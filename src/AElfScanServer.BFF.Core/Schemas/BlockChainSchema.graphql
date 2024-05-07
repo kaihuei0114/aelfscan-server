@@ -1,0 +1,82 @@
+type Block {
+    blockHeight: String @fromJson
+    timestamp: Long @fromJson
+    transactionCount: Int @fromJson
+    timeSpan: String @fromJson
+    reward: String @fromJson
+    burntFees: String @fromJson
+    producerName: String @fromJson
+    producerAddress: String @fromJson
+}
+
+type Blocks {
+    total: Int! @fromJson
+    blocks: [Block!] @fromJson
+}
+
+type Query {
+    latestBlocks(chainId: String!, maxResultCount: Int!): Blocks
+    @http(url:"BASE_URL/blockchain/latestBlocks", method:"GET", path:"data")
+
+    blocks(chainId: String!, endBlockHeight: Long!, maxResultCount: Int!): Blocks
+    @http(url:"BASE_URL/blockchain/blocks", method:"GET", path:"data")
+
+    blockDetail(chainId: String!, blockHeight: Int!): BlockDetail
+    @http(url:"BASE_URL/blockchain/blockDetail", method:"GET", path:"data")
+}
+
+
+
+type BlockDetail {
+    blockHeight: Int @fromJson
+    chainId: String @fromJson
+    blockHash: String @fromJson
+    timestamp: Int @fromJson
+    burntFees: String @fromJson
+    confirmed: Boolean @fromJson
+    reward: Reward @fromJson
+    previousBlockHash: String @fromJson
+    blockSize: String @fromJson
+    merkleTreawakeneRootOfTransactions: String @fromJson
+    merkleTreeRootOfWorldState: String @fromJson
+    merkleTreeRootOfTransactionState: String @fromJson
+    extra: String @fromJson
+    producer: Producer @fromJson
+    burntFee: Fee @fromJson
+    total: Int @fromJson
+    transactions: [Transaction] @fromJson
+}
+
+type Reward {
+    usdReward: String @fromJson
+    elfReward: String @fromJson
+}
+
+type Producer {
+    address: String @fromJson
+    name: String @fromJson
+}
+
+type Fee {
+    usdFee: String @fromJson
+    elfFee: String @fromJson
+}
+
+type Transaction {
+    transactionId: String @fromJson
+    blockHeight: Int @fromJson
+    method: String @fromJson
+    from: Account @fromJson
+    to: Account @fromJson
+    timestamp: Int @fromJson
+    transactionValue: String @fromJson
+    transactionFee: String @fromJson
+}
+
+type Account {
+    name: String @fromJson
+    address: String @fromJson
+    addressType: Int @fromJson
+    isManager: Boolean @fromJson
+    isProducer: Boolean @fromJson
+}
