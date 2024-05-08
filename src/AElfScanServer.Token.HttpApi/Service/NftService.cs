@@ -267,7 +267,7 @@ public class NftService : INftService, ISingletonDependency
         AssertHelper.NotEmpty(collectionInfos, "this nft collection not exist");
         var collectionInfo = collectionInfos[0];
         var nftItemDetailDto = _objectMapper.Map<IndexerTokenInfoDto, NftItemDetailDto>(nftItem);
-        nftItemDetailDto.NftCollection = new TokenBaseInfo()
+        nftItemDetailDto.NftCollection = new TokenBaseInfo
         {
             Name = collectionInfo.TokenName,
             Symbol = collectionInfo.Symbol,
