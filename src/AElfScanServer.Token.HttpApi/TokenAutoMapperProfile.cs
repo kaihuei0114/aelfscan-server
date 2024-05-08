@@ -133,10 +133,7 @@ public class TokenAutoMapperProfile : Profile
             .ReverseMap()
             ;
         CreateMap<NftItemHolderInfoInput, TokenHolderInput>();
-        CreateMap<NftItemActivityInput, TokenTransferInput>()
-            .ReverseMap();
-        CreateMap<TokenCommonDto, TokenDetailDto>()
-            ;
+        CreateMap<TokenCommonDto, TokenDetailDto>();
     }
     
     private static string OfChainId(MetadataDto metadata)

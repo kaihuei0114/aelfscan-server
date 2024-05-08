@@ -9,6 +9,8 @@ public class NftInventoryDto
     public decimal LastSalePriceInUsd { get; set; }
     public decimal LastSaleAmount { get; set; }
     public string LastTransactionId { get; set; }
+    
+    public long BlockHeight { get; set; }
 }
 
 public class NftInventorysDto : ListResponseDto<NftInventoryDto>

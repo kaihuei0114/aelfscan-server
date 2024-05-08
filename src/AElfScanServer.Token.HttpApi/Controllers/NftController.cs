@@ -59,6 +59,12 @@ public class NftController
         return await _nftService.GetNftItemDetailAsync(chainId, symbol);
     }
     
+    [HttpGet("item-activity")]
+    public async Task<ListResponseDto<NftItemActivityDto>> GetNftItemDetailAsync(NftItemActivityInput input)
+    {
+        return await _nftService.GetNftItemActivityAsync(input);
+    }
+    
     [HttpGet("item-holders")]
     public async Task<ListResponseDto<NftItemHolderInfoDto>> GetNftItemHoldersAsync(NftItemHolderInfoInput input)
     {
