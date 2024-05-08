@@ -10,6 +10,7 @@ using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Constant;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
+using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using AElfScanServer.Token;
 using AElfScanServer.TokenDataFunction.Dtos;
@@ -267,12 +268,13 @@ public class NftService : INftService, ISingletonDependency
         AssertHelper.NotEmpty(collectionInfos, "this nft collection not exist");
         var collectionInfo = collectionInfos[0];
         var nftItemDetailDto = _objectMapper.Map<IndexerTokenInfoDto, NftItemDetailDto>(nftItem);
+        nftItemDetailDto.Quantity = DecimalHelper.DivideLong(nftItem.TotalSupply, nftItem.Decimals);
         nftItemDetailDto.NftCollection = new TokenBaseInfo
         {
             Name = collectionInfo.TokenName,
             Symbol = collectionInfo.Symbol,
-            Decimals = collectionInfo.Decimals
-            // ImageUrl = collectionInfo.ExternalInfo[""];
+            Decimals = collectionInfo.Decimals, 
+            //ImageUrl = collectionInfo.ExternalInfo;
         };
         return nftItemDetailDto;
     }
@@ -293,26 +295,33 @@ public class NftService : INftService, ISingletonDependency
     public async Task<ListResponseDto<NftItemHolderInfoDto>> GetNftItemHoldersAsync(NftItemHolderInfoInput input)
     {
         var tokenHolderInput = _objectMapper.Map<NftItemHolderInfoInput, TokenHolderInput>(input);
-        var nftItemHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
-
-        var nftItemList = await _tokenIndexerProvider.GetTokenDetailAsync(input.ChainId, input.Symbol);
-
+        tokenHolderInput.SetDefaultSort();
+        var tokenHolderInfoTask = _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
+        var tokenDetailTask = _tokenIndexerProvider.GetTokenDetailAsync(input.ChainId, input.Symbol);
+        await Task.WhenAll(tokenHolderInfoTask, tokenDetailTask);
+        var nftItemHolderInfos = await tokenHolderInfoTask;
+        var nftItemList = await tokenDetailTask;
         AssertHelper.NotEmpty(nftItemList, "this nft not exist");
 
         var supply = nftItemList[0].Supply;
-        
+
         var list = new List<NftItemHolderInfoDto>();
         foreach (var nftCollectionHolderInfoIndex in nftItemHolderInfos.Items)
         {
             var nftItemHolderInfoDto = new NftItemHolderInfoDto()
             {
-                Quantity = nftCollectionHolderInfoIndex.FormatAmount,
-                Percentage = nftCollectionHolderInfoIndex.FormatAmount / supply
+                Quantity = nftCollectionHolderInfoIndex.FormatAmount
             };
             nftItemHolderInfoDto.Address = new CommonAddressDto
             {
                 Address = nftCollectionHolderInfoIndex.Address
             };
+
+            if (supply > 0)
+            {
+                nftItemHolderInfoDto.Percentage =
+                    Math.Round((decimal)nftCollectionHolderInfoIndex.Amount / supply * 100, CommonConstant.PercentageValueDecimals);
+            }
 
             list.Add(nftItemHolderInfoDto);
         }
@@ -587,7 +596,7 @@ public class NftService : INftService, ISingletonDependency
             .Select(group => new 
             {
                 CollectionSymbol = group.Key,
-                SumSupply = group.Sum(token => token.Supply)
+                SumSupply = group.Sum(token => DecimalHelper.DivideLong(token.Supply, token.Decimals))
             })
             .ToDictionary(g => g.CollectionSymbol, g => g.SumSupply);
         return groupedResult;    

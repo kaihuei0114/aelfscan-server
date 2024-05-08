@@ -12,10 +12,16 @@ public class NftItemDetailDto
     public List<string> Issuer { get; set; }
     public string TokenSymbol { get; set; }
     public long Quantity { get; set; }
+    
     public MarketInfoDto MarketPlaces { get; set; }
+    
     public bool IsSeed { get; set; }
+    
     public string SymbolToCreate { get; set; }
-    public string Expires { get; set; }
+    
+    //seed has expire time
+    public string ExpireTime { get; set; }
+
     public ListResponseDto<PropertyDto> Properties { get; set; }
     public string Description { get; set; }
 }
