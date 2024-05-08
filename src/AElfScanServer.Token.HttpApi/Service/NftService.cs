@@ -126,7 +126,6 @@ public class NftService : INftService, ISingletonDependency
     public async Task<NftTransferInfosDto> GetNftCollectionTransferInfosAsync(TokenTransferInput input)
     {
         input.Types = new List<SymbolType> { SymbolType.Nft };
-        
         var indexerNftTransfer = await _tokenIndexerProvider.GetTokenTransferInfoAsync(input);
 
         var list = await ConvertIndexerNftTransferDtoAsync(indexerNftTransfer.Items, input.ChainId);
