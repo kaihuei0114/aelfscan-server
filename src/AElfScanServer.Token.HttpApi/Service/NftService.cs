@@ -45,6 +45,7 @@ public interface INftService
 
 public class NftService : INftService, ISingletonDependency
 {
+    private const int MaxPageSize = 1000;
     private readonly IOptionsMonitor<ChainOptions> _chainOptions;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly IBlockChainProvider _blockChainProvider;
@@ -576,12 +577,13 @@ public class NftService : INftService, ISingletonDependency
     }
     
     private async Task<Dictionary<string, long>> GetCollectionSupplyAsync(string chainId, List<string> collectionSymbols)
-    { 
+    {
         var nftInput = new TokenListInput()
         {
             ChainId = chainId,
             Types = new List<SymbolType> { SymbolType.Nft },
-            CollectionSymbols = collectionSymbols
+            CollectionSymbols = collectionSymbols,
+            MaxResultCount = 1000
         };
         var nftListDto = await _tokenIndexerProvider.GetTokenListAsync(nftInput);
         var groupedResult = nftListDto.Items
