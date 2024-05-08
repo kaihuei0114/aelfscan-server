@@ -113,13 +113,13 @@ public class NftService : INftService, ISingletonDependency
         nftDetailDto.Items = (await groupAndSumSupplyTask).TryGetValue(collectionInfo.Symbol, out var sumSupply) ? sumSupply : 0;
         //of floor price
         var floorPricePair = await getFloorPricePairTask;
-        if (floorPricePair.Item2.IsNullOrEmpty())
+        nftDetailDto.FloorPrice = floorPricePair.Item1;
+        if (floorPricePair.Item2.IsNullOrEmpty() || nftDetailDto.FloorPrice == -1)
         {
             return nftDetailDto;
         }
         var priceDto = await _tokenPriceService.GetTokenPriceAsync(floorPricePair.Item2, CurrencyConstant.UsdCurrency);
-        nftDetailDto.FloorPrice = floorPricePair.Item1;
-        nftDetailDto.FloorPriceOfUsd = Math.Round(floorPricePair.Item1 * priceDto.Price, CommonConstant.UsdValueDecimals);
+        nftDetailDto.FloorPriceOfUsd = Math.Round(nftDetailDto.FloorPrice * priceDto.Price, CommonConstant.UsdValueDecimals);
         return nftDetailDto;
     }
 
@@ -344,7 +344,7 @@ public class NftService : INftService, ISingletonDependency
             var listingDto = await _nftInfoProvider.GetNftListingsAsync(nftListingsDto);
             if (listingDto.Items.IsNullOrEmpty())
             {
-                return (0, null);
+                return (-1, null);
             }
 
             var item = listingDto.Items[0];
@@ -354,7 +354,7 @@ public class NftService : INftService, ISingletonDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[GetNftFloorPrice] error.");
-            return (0, null);
+            return (-1, null);
         }
     }
 
@@ -596,7 +596,6 @@ public class NftService : INftService, ISingletonDependency
             {
                 // Update the input for the next page
                 nftInput.SkipCount += nftListDto.Items.Count;
-
                 // Group and sum up the supplies
                 foreach (var group in nftListDto.Items.GroupBy(token => token.CollectionSymbol))
                 {
