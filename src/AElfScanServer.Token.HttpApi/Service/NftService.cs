@@ -302,7 +302,6 @@ public class NftService : INftService, ISingletonDependency
         var nftItemHolderInfos = await tokenHolderInfoTask;
         var nftItemList = await tokenDetailTask;
         AssertHelper.NotEmpty(nftItemList, "this nft not exist");
-
         var supply = nftItemList[0].Supply;
 
         var list = new List<NftItemHolderInfoDto>();
