@@ -516,9 +516,10 @@ public class NftService : INftService, ISingletonDependency
                 nftInventoryDto.LastTransactionId = lastSaleInfo.TransactionId;
                 nftInventoryDto.BlockHeight = lastSaleInfo.BlockHeight;
                 nftInventoryDto.LastSaleAmount = lastSaleInfo.SaleAmount;
+                nftInventoryDto.LastSaleAmountSymbol = lastSaleInfo.SaleAmountSymbol;
                 if (!priceDict.TryGetValue(lastSaleInfo.SaleAmountSymbol, out var priceDto))
                 {
-                    priceDto = await _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency,
+                    priceDto = await _tokenPriceService.GetTokenPriceAsync(lastSaleInfo.SaleAmountSymbol,
                         CurrencyConstant.UsdCurrency);
                     priceDict[lastSaleInfo.SaleAmountSymbol] = priceDto;
                 }
