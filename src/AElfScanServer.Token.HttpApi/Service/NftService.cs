@@ -45,7 +45,7 @@ public interface INftService
 
 public class NftService : INftService, ISingletonDependency
 {
-    private const int MaxPageSize = 1000;
+    private const int MaxResultCount = 1000;
     private readonly IOptionsMonitor<ChainOptions> _chainOptions;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly IBlockChainProvider _blockChainProvider;
@@ -580,21 +580,39 @@ public class NftService : INftService, ISingletonDependency
     {
         var nftInput = new TokenListInput()
         {
-            ChainId = chainId,
-            Types = new List<SymbolType> { SymbolType.Nft },
-            CollectionSymbols = collectionSymbols,
-            MaxResultCount = 1000
+            ChainId = chainId, Types = new List<SymbolType> { SymbolType.Nft },
+            CollectionSymbols = collectionSymbols, MaxResultCount = MaxResultCount
         };
-        var nftListDto = await _tokenIndexerProvider.GetTokenListAsync(nftInput);
-        var groupedResult = nftListDto.Items
-            .GroupBy(token => token.CollectionSymbol)
-            .Select(group => new 
+        var hasMoreData = true;
+        var result = new Dictionary<string, long>();
+        while (hasMoreData)
+        {
+            var nftListDto = await _tokenIndexerProvider.GetTokenListAsync(nftInput);
+            if (nftListDto.Items.Count == 0)
             {
-                CollectionSymbol = group.Key,
-                SumSupply = group.Sum(token => DecimalHelper.DivideLong(token.Supply, token.Decimals))
-            })
-            .ToDictionary(g => g.CollectionSymbol, g => g.SumSupply);
-        return groupedResult;    
+                hasMoreData = false;
+            }
+            else
+            {
+                // Update the input for the next page
+                nftInput.SkipCount += nftListDto.Items.Count;
+
+                // Group and sum up the supplies
+                foreach (var group in nftListDto.Items.GroupBy(token => token.CollectionSymbol))
+                {
+                    var sumSupply = group.Sum(token => DecimalHelper.DivideLong(token.Supply, token.Decimals));
+                    if (result.ContainsKey(group.Key))
+                    {
+                        result[group.Key] += sumSupply;
+                    }
+                    else
+                    {
+                        result.Add(group.Key, sumSupply);
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     private async Task<List<HolderInfo>> GetHolderInfoAsync(SymbolType symbolType, string chainId, string address)
