@@ -11,7 +11,7 @@ jobs:
     runs-on: aelfscan-runner
     strategy:
       matrix:
-        servicename: [AElfScanServer.BFF, AElfScanServer.BlockChain.HttpApi.Host, AElfScanServer.Token.HttpApi.Host]
+        servicename: [AElfScanServer.BFF, AElfScanServer.BlockChain.HttpApi.Host, AElfScanServer.Token.HttpApi.Host, AElfScanServer.Worker]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -29,7 +29,7 @@ jobs:
     runs-on: aelfscan-runner
     strategy:
       matrix:
-        servicename: [AElfScanServer.BFF, AElfScanServer.BlockChain.HttpApi.Host, AElfScanServer.Token.HttpApi.Host]
+        servicename: [AElfScanServer.BFF, AElfScanServer.BlockChain.HttpApi.Host, AElfScanServer.Token.HttpApi.Host, AElfScanServer.Worker]
     permissions:
       id-token: write
       contents: read
@@ -79,7 +79,7 @@ jobs:
     needs: build-and-push-image
     strategy:
       matrix:
-        servicename: [aelf-explorer-bff, aelf-explorer-blockchain-api-host, aelf-explorer-token-api-host]
+        servicename: [aelf-explorer-bff, aelf-explorer-blockchain-api-host, aelf-explorer-token-api-host, aelf-explorer-worker]
     steps:
       - name: Deploy
         uses: actions/github-script@v6
