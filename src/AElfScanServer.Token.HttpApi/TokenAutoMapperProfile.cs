@@ -126,8 +126,6 @@ public class TokenAutoMapperProfile : Profile
                 m => m.MapFrom(u => OfExternalInfoKeyValue(u.ExternalInfo, "__seed_owned_symbol")))
             .ForPath(t => t.ExpireTime,
                 m => m.MapFrom(u => OfExternalInfoKeyValue(u.ExternalInfo, "__seed_exp_time")))
-            .ForPath(t => t.Item.ImageUrl,
-                m => m.MapFrom(u => OfExternalInfoKeyValue(u.ExternalInfo, "__nft_image_url")))
             .ForPath(t => t.Description,
                 m => m.MapFrom(u => OfExternalInfoKeyValue(u.ExternalInfo, "Description")))
             .ReverseMap()

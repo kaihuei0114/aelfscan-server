@@ -276,12 +276,15 @@ public class NftService : INftService, ISingletonDependency
         var collectionInfo = collectionInfos[0];
         var nftItemDetailDto = _objectMapper.Map<IndexerTokenInfoDto, NftItemDetailDto>(nftItem);
         nftItemDetailDto.Quantity = DecimalHelper.DivideLong(nftItem.TotalSupply, nftItem.Decimals);
+        nftItemDetailDto.Item.ImageUrl = TokenInfoHelper.GetImageUrl(nftItem.ExternalInfo,
+            () => _tokenImageProvider.BuildImageUrl(nftItem.Symbol));
         nftItemDetailDto.NftCollection = new TokenBaseInfo
         {
             Name = collectionInfo.TokenName,
             Symbol = collectionInfo.Symbol,
             Decimals = collectionInfo.Decimals, 
-            //ImageUrl = collectionInfo.ExternalInfo;
+            ImageUrl = TokenInfoHelper.GetImageUrl(collectionInfo.ExternalInfo,
+                    () => _tokenImageProvider.BuildImageUrl(collectionInfo.Symbol))
         };
         return nftItemDetailDto;
     }
@@ -307,9 +310,7 @@ public class NftService : INftService, ISingletonDependency
         var nftItemHolderInfos = await tokenHolderInfoTask;
         var nftItemList = await tokenDetailTask;
         AssertHelper.NotEmpty(nftItemList, "this nft not exist");
-        
         var supply = nftItemList[0].Supply;
-
         var list = new List<NftItemHolderInfoDto>();
         foreach (var nftCollectionHolderInfoIndex in nftItemHolderInfos.Items)
         {
@@ -380,6 +381,7 @@ public class NftService : INftService, ISingletonDependency
                 To = new CommonAddressDto() { Address = "2jwoGHSPUWuCu49eCgnmEy9qewT4APEA1eoYzg5WbU3Mm2nzt" },
                 Price = new decimal(i * 1.2),
                 PriceSymbol = "ELF",
+                Status = "Success",
                 Quantity = i + 10,
                 TransactionId = i == 1
                     ? "f0bed7aba6f177818eb18a07cdffd4f0e52aed22bf5fea5c48973c06b7e9bb0d"
@@ -514,6 +516,15 @@ public class NftService : INftService, ISingletonDependency
         }
         var priceDict = new Dictionary<string, TokenPriceDto>();
         var symbolList = indexerNftHolder.Select(dto => dto.Token.Symbol).Distinct().ToList();
+        //query token infos
+        var tokenInput = new TokenListInput()
+        {
+            ChainId = chainId,
+            Symbols = symbolList,
+            MaxResultCount = symbolList.Count
+        };
+        var indexerTokenListDto = await _tokenIndexerProvider.GetTokenListAsync(tokenInput);
+        var itemInfosDict = indexerTokenListDto.Items.ToDictionary(i => i.Symbol, i => i);
         //batch query symbol last sale info
         var lastSaleInfoDict = new Dictionary<string, NftSalInfoDto>();
         foreach (var indexerTokenHolderInfoDto in indexerNftHolder)
@@ -521,6 +532,13 @@ public class NftService : INftService, ISingletonDependency
             var nftInventoryDto =
                 _objectMapper.Map<IndexerTokenHolderInfoDto, NftInventoryDto>(indexerTokenHolderInfoDto);
             var symbol = nftInventoryDto.Item.Symbol;
+            if (itemInfosDict.TryGetValue(symbol, out var itemInfo))
+            {
+                //handle image url
+                nftInventoryDto.Item.ImageUrl = TokenInfoHelper.GetImageUrl(itemInfo.ExternalInfo,
+                    () => _tokenImageProvider.BuildImageUrl(symbol));
+            }
+
             if (lastSaleInfoDict.TryGetValue(symbol, out var lastSaleInfo))
             {
                 nftInventoryDto.LastTransactionId = lastSaleInfo.TransactionId;
