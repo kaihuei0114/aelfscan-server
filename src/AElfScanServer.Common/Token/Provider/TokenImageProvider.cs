@@ -5,24 +5,24 @@ using Volo.Abp.DependencyInjection;
 
 namespace AElfScanServer.Token.Provider;
 
-public interface ITokenProvider
+public interface ITokenImageProvider
 {
-    string BuildTokenImageUrl(string symbol);
+    string BuildImageUrl(string symbol);
 }
 
-public class TokenProvider : ITokenProvider, ISingletonDependency
+public class TokenImageProvider : ITokenImageProvider, ISingletonDependency
 {
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptionsMonitor;
     private readonly IOptionsMonitor<AssetsInfoOptions> _assetsInfoOptionsMonitor;
 
-    public TokenProvider(IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
+    public TokenImageProvider(IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
         IOptionsMonitor<AssetsInfoOptions> assetsInfoOptions)
     {
         _tokenInfoOptionsMonitor = tokenInfoOptions;
         _assetsInfoOptionsMonitor = assetsInfoOptions;
     }
 
-    public string BuildTokenImageUrl(string symbol)
+    public string BuildImageUrl(string symbol)
     {
         if (symbol.IsNullOrWhiteSpace())
         {

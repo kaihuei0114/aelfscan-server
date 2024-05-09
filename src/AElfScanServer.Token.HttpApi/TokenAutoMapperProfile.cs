@@ -156,7 +156,7 @@ public class TokenAutoMapperProfile : Profile
         return TimeHelper.GetTimeStampFromDateTimeInSeconds(blockTimeNew);
     }
     
-    private static string OfExternalInfoKeyValue(List<IndexerTokenExternalInfoDto> externalInfo, string key)
+    private static string OfExternalInfoKeyValue(List<ExternalInfoDto> externalInfo, string key)
     {
         return externalInfo.Where(e => e.Key == key).Select(e => e.Value).FirstOrDefault();
     }

@@ -24,6 +24,7 @@ public class AElfScanCommonModule : AbpModule
         Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<CoinGeckoOptions>(configuration.GetSection("CoinGecko"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfoOptions"));
+        Configure<AssetsInfoOptions>(configuration.GetSection("AssetsInfoOptions"));
         context.Services.AddSingleton<IHttpProvider, HttpProvider>();
         context.Services.AddSingleton<IGraphQlFactory, GraphQlFactory>();
         context.Services.AddTransient<IExchangeProvider, OkxProvider>();

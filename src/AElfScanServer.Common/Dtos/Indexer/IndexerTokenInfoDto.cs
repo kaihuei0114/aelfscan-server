@@ -14,15 +14,9 @@ public class IndexerTokenInfoDto : IndexerTokenBaseDto
     public bool IsBurnable { get; set; }
     public string IssueChainId { get; set; }
     public int Decimals { get; set; }
-    public List<IndexerTokenExternalInfoDto> ExternalInfo { get; set; } = new();
+    public List<ExternalInfoDto> ExternalInfo { get; set; } = new();
     public long HolderCount { get; set; }
     public long TransferCount { get; set; }
-}
-
-public class IndexerTokenExternalInfoDto
-{
-    public string Key { get; set; }
-    public string Value { get; set; }
 }
 
 public class IndexerTokenBaseDto

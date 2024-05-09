@@ -12,6 +12,7 @@ using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using AElfScanServer.Token;
+using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AElfScanServer.TokenDataFunction.Dtos.Input;
 using AElfScanServer.TokenDataFunction.Provider;
@@ -44,17 +45,19 @@ public class TokenService : ITokenService, ITransientDependency
     private readonly IOptionsMonitor<ChainOptions> _chainOptions;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
     private readonly ITokenPriceService _tokenPriceService;
-
+    private readonly ITokenImageProvider _tokenImageProvider;
+    
 
     public TokenService(ITokenIndexerProvider tokenIndexerProvider, IBlockChainProvider blockChainProvider,
         ITokenHolderPercentProvider tokenHolderPercentProvider, IObjectMapper objectMapper,
         IOptionsMonitor<ChainOptions> chainOptions, ITokenPriceService tokenPriceService, 
-        IOptionsMonitor<TokenInfoOptions> tokenInfoOptions)
+        IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenImageProvider tokenImageProvider)
     {
         _objectMapper = objectMapper;
         _chainOptions = chainOptions;
         _tokenPriceService = tokenPriceService;
         _tokenInfoOptions = tokenInfoOptions;
+        _tokenImageProvider = tokenImageProvider;
         _blockChainProvider = blockChainProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenHolderPercentProvider = tokenHolderPercentProvider;
@@ -303,7 +306,9 @@ public class TokenService : ITokenService, ITransientDependency
             var tokenListDto = _objectMapper.Map<IndexerTokenInfoDto, TokenCommonDto>(indexerTokenInfoDto);
             tokenListDto.TotalSupply = DecimalHelper.DivideLong(tokenListDto.TotalSupply, indexerTokenInfoDto.Decimals);
             tokenListDto.CirculatingSupply = DecimalHelper.DivideLong(tokenListDto.CirculatingSupply, indexerTokenInfoDto.Decimals);
-            //image url
+            //handle image url
+            tokenListDto.Token.ImageUrl = TokenInfoHelper.GetImageUrl(indexerTokenInfoDto.ExternalInfo,
+                () => _tokenImageProvider.BuildImageUrl(indexerTokenInfoDto.Symbol));
             if (tokenHolderCountDic.TryGetValue(indexerTokenInfoDto.Symbol, out var beforeCount) && beforeCount != 0)
             {
                 tokenListDto.HolderPercentChange24H = Math.Round(
