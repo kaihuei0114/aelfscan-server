@@ -13,6 +13,8 @@ public class WorkerOptions
     public bool ClearTransactionDataSwitch { get; set; }
 
     public List<string> EsUrl { get; set; }
+
+    public List<string> PullDataChainIds { get; set; }
 }
 
 public class ChainOptionDto
@@ -20,4 +22,3 @@ public class ChainOptionDto
     public string ChainId { get; set; }
     public string BasicInfoUrl { get; set; }
 }
-

@@ -52,11 +52,9 @@ public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
     {
         // do something
         // await _transactionService.PullTokenData();
-
-        _logger.LogDebug("Start to pull transaction data.");
-        // await ExecutePullTransactionAsync("AELF");
-        // var tasks = _aelfIndexerOptions.ChainIds.Select(ExecutePullTransactionAsync);
-        // await Task.WhenAll(tasks);
+      
+        var tasks = _workerOptions.PullDataChainIds.Select(ExecutePullTransactionAsync);
+        await Task.WhenAll(tasks);
     }
 
     private async Task ExecutePullTransactionAsync(string chainId)
@@ -120,14 +118,5 @@ public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
             _logger.LogError(e, "pull transaction error:{e}", e.Message);
         }
     }
-
-    // private async Task<long> GetStartBlockHeight(string chainId)
-    // {
-    //     var lastBlockHeight = await _transactionService.GetLastBlockHeight(chainId);
-    //
-    //     if (lastBlockHeight > 0)
-    //     {
-    //         return lastBlockHeight;
-    //     }
-    // }
+    
 }
