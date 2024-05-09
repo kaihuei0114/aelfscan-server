@@ -13,6 +13,7 @@ using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using AElfScanServer.Token;
+using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Dtos;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AElfScanServer.TokenDataFunction.Dtos.Input;
@@ -54,10 +55,13 @@ public class NftService : INftService, ISingletonDependency
     private readonly INftCollectionHolderProvider _collectionHolderProvider;
     private readonly INftInfoProvider _nftInfoProvider;
     private readonly ITokenPriceService _tokenPriceService;
+    private readonly ITokenImageProvider _tokenImageProvider;
+
     
     public NftService(ITokenIndexerProvider tokenIndexerProvider, ILogger<NftService> logger,
         IObjectMapper objectMapper, IBlockChainProvider blockChainProvider,
-        INftCollectionHolderProvider collectionHolderProvider, INftInfoProvider nftInfoProvider, ITokenPriceService tokenPriceService, IOptionsMonitor<ChainOptions> chainOptions)
+        INftCollectionHolderProvider collectionHolderProvider, INftInfoProvider nftInfoProvider, ITokenPriceService tokenPriceService, 
+        IOptionsMonitor<ChainOptions> chainOptions, ITokenImageProvider tokenImageProvider)
     {
         _tokenIndexerProvider = tokenIndexerProvider;
         _logger = logger;
@@ -67,6 +71,7 @@ public class NftService : INftService, ISingletonDependency
         _nftInfoProvider = nftInfoProvider;
         _tokenPriceService = tokenPriceService;
         _chainOptions = chainOptions;
+        _tokenImageProvider = tokenImageProvider;
     }
 
 
@@ -86,6 +91,8 @@ public class NftService : INftService, ISingletonDependency
         {
             var nftInfoDto = _objectMapper.Map<IndexerTokenInfoDto, NftInfoDto>(item);
             //convert url
+            nftInfoDto.NftCollection.ImageUrl = TokenInfoHelper.GetImageUrl(item.ExternalInfo,
+                () => _tokenImageProvider.BuildImageUrl(item.Symbol));
             nftInfoDto.Items = groupAndSumSupply.TryGetValue(item.Symbol, out var sumSupply) ? sumSupply : 0;
             return nftInfoDto;
         }).ToList();
@@ -110,6 +117,9 @@ public class NftService : INftService, ISingletonDependency
         var collectionInfo = collectionInfoDtos[0];
         var nftDetailDto = _objectMapper.Map<IndexerTokenInfoDto, NftDetailDto>(collectionInfo);
         nftDetailDto.TokenContractAddress = _chainOptions.CurrentValue.GetChainInfo(chainId)?.TokenContractAddress;
+        //collectionInfo.Symbol is xxx-0
+        nftDetailDto.NftCollection.ImageUrl = TokenInfoHelper.GetImageUrl(collectionInfo.ExternalInfo,
+            () => _tokenImageProvider.BuildImageUrl(collectionInfo.Symbol));
         nftDetailDto.Items = (await groupAndSumSupplyTask).TryGetValue(collectionInfo.Symbol, out var sumSupply) ? sumSupply : 0;
         //of floor price
         var floorPricePair = await getFloorPricePairTask;
