@@ -7,4 +7,5 @@ public static class CommonConstant
     public const string Underline = "_";
     public const int UsdValueDecimals = 2;
     public const int PercentageValueDecimals = 4;
+    public const string DefaultMarket = "Forest";
 }

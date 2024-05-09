@@ -56,12 +56,13 @@ public class NftService : INftService, ISingletonDependency
     private readonly INftInfoProvider _nftInfoProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenImageProvider _tokenImageProvider;
+    private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptionsMonitor;
 
     
     public NftService(ITokenIndexerProvider tokenIndexerProvider, ILogger<NftService> logger,
         IObjectMapper objectMapper, IBlockChainProvider blockChainProvider,
         INftCollectionHolderProvider collectionHolderProvider, INftInfoProvider nftInfoProvider, ITokenPriceService tokenPriceService, 
-        IOptionsMonitor<ChainOptions> chainOptions, ITokenImageProvider tokenImageProvider)
+        IOptionsMonitor<ChainOptions> chainOptions, ITokenImageProvider tokenImageProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptionsMonitor)
     {
         _tokenIndexerProvider = tokenIndexerProvider;
         _logger = logger;
@@ -72,6 +73,7 @@ public class NftService : INftService, ISingletonDependency
         _tokenPriceService = tokenPriceService;
         _chainOptions = chainOptions;
         _tokenImageProvider = tokenImageProvider;
+        _tokenInfoOptionsMonitor = tokenInfoOptionsMonitor;
     }
 
 
@@ -278,6 +280,9 @@ public class NftService : INftService, ISingletonDependency
         nftItemDetailDto.Quantity = DecimalHelper.DivideLong(nftItem.TotalSupply, nftItem.Decimals);
         nftItemDetailDto.Item.ImageUrl = TokenInfoHelper.GetImageUrl(nftItem.ExternalInfo,
             () => _tokenImageProvider.BuildImageUrl(nftItem.Symbol));
+        var marketInfo = _tokenInfoOptionsMonitor.CurrentValue.GetMarketInfo(CommonConstant.DefaultMarket);
+        marketInfo.MarketUrl = string.Format(marketInfo.MarketUrl, symbol);
+        nftItemDetailDto.MarketPlaces = marketInfo;
         nftItemDetailDto.NftCollection = new TokenBaseInfo
         {
             Name = collectionInfo.TokenName,
@@ -370,16 +375,17 @@ public class NftService : INftService, ISingletonDependency
     private async Task<List<NftItemActivityDto>> ConvertNftItemActivityAsync(string chainId)
     {
         var list = new List<NftItemActivityDto>();
-
+        var priceDict = new Dictionary<string, TokenPriceDto>();
         for (int i = 2; i > 0; i--)
         {
+            var priceSymbol = "ELF";
             var activityDto = new NftItemActivityDto()
             {
                 Action = "Sale",
                 From = new CommonAddressDto() { Address = "CeQt2cD4rG3Un1QW6FAzGJcdGYoyE987dE7Gr816mWDQw1HRN" },
                 To = new CommonAddressDto() { Address = "2jwoGHSPUWuCu49eCgnmEy9qewT4APEA1eoYzg5WbU3Mm2nzt" },
                 Price = new decimal(i * 1.2),
-                PriceSymbol = "ELF",
+                PriceSymbol = priceSymbol,
                 Status = "Success",
                 Quantity = i + 10,
                 TransactionId = i == 1
@@ -388,6 +394,14 @@ public class NftService : INftService, ISingletonDependency
                 BlockHeight = 1,
                 BlockTime = 1713619225346 + i    
             };
+            
+            if (!priceDict.TryGetValue(priceSymbol, out var priceDto))
+            {
+                priceDto = await _tokenPriceService.GetTokenPriceAsync(priceSymbol,
+                    CurrencyConstant.UsdCurrency);
+                priceDict[priceSymbol] = priceDto;
+            }
+            activityDto.PriceOfUsd = Math.Round(activityDto.Price * priceDto.Price, CommonConstant.UsdValueDecimals);
             list.Add(activityDto);
         }
         return list;
