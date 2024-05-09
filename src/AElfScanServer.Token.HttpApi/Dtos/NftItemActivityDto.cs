@@ -5,6 +5,7 @@ namespace AElfScanServer.TokenDataFunction.Dtos;
 public class NftItemActivityDto
 {
     public string TransactionId { get; set; }
+    public string Status { get; set; }
     public string Action { get; set; }
     public long BlockTime { get; set; }
     public long BlockHeight { get; set; }
