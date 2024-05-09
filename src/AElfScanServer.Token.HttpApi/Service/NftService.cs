@@ -331,7 +331,6 @@ public class NftService : INftService, ISingletonDependency
 
             list.Add(nftItemHolderInfoDto);
         }
-
         return new ListResponseDto<NftItemHolderInfoDto>()
         {
             Total = nftItemHolderInfos.TotalCount,
