@@ -375,16 +375,17 @@ public class NftService : INftService, ISingletonDependency
     private async Task<List<NftItemActivityDto>> ConvertNftItemActivityAsync(string chainId)
     {
         var list = new List<NftItemActivityDto>();
-
+        var priceDict = new Dictionary<string, TokenPriceDto>();
         for (int i = 2; i > 0; i--)
         {
+            var priceSymbol = "ELF";
             var activityDto = new NftItemActivityDto()
             {
                 Action = "Sale",
                 From = new CommonAddressDto() { Address = "CeQt2cD4rG3Un1QW6FAzGJcdGYoyE987dE7Gr816mWDQw1HRN" },
                 To = new CommonAddressDto() { Address = "2jwoGHSPUWuCu49eCgnmEy9qewT4APEA1eoYzg5WbU3Mm2nzt" },
                 Price = new decimal(i * 1.2),
-                PriceSymbol = "ELF",
+                PriceSymbol = priceSymbol,
                 Status = "Success",
                 Quantity = i + 10,
                 TransactionId = i == 1
@@ -393,6 +394,14 @@ public class NftService : INftService, ISingletonDependency
                 BlockHeight = 1,
                 BlockTime = 1713619225346 + i    
             };
+            
+            if (!priceDict.TryGetValue(priceSymbol, out var priceDto))
+            {
+                priceDto = await _tokenPriceService.GetTokenPriceAsync(priceSymbol,
+                    CurrencyConstant.UsdCurrency);
+                priceDict[priceSymbol] = priceDto;
+            }
+            activityDto.PriceOfUsd = Math.Round(activityDto.Price * priceDto.Price, CommonConstant.UsdValueDecimals);
             list.Add(activityDto);
         }
         return list;
