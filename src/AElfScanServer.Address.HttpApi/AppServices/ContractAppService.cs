@@ -59,17 +59,18 @@ public class ContractAppService : IContractAppService
             await _indexerGenesisProvider.GetContractListAsync(input.ChainId, input.SkipCount, input.MaxResultCount);
         result.Total = getContractListResult.Count;
 
+
         var addressInfos = await _blockChainProvider.GetAddressDictionaryAsync(new AElfAddressInput
         {
             ChainId = input.ChainId,
             Addresses = new List<string>(getContractListResult.Select(t => t.Address))
         });
 
-        
-        
+
         foreach (var info in getContractListResult)
         {
             var transactions = await _blockChainProvider.GetTransactionsAsync(info.ChainId, info.Address);
+
 
             var contractInfo = new ContractDto
             {
@@ -78,7 +79,8 @@ public class ContractAppService : IContractAppService
                 ContractVersion = info.ContractVersion,
                 LastUpdateTime = info.BlockTime != DateTime.MinValue ? info.BlockTime : DateTime.Now,
                 Type = info.ContractType,
-                TransactionCount = transactions.Total > 0 ? transactions.Total : 0
+                TransactionCount =0,
+                ContractName = GetContractName(info.ChainId, info.Address).Result
             };
 
             // todo: support batch search by address list.
@@ -96,9 +98,21 @@ public class ContractAppService : IContractAppService
 
         return result;
     }
-    
-    
-    
+
+
+    public async Task<string> GetContractName(string chainId, string address)
+    {
+        _blockChainOptions.ContractNames.TryGetValue(chainId, out var contractNames);
+        if (contractNames == null)
+        {
+            return "";
+        }
+
+        contractNames.TryGetValue(address, out var contractName);
+
+        return contractName;
+    }
+
 
     public async Task<GetContractFileResultDto> GetContractFileAsync(GetContractFileInput input)
     {
