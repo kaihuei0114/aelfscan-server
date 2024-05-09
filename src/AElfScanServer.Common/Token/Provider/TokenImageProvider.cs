@@ -7,7 +7,7 @@ namespace AElfScanServer.Token.Provider;
 
 public interface ITokenImageProvider
 {
-    string BuildImageUrl(string symbol);
+    string BuildImageUrl(string symbol, bool useAssetUrl = false);
 }
 
 public class TokenImageProvider : ITokenImageProvider, ISingletonDependency
@@ -22,7 +22,7 @@ public class TokenImageProvider : ITokenImageProvider, ISingletonDependency
         _assetsInfoOptionsMonitor = assetsInfoOptions;
     }
 
-    public string BuildImageUrl(string symbol)
+    public string BuildImageUrl(string symbol, bool useAssetUrl = false)
     {
         if (symbol.IsNullOrWhiteSpace())
         {
@@ -39,6 +39,6 @@ public class TokenImageProvider : ITokenImageProvider, ISingletonDependency
             return string.Empty;
         }
 
-        return _assetsInfoOptionsMonitor.CurrentValue.BuildImageUrl(symbol);
+        return useAssetUrl ? _assetsInfoOptionsMonitor.CurrentValue.BuildImageUrl(symbol) : string.Empty;
     }
 }
