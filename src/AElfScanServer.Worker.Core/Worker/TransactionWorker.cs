@@ -54,7 +54,7 @@ public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
         // await _transactionService.PullTokenData();
 
         _logger.LogDebug("Start to pull transaction data.");
-        await ExecutePullTransactionAsync("AELF");
+        // await ExecutePullTransactionAsync("AELF");
         // var tasks = _aelfIndexerOptions.ChainIds.Select(ExecutePullTransactionAsync);
         // await Task.WhenAll(tasks);
     }
