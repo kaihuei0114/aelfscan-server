@@ -56,12 +56,13 @@ public class NftService : INftService, ISingletonDependency
     private readonly INftInfoProvider _nftInfoProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenImageProvider _tokenImageProvider;
+    private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptionsMonitor;
 
     
     public NftService(ITokenIndexerProvider tokenIndexerProvider, ILogger<NftService> logger,
         IObjectMapper objectMapper, IBlockChainProvider blockChainProvider,
         INftCollectionHolderProvider collectionHolderProvider, INftInfoProvider nftInfoProvider, ITokenPriceService tokenPriceService, 
-        IOptionsMonitor<ChainOptions> chainOptions, ITokenImageProvider tokenImageProvider)
+        IOptionsMonitor<ChainOptions> chainOptions, ITokenImageProvider tokenImageProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptionsMonitor)
     {
         _tokenIndexerProvider = tokenIndexerProvider;
         _logger = logger;
@@ -72,6 +73,7 @@ public class NftService : INftService, ISingletonDependency
         _tokenPriceService = tokenPriceService;
         _chainOptions = chainOptions;
         _tokenImageProvider = tokenImageProvider;
+        _tokenInfoOptionsMonitor = tokenInfoOptionsMonitor;
     }
 
 
@@ -278,6 +280,9 @@ public class NftService : INftService, ISingletonDependency
         nftItemDetailDto.Quantity = DecimalHelper.DivideLong(nftItem.TotalSupply, nftItem.Decimals);
         nftItemDetailDto.Item.ImageUrl = TokenInfoHelper.GetImageUrl(nftItem.ExternalInfo,
             () => _tokenImageProvider.BuildImageUrl(nftItem.Symbol));
+        var marketInfo = _tokenInfoOptionsMonitor.CurrentValue.GetMarketInfo(CommonConstant.DefaultMarket);
+        marketInfo.MarketUrl = string.Format(marketInfo.MarketUrl, symbol);
+        nftItemDetailDto.MarketPlaces = marketInfo;
         nftItemDetailDto.NftCollection = new TokenBaseInfo
         {
             Name = collectionInfo.TokenName,

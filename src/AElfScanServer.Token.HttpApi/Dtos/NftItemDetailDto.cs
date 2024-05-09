@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AElfScanServer.Dtos;
 using AElfScanServer.Token.Dtos;
 
 namespace AElfScanServer.TokenDataFunction.Dtos;
@@ -24,13 +25,6 @@ public class NftItemDetailDto
 
     public ListResponseDto<PropertyDto> Properties { get; set; }
     public string Description { get; set; }
-}
-
-public class MarketInfoDto
-{
-    public string MarketName { get; set; }
-    public string MarketLogo { get; set; }
-    public string MarketUrl { get; set; }
 }
 
 public class PropertyDto
