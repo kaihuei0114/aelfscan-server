@@ -15,7 +15,6 @@ public class NftTransferInfoDto
     public CommonAddressDto To { get; set; }
     public decimal Value { get; set; }
     public TokenBaseInfo Item { get; set; }
-    
     public List<TransactionFeeDto> TransactionFeeList { get; set; }
 }
 
