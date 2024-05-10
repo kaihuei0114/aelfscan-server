@@ -12,7 +12,8 @@ public class GetAddressDetailInput : GetDetailBasicDto
 
 public class GetAddressDetailResultDto
 {
-    public long ElfBalance { get; set; }
+    public decimal ElfBalance { get; set; }
+    public decimal ElfBalanceOfUsd { get; set; }
     public decimal ElfPriceInUsd { get; set; }
     public long TokenHoldings { get; set; }
     public decimal TokenTotalPriceInUsd { get; set; }
