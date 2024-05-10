@@ -17,17 +17,17 @@ public class IndexerBlockDto
     public string ChainId { get; set; }
     public string BlockHash { get; set; }
     public long BlockHeight { get; set; }
-    public string PreviousBlockHash { get; set; }
+    // public string PreviousBlockHash { get; set; }
     public DateTime BlockTime { get; set; }
-    public string SignerPubkey { get; set; }
+    // public string SignerPubkey { get; set; }
     public string Miner { get; set; }
-    public string Signature { get; set; }
+    // public string Signature { get; set; }
     public bool Confirmed { get; set; }
-    public Dictionary<string, string> ExtraProperties { get; set; }
+    // public Dictionary<string, string> ExtraProperties { get; set; }
 
     // public List<TransactionDto> Transactions {get;set;}
     public List<string> TransactionIds { get; set; } = new();
-    public int LogEventCount { get; set; }
+    // public int LogEventCount { get; set; }
 }
 
 public class IndexSummaries
@@ -48,11 +48,11 @@ public class IndexerTransactionDto
 
     public string To { get; set; }
 
-    public string BlockHash { get; set; }
+    // public string BlockHash { get; set; }
 
     public long BlockHeight { get; set; }
 
-    public string PreviousBlockHash { get; set; }
+    // public string PreviousBlockHash { get; set; }
 
     public DateTime BlockTime { get; set; }
 
@@ -78,17 +78,17 @@ public class IndexerTransactionDto
 
 public class IndexerLogEventDto
 {
-    public string ChainId { get; set; }
+    // public string ChainId { get; set; }
     public string BlockHash { get; set; }
 
 
     public long BlockHeight { get; set; }
 
-    public string PreviousBlockHash { get; set; }
+    // public string PreviousBlockHash { get; set; }
 
     public string TransactionId { get; set; }
 
-    public DateTime BlockTime { get; set; }
+    // public DateTime BlockTime { get; set; }
 
     public string ContractAddress { get; set; }
 
@@ -96,7 +96,7 @@ public class IndexerLogEventDto
 
     public int Index { get; set; }
 
-    public bool Confirmed { get; set; }
+    // public bool Confirmed { get; set; }
 
     public Dictionary<string, string> ExtraProperties { get; set; }
 }
@@ -108,11 +108,11 @@ public class Header
     public string MerkleTreeRootOfWorldState { get; set; }
     public string MerkleTreeRootOfTransactionState { get; set; }
     public string Extra { get; set; }
-    public string Height { get; set; }
-    public string Time { get; set; }
-    public string ChainId { get; set; }
-    public string Bloom { get; set; }
-    public string SignerPubkey { get; set; }
+    // public string Height { get; set; }
+    // public string Time { get; set; }
+    // public string ChainId { get; set; }
+    // public string Bloom { get; set; }
+    // public string SignerPubkey { get; set; }
 }
 
 public class Body
@@ -123,8 +123,8 @@ public class Body
 
 public class BlockDetailDto
 {
-    public string BlockHash { get; set; }
+    // public string BlockHash { get; set; }
     public Header Header { get; set; }
-    public Body Body { get; set; }
+    // public Body Body { get; set; }
     public int BlockSize { get; set; }
 }
