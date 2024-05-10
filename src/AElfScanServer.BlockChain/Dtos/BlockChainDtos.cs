@@ -281,7 +281,7 @@ public class SearchContract
 public class LatestBlocksRequestDto
 {
     public string ChainId { get; set; }
-    public int MaxResultCount { get; set; } = 25;
+    public int MaxResultCount { get; set; } = 6;
 }
 
 public class LatestTransactionsResponseSto

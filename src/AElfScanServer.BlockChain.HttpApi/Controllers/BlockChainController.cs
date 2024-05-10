@@ -64,7 +64,7 @@ public class BlockChainController : AbpController
         LatestTransactionsReq req)
     {
         return await _blockChainService.GetTransactionsAsync(new TransactionsRequestDto()
-            { ChainId = req.ChainId, SkipCount = 0,MaxResultCount = req.MaxResultCount});
+            { ChainId = req.ChainId, SkipCount = 0,MaxResultCount = 6});
     }
 
     [HttpGet]
