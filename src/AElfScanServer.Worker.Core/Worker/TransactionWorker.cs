@@ -36,7 +36,7 @@ public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<TransactionWorker> logger, ITransactionService transactionService,
         IOptionsSnapshot<AELFIndexerOptions> aelfIndexerOptions, IStorageProvider storageProvider,
         IOptionsSnapshot<WorkerOptions> workerOptions, AELFIndexerProvider aelfIndexerProvider
-        ) : base(timer,
+    ) : base(timer,
         serviceScopeFactory)
     {
         _logger = logger;
@@ -52,7 +52,7 @@ public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
     {
         // do something
         // await _transactionService.PullTokenData();
-      
+
         var tasks = _workerOptions.PullDataChainIds.Select(ExecutePullTransactionAsync);
         await Task.WhenAll(tasks);
     }
@@ -92,15 +92,20 @@ public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
 
             var tasks = new List<Task>();
 
+            var nextBlockHeight = 0l;
             for (long i = startBlockHeight;
                  i <= startBlockHeight + _aelfIndexerOptions.PullHeightInterval &&
                  i <= summariesAsync.First().LatestBlockHeight;
                  i += 1000)
             {
+                var tmpEnd = i + 1000 > summariesAsync.First().LatestBlockHeight
+                    ? summariesAsync.First().LatestBlockHeight
+                    : i + 1000;
+                _logger.LogInformation("Start handler transaction blockRange:[{0},{1}],chainId:{2}", i, tmpEnd,
+                    chainId);
                 var t = _transactionService.HandlerTransactionAsync(chainId, i,
-                    i + 1000 > summariesAsync.First().LatestBlockHeight
-                        ? summariesAsync.First().LatestBlockHeight
-                        : i + 1000);
+                    tmpEnd);
+                nextBlockHeight = tmpEnd;
                 tasks.Add(t);
             }
 
@@ -109,14 +114,13 @@ public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
 
             _logger.LogInformation("cost time seconds:{0}", stopwatch.Elapsed.TotalSeconds);
 
-
+            _logger.LogInformation("next start block height:{0}", nextBlockHeight);
             await _storageProvider.SetAsync(RedisKeyHelper.PullBlockHeight(chainId),
-                new SearchHeightDto { BlockHeight = startBlockHeight + _aelfIndexerOptions.PullHeightInterval });
+                new SearchHeightDto { BlockHeight = nextBlockHeight });
         }
         catch (Exception e)
         {
             _logger.LogError(e, "pull transaction error:{e}", e.Message);
         }
     }
-    
 }
