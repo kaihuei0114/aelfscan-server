@@ -505,7 +505,6 @@ public class NftService : INftService, ISingletonDependency
                     Address = indexerNftTransferInfoDto.To
                 };
             }
-
             if (indexerNftTransferInfoDto.Token?.Symbol != null &&
                 tokenDic.TryGetValue(indexerNftTransferInfoDto.Token.Symbol, out var item))
             {
