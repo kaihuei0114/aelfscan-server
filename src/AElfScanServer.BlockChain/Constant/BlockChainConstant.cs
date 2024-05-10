@@ -10,5 +10,4 @@ public static class BlockChainConstant
     public const string LatestTransactionsUri = BlockChainBaseUri + "latestTransactions";
     public const string FiltersUri = BlockChainBaseUri + "filters";
     public const string LogEventsUri = BlockChainBaseUri + "logEvents";
-    
 }
