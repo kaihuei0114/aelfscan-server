@@ -90,28 +90,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         _elasticClient = new ElasticClient(settings);
-        //
-        // timer = new Timer(1500); 
-        // timer.AutoReset = true; 
-        // timer.Elapsed += OnTimerElapsed; 
-        // timer.Start(); 
+       
     }
 
-    // private static void OnTimerElapsed(object sender, ElapsedEventArgs e)
-    // {
-    //     lock (lockObject)
-    //     {
-    //         if (batchTransactions.Count > 0)
-    //         {
-    //           
-    //             
-    //             Console.WriteLine("...");
-    //             batchTransactions.Clear();
-    //             batchWriteTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-    //         }
-    //     }
-    //
-    // }
+  
 
     public async Task<long> GetLastBlockHeight(string chainId)
     {
@@ -543,13 +525,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         //         BlockChainIndexNameHelper.GenerateAddressIndexName(chainId));
         // }
         //
-        if (!blockBurnFeeDic.IsNullOrEmpty())
-        {
-            var blockExtraIndices = blockBurnFeeDic.Values.ToList();
-
-            await _blockExtraIndexRepository.AddOrUpdateManyAsync(blockExtraIndices,
-                BlockChainIndexNameHelper.GenerateBlockExtraIndexName(chainId));
-        }
+        // if (!blockBurnFeeDic.IsNullOrEmpty())
+        // {
+        //     var blockExtraIndices = blockBurnFeeDic.Values.ToList();
+        //
+        //     await _blockExtraIndexRepository.AddOrUpdateManyAsync(blockExtraIndices,
+        //         BlockChainIndexNameHelper.GenerateBlockExtraIndexName(chainId));
+        // }
 
         //
         //
@@ -564,14 +546,22 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         //     await _tokenInfoIndexRepository.AddOrUpdateManyAsync(tokenInfoIndices,
         //         BlockChainIndexNameHelper.GenerateTokenIndexName(chainId));
         // }
+          
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
         _logger.LogInformation("start add or update transaction list,chainId:{0},count:{1},blockRange:[{2},{3}]",
             chainId,
             transactionIndices.Count, startBlockHeight, endBlockHeight);
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        await _transactionIndexRepository.AddOrUpdateManyAsync(transactionIndices,
-            BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId));
+        var bulkResponse = _elasticClient.Bulk(b=>b.Index(BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId)).IndexMany(transactionIndices));
+        if (!bulkResponse.IsValid)
+        {
+            _logger.LogError("bulk transaction error:{e}", bulkResponse.ServerError.Error.Reason);
+            return;
+        }
+    
+        //
+        // await _transactionIndexRepository.AddOrUpdateManyAsync(transactionIndices,
+        //     BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId));
         stopwatch.Stop();
         _logger.LogInformation(
             "Success! add or update transaction list,chainId:{0},count:{1},blockRange:[{2},{3}],cost time:{4}", chainId,
