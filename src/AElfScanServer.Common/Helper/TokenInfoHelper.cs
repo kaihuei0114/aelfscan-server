@@ -9,9 +9,9 @@ namespace AElfScanServer.Helper;
 
 public class TokenInfoHelper
 {
-    public static string OfTransactionStatus(string status)
+    public static TransactionStatus OfTransactionStatus(string status)
     {
-        return "Mined" == status ? "Success" : status;
+        return EnumConverter.ConvertToEnum<TransactionStatus>(status);
     }
 
     public static List<TransactionFeeDto> GetTransactionFee(List<ExternalInfoDto> externalInfos)

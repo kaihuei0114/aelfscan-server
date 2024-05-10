@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using AElfScanServer.Dtos;
+using AElfScanServer.Enums;
 
 namespace AElfScanServer.Token.Dtos;
 
@@ -14,7 +15,7 @@ public class TokenTransferInfoDto
     public CommonAddressDto To { get; set; }
     public decimal Quantity { get; set; }
     
-    public string Status { get; set; }
+    public TransactionStatus Status { get; set; }
     
     public List<TransactionFeeDto> TransactionFeeList { get; set; }
 }

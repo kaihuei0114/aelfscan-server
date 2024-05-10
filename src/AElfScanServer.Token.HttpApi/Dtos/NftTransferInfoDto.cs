@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Dtos;
+using AElfScanServer.Enums;
 
 namespace AElfScanServer.TokenDataFunction.Dtos;
 
 public class NftTransferInfoDto
-{
+{ 
     public string TransactionId { get; set; }
-    public string Status { get; set; }
+    public TransactionStatus Status { get; set; }
     public string Method { get; set; }
     public long BlockHeight { get; set; }
     public long BlockTime { get; set; }
