@@ -15,8 +15,3 @@ public class TokenServerConstant
     public const string NftTransfersByAddress = TokenServerBaseUri + "nft/transfers";
 }
 
-public class CurrencyConstant
-{
-    public const string UsdCurrency = "USDT";
-    public const string ElfCurrency = "ELF";
-}

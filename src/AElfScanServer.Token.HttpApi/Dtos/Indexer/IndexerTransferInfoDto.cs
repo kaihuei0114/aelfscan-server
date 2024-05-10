@@ -16,8 +16,11 @@ public class IndexerTransferInfoDto
     public long Amount { get; set; } 
     public decimal FormatAmount { get; set; }
     public IndexerTokenBaseDto Token { get; set; }
-    
     public MetadataDto Metadata { get; set; }
+    
+    public string Status { get; set; }
+    
+    public List<ExternalInfoDto> ExtraProperties { get; set; } = new();
 }
 
 public class IndexerTokenTransfersDto

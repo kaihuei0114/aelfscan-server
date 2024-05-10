@@ -12,7 +12,7 @@ public class NftItemDetailDto
     public List<string> Owner { get; set; }
     public List<string> Issuer { get; set; }
     public string TokenSymbol { get; set; }
-    public long Quantity { get; set; }
+    public decimal Quantity { get; set; }
     
     public MarketInfoDto MarketPlaces { get; set; }
     

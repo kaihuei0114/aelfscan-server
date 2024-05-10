@@ -136,6 +136,8 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                         amount,
                         formatAmount
                         token {symbol, collectionSymbol, type, decimals}
+                        status,
+                        extraProperties{ key, value }
                   }                     
                 }
             }",
