@@ -9,7 +9,7 @@ namespace AElfScanServer.Address.HttpApi.Controllers;
 [RemoteService]
 [Area("app")]
 [ControllerName("Address")]
-[Route("api/app")]
+[Route("api/app/address")]
 public class AddressController : AElfScanServerAddressController
 {
     private readonly IAddressAppService _addressAppService;
