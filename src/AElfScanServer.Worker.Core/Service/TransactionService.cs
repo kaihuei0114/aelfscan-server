@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
@@ -114,7 +115,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task<long> GetLastBlockHeight(string chainId)
     {
-        
         var searchRequest =
             new SearchRequest(BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId))
             {
@@ -550,6 +550,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             await _blockExtraIndexRepository.AddOrUpdateManyAsync(blockExtraIndices,
                 BlockChainIndexNameHelper.GenerateBlockExtraIndexName(chainId));
         }
+
         //
         //
         // if (!logEventIndices.IsNullOrEmpty())
@@ -563,16 +564,18 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         //     await _tokenInfoIndexRepository.AddOrUpdateManyAsync(tokenInfoIndices,
         //         BlockChainIndexNameHelper.GenerateTokenIndexName(chainId));
         // }
+        _logger.LogInformation("start add or update transaction list,chainId:{0},count:{1},blockRange:[{2},{3}]",
+            chainId,
+            transactionIndices.Count, startBlockHeight, endBlockHeight);
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
 
         await _transactionIndexRepository.AddOrUpdateManyAsync(transactionIndices,
             BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId));
-
+        stopwatch.Stop();
         _logger.LogInformation(
-            "pull transaction success!,chainId:{chainId}，firstBlockHeight:{startHeight},endBlockHeight:{endHeight}," +
-            "transaction count:{txncount},address count:{addreAcount},token list:{tokenlist},blockExtra count:{b},logEvent count:{logCount}",
-            chainId, transactionIndices.First()?.BlockHeight,
-            transactionIndices.Last()?.BlockHeight, transactionIndices.Count, addressIndices.Count,
-            tokenInfoIndices?.Select(s => s.Symbol).ToList(), blockBurnFeeDic.Count, logEventIndices?.Count);
+            "Success! add or update transaction list,chainId:{0},count:{1},blockRange:[{2},{3}],cost time:{4}", chainId,
+            transactionIndices.Count, startBlockHeight, endBlockHeight, stopwatch.Elapsed.TotalSeconds);
     }
 
     public async Task PullTokenData()
