@@ -22,8 +22,8 @@ public interface ITokenIndexerProvider
     public Task<List<IndexerTokenInfoDto>> GetTokenDetailAsync(string chainId, string symbol);
     public Task<IndexerTokenTransferListDto> GetTokenTransferInfoAsync(TokenTransferInput input);
     Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfoAsync(TokenHolderInput input);
-    Task<List<HolderInfo>> GetHolderInfoAsync(SymbolType symbolType, string chainId, string address);
-    Task<HolderInfo> GetHolderInfoAsync(SymbolType symbolType, string chainId, string symbol, string address);
+    Task<List<HolderInfo>> GetHolderInfoAsync(string chainId, string address, SymbolType? symbolType = null);
+    Task<HolderInfo> GetHolderInfoAsync(string chainId, string symbol, string address);
 }
 
 public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
@@ -194,28 +194,32 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         return _graphQlFactory.GetGraphQlHelper(AElfIndexerConstant.TokenIndexer);
     }
     
-    public async Task<List<HolderInfo>> GetHolderInfoAsync(SymbolType symbolType, string chainId, string address)
+    public async Task<List<HolderInfo>> GetHolderInfoAsync(string chainId, string address, SymbolType? symbolType = null)
     {
-        return await GetHolderInfosAsync(symbolType, chainId, null, address);
+        return await GetHolderInfosAsync(chainId, null, address, symbolType);
     }
     
-    public async Task<HolderInfo> GetHolderInfoAsync(SymbolType symbolType, string chainId, string symbol, string address)
+    public async Task<HolderInfo> GetHolderInfoAsync(string chainId, string symbol, string address)
     {
-        var list = await GetHolderInfosAsync(symbolType, chainId, symbol, address);
+        var list = await GetHolderInfosAsync(chainId, symbol, address);
         return list.IsNullOrEmpty() ? new HolderInfo() : list[0];
     }
     
-    private async Task<List<HolderInfo>> GetHolderInfosAsync(SymbolType symbolType, string chainId, string symbol, string address)
+    private async Task<List<HolderInfo>> GetHolderInfosAsync(string chainId, string symbol, string address, SymbolType? symbolType = null)
     {
         var tokenHolderInput = new TokenHolderInput
         {
-            Types = new List<SymbolType> { symbolType },
             ChainId = chainId,
-            Address = address
+            Address = address,
+            MaxResultCount = 1000
         };
         if (!symbol.IsNullOrEmpty())
         {
             tokenHolderInput.Symbol = symbol;
+        }
+        if (symbolType != null)
+        {
+            tokenHolderInput.Types = new List<SymbolType> { symbolType.Value };
         }
         var indexerNftHolder = await GetTokenHolderInfoAsync(tokenHolderInput);
         return indexerNftHolder.Items.Select(i => new HolderInfo

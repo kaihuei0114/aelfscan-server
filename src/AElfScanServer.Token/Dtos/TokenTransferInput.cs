@@ -20,5 +20,15 @@ public class TokenTransferInput : BaseInput
     {
         return !Search.IsNullOrWhiteSpace() && CommomHelper.IsValidAddress(Search);
     }
+    
+    public void SetDefaultSort()
+    {
+        /*if (!Sort.IsNullOrEmpty())
+        {
+            return;
+        }
 
+        Sort = "Desc";
+        OrderBy = "BlockTime";*/
+    }
 }
