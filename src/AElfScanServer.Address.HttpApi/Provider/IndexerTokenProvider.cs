@@ -77,7 +77,7 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
     {
         try
         {
-            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerAccountTokenListDto>(
+            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerAccountTokenDto>(
                 new GraphQLRequest
                 {
                     Query =
@@ -114,7 +114,7 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
                         chainId = chainId, symbol = symbol, skipCount = skipCount, maxResultCount = maxResultCount
                     }
                 });
-            return result.AccountToken;
+            return result.AccountToken != null ? result.AccountToken.Items : new List<AccountTokenDto>();
         }
         catch (Exception e)
         {
@@ -128,7 +128,7 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
     {
         try
         {
-            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerAccountTokenListDto>(
+            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerAccountTokenDto>(
                 new GraphQLRequest
                 {
                     Query =
@@ -148,14 +148,6 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
                               transferCount
                               firstNftTransactionId
                               firstNftTime
-                              metadata {
-                                chainId
-                                block {
-                                  blockHash
-                                  blockTime
-                                  blockHeight
-                                }
-                              }
                             }
                             }
                         }",
@@ -165,7 +157,7 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
                         maxResultCount = maxResultCount
                     }
                 });
-            return result.AccountToken;
+            return result.AccountToken != null ? result.AccountToken.Items : new List<AccountTokenDto>();
         }
         catch (Exception e)
         {
@@ -178,7 +170,7 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
     {
         try
         {
-            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerAccountTokenListDto>(
+            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerAccountTokenDto>(
                 new GraphQLRequest
                 {
                     Query =
@@ -192,7 +184,7 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
                         chainId = chainId, address = address, symbol = "ELF", skipCount = 0, maxResultCount = 1
                     }
                 });
-            return result.AccountToken.Count > 0 ? result.AccountToken[0].Amount : 0;
+            return result.AccountToken.Items.Count > 0 ? result.AccountToken.Items[0].Amount : 0;
         }
         catch (Exception e)
         {

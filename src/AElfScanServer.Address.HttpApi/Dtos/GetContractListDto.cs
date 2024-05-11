@@ -18,7 +18,6 @@ public class ContractDto
     public string Address { get; set; }
     public string ContractName { get; set; } = "-";
     public string Type { get; set; }
-    public int Version { get; set; }
     public decimal Balance { get; set; }
     public DateTime LastUpdateTime { get; set; }
     public long Txns { get; set; }

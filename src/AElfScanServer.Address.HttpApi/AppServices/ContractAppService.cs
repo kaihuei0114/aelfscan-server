@@ -61,19 +61,19 @@ public class ContractAppService : IContractAppService
         result.Total = getContractListResult.Count;
         // var getContractListResult= await MockData();
 
-        getContractListResult.Add(new ContractInfoDto()
-        {
-            Address = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
-            ContractVersion = "1.0",
-            Metadata = new MetadataDto()
-            {
-                Block = new BlockMetadataDto()
-                {
-                    BlockTime = DateTime.Now
-                }
-            },
-            ContractType = "User"
-        });
+        // getContractListResult.Add(new ContractInfoDto()
+        // {
+        //     Address = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+        //     ContractVersion = "1.0",
+        //     Metadata = new MetadataDto()
+        //     {
+        //         Block = new BlockMetadataDto()
+        //         {
+        //             BlockTime = DateTime.Now
+        //         }
+        //     },
+        //     ContractType = "User"
+        // });
 
         foreach (var info in getContractListResult)
         {
@@ -94,6 +94,7 @@ public class ContractAppService : IContractAppService
                 "ELF", input.SkipCount, input.MaxResultCount);
             contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].FormatAmount : 0;
 
+            contractInfo.Txns = addressTokenList.Count > 0 ? addressTokenList[0].TransferCount : 0;
 
             result.List.Add(contractInfo);
         }
