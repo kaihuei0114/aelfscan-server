@@ -5,14 +5,13 @@ using Scriban.Parsing;
 
 namespace AElfScanServer.Address.HttpApi.Dtos;
 
-public class GetAddressTokenListInput : GetListInputBasicDto
+public class GetAddressNftListInput : GetListInputBasicDto
 {
     [Required] public string Address { get; set; }
 }
 
-public class GetAddressTokenListResultDto
+public class GetAddressNftListResultDto
 {
-    public decimal AssetInUsd { get; set; }
     public long Total { get; set; }
-    public List<TokenInfoDto> List { get; set; }
+    public List<NftInfoDto> List { get; set; }
 }

@@ -7,7 +7,7 @@ namespace AElfScanServer.Address.HttpApi.Dtos;
 public class GetTransferListInput : GetListInputBasicDto
 {
     [Required] public string Address { get; set; }
-    public TokenType TokenType { get; set; } = TokenType.Token;
+    //public TokenType TokenType { get; set; } = TokenType.Token;
 }
 
 public class GetTransferListResultDto

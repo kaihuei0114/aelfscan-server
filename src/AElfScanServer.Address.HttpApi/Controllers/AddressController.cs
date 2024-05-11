@@ -22,19 +22,19 @@ public class AddressController : AElfScanServerAddressController
     }
 
     // address common
-    [HttpGet("address-detail")]
+    [HttpGet("detail")]
     public async Task<GetAddressDetailResultDto> GetAddressDetailAsync(GetAddressDetailInput input)
         => await _addressAppService.GetAddressDetailAsync(input);
 
-    [HttpGet("address/tokens")]
+    [HttpGet("tokens")]
     public async Task<GetAddressTokenListResultDto> GetAddressTokenListAsync(
         GetAddressTokenListInput input) => await _addressAppService.GetAddressTokenListAsync(input);
 
-    [HttpGet("address/transfers")]
+    [HttpGet("transfers")]
     public async Task<GetTransferListResultDto> GetTransferListAsync(GetTransferListInput input)
         => await _addressAppService.GetTransferListAsync(input);
 
-    [HttpGet("address/transactions")]
+    [HttpGet("transactions")]
     public async Task<GetTransactionListResultDto> GetTransactionListAsync(
         GetTransactionListInput input) => await _addressAppService.GetTransactionListAsync(input);
 

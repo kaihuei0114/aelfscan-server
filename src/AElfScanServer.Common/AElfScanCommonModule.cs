@@ -1,5 +1,6 @@
 using AutoResponseWrapper;
 using AElfScanServer.GraphQL;
+using AElfScanServer.Helper;
 using AElfScanServer.HttpClient;
 using AElfScanServer.Options;
 using AElfScanServer.ThirdPart.Exchange;
@@ -33,6 +34,7 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<IExchangeProvider, BinanceProvider>();
         context.Services.AddTransient<IExchangeProvider, CoinGeckoProvider>();
         context.Services.AddTransient<ITokenExchangeProvider, TokenExchangeProvider>();
+        context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();
