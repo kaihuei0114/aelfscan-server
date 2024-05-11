@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
-using AElfScanServer.Token.Constant;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Constant;
@@ -36,12 +35,13 @@ public interface INftService
     public Task<ListResponseDto<TokenHolderInfoDto>> GetNftCollectionHolderInfosAsync(TokenHolderInput input);
     public Task<ListResponseDto<NftHolderInfoDto>> GetNftCollectionHolderInfoAsync(NftHolderInfoInput input);
     public Task<NftInventorysDto> GetNftCollectionInventoryAsync(NftInventoryInput input);
-    Task<NftInfoListDto> GetAddressTokenListAsync(GetNftListInput input);
-    Task<TokenTransferInfoListDto> GetAddressTransfersAsync(GetTransferInfoListInput input);
     Task<NftItemDetailDto> GetNftItemDetailAsync(string chainId, string symbol);
     Task<ListResponseDto<NftItemActivityDto>> GetNftItemActivityAsync(NftItemActivityInput input);
     Task<ListResponseDto<NftItemHolderInfoDto>> GetNftItemHoldersAsync(NftItemHolderInfoInput input);
     Task<(decimal, string)> GetNftFloorPriceAsync(string chainId, string symbol);
+
+    Task<Dictionary<string, decimal>> GetCollectionSupplyAsync(string chainId, List<string> collectionSymbols);
+
 }
 
 public class NftService : INftService, ISingletonDependency
@@ -235,38 +235,7 @@ public class NftService : INftService, ISingletonDependency
         }
         return result;
     }
-
-    public async Task<NftInfoListDto> GetAddressTokenListAsync(GetNftListInput input)
-    {
-        var tokenHolderInput = _objectMapper.Map<GetNftListInput, TokenHolderInput>(input);
-
-        var indexerAddressTokens = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
-
-        var list = await ConvertAddressNftAsync(indexerAddressTokens.Items, input.ChainId);
-
-        return new NftInfoListDto
-        {
-            Total = indexerAddressTokens.TotalCount,
-            List = list
-        };
-    }
-
-    public async Task<TokenTransferInfoListDto> GetAddressTransfersAsync(GetTransferInfoListInput input)
-    {
-        var tokenTransferInput = _objectMapper.Map<GetTransferInfoListInput, TokenTransferInput>(input);
-
-        var indexerTokenTransfer = await _tokenIndexerProvider.GetTokenTransferInfoAsync(tokenTransferInput);
-
-        var list = await ConvertAddressTransferAsync(indexerTokenTransfer.Items, input.ChainId, input.Address);
-
-        return new TokenTransferInfoListDto
-        {
-            AssetInUsd = 0,
-            Total = indexerTokenTransfer.TotalCount,
-            List = list
-        };
-    }
-
+    
     public async Task<NftItemDetailDto> GetNftItemDetailAsync(string chainId, string symbol)
     {
         var nftItems = await _tokenIndexerProvider.GetTokenDetailAsync(chainId, symbol);
@@ -404,30 +373,6 @@ public class NftService : INftService, ISingletonDependency
             activityDto.PriceOfUsd = Math.Round(activityDto.Price * priceDto.Price, CommonConstant.UsdValueDecimals);
             list.Add(activityDto);
         }
-        return list;
-    }
-
-    private async Task<List<AddressNftInfoDto>> ConvertAddressNftAsync(
-        List<IndexerTokenHolderInfoDto> indexerAddressTokens, string chainId)
-    {
-        var symbolList = indexerAddressTokens.SelectMany(dto => new List<string> { dto.Token.Symbol }).Distinct()
-            .ToList();
-        var tokenDic = await GetTokenDicAsync(symbolList, chainId);
-
-        var list = new List<AddressNftInfoDto>();
-        foreach (var indexerAddressToken in indexerAddressTokens)
-        {
-            var addressTokenDto =
-                _objectMapper.Map<IndexerTokenHolderInfoDto, AddressNftInfoDto>(indexerAddressToken);
-
-            if (tokenDic.TryGetValue(indexerAddressToken.Token.Symbol, out var item))
-            {
-                addressTokenDto.Item = item.Token;
-            }
-
-            list.Add(addressTokenDto);
-        }
-
         return list;
     }
 
@@ -614,7 +559,7 @@ public class NftService : INftService, ISingletonDependency
         return list;
     }
     
-    private async Task<Dictionary<string, decimal>> GetCollectionSupplyAsync(string chainId, List<string> collectionSymbols)
+    public async Task<Dictionary<string, decimal>> GetCollectionSupplyAsync(string chainId, List<string> collectionSymbols)
     {
         var nftInput = new TokenListInput()
         {

@@ -70,16 +70,4 @@ public class NftController
     {
         return await _nftService.GetNftItemHoldersAsync(input);
     }
-
-    [HttpGet("addressNftList")]
-    public async Task<NftInfoListDto> GetAddressNftListAsync(GetNftListInput input)
-    {
-        return await _nftService.GetAddressTokenListAsync(input);
-    }
-
-    [HttpGet("addressTransfers")]
-    public async Task<TokenTransferInfoListDto> GetAddressTransfersAsync(GetTransferInfoListInput input)
-    {
-        return await _nftService.GetAddressTransfersAsync(input);
-    }
 }

@@ -29,6 +29,10 @@ public class AddressController : AElfScanServerAddressController
     [HttpGet("tokens")]
     public async Task<GetAddressTokenListResultDto> GetAddressTokenListAsync(
         GetAddressTokenListInput input) => await _addressAppService.GetAddressTokenListAsync(input);
+    
+    [HttpGet("nft-assets")]
+    public async Task<GetAddressNftListResultDto> GetNftAssetsAsync(
+        GetAddressNftListInput input) => await _addressAppService.GetAddressNftListAsync(input);
 
     [HttpGet("transfers")]
     public async Task<GetTransferListResultDto> GetTransferListAsync(GetTransferListInput input)

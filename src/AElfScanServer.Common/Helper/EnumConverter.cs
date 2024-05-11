@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace AElfScanServer.Helper;
 
@@ -17,5 +18,19 @@ public class EnumConverter
         }
 
         throw new ArgumentException($"Invalid value for enum {typeof(T).Name}: {value}");
+    }
+    
+    
+    public static List<T> GetEnumValuesList<T>() where T : Enum
+    {
+        var enumValues = Enum.GetValues(typeof(T));
+        List<T> enumList = new List<T>(enumValues.Length);
+        
+        foreach (var value in enumValues)
+        {
+            enumList.Add((T)value);
+        }
+        
+        return enumList;
     }
 }

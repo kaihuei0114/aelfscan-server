@@ -28,10 +28,15 @@ public class AElfScanServerAddressAutoMapperProfile : Profile
             .ForPath(t => t.TransactionCount, m => m.MapFrom(u => u.TransferCount))
             ;
         CreateMap<GetAddressTokenListInput, TokenHolderInput>();
+        CreateMap<GetAddressNftListInput, TokenHolderInput>();
         CreateMap<IndexerTokenHolderInfoDto, TokenInfoDto>()
             .ForPath(t => t.Token.Name, m => m.MapFrom(u => u.Token.CollectionSymbol))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
+            .ForPath(t => t.Quantity, m => m.MapFrom(u => u.FormatAmount))
+            ;
+        CreateMap<IndexerTokenHolderInfoDto, AddressNftInfoDto>()
+            .ForMember(t => t.Token, m => m.Ignore())
             .ForPath(t => t.Quantity, m => m.MapFrom(u => u.FormatAmount))
             ;
     }

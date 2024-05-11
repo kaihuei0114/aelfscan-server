@@ -1,4 +1,4 @@
-namespace AElfScanServer.Token.Dtos;
+namespace AElfScanServer.Dtos;
 
 public class TokenBaseInfo
 {

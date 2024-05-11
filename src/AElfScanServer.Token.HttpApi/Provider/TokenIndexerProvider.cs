@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +8,7 @@ using AElfScanServer.Constant;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.GraphQL;
+using AElfScanServer.Helper;
 using AElfScanServer.TokenDataFunction.Dtos;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AElfScanServer.TokenDataFunction.Dtos.Input;
@@ -217,7 +219,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             Address = address,
             MaxResultCount = 1000
         };
-        if (!symbol.IsNullOrEmpty())
+        if (!CollectionUtilities.IsNullOrEmpty(symbol))
         {
             tokenHolderInput.Symbol = symbol;
         }
@@ -239,6 +241,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         {
             ChainId = chainId,
             Symbols = symbols,
+            Types =  EnumConverter.GetEnumValuesList<SymbolType>(),
             MaxResultCount = symbols.Count
         };
         var indexerTokenListDto = await GetTokenListAsync(input);

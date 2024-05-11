@@ -1,3 +1,5 @@
+using AElfScanServer.Dtos;
+
 namespace AElfScanServer.Token.Dtos;
 
 public class TokenInfoListDto : ListResponseDto<TokenInfoDto>
