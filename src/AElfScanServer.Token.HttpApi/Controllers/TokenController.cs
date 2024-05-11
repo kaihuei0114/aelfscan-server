@@ -50,12 +50,6 @@ public class TokenController : AbpControllerBase
         return await _tokenService.GetTokenHolderInfosAsync(input);
     }
 
-    [HttpGet("addressTokenList")]
-    public async Task<TokenInfoListDto> GetAddressTokenListAsync(GetTokenListInput input)
-    {
-        return await _tokenService.GetAddressTokenListAsync(input);
-    }
-
     [HttpGet("price")]
     public async Task<TokenPriceDto> GetTokenPriceInfoAsync(CurrencyDto input)
     {
