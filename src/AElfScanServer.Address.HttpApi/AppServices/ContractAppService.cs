@@ -72,7 +72,7 @@ public class ContractAppService : IContractAppService
                     BlockTime = DateTime.Now
                 }
             },
-            ContractType = ContractType.UserContract
+            ContractType = "User"
         });
 
         foreach (var info in getContractListResult)
@@ -84,7 +84,7 @@ public class ContractAppService : IContractAppService
                 Address = info.Address, // contractInfo
                 ContractVersion = info.ContractVersion == "" ? info.Version.ToString() : info.ContractVersion,
                 LastUpdateTime = info.Metadata.Block.BlockTime,
-                Type = nameof(info.ContractType),
+                Type = info.ContractType,
                 Txns = 0,
                 ContractName = GetContractName(input.ChainId, info.Address).Result
             };
@@ -92,7 +92,7 @@ public class ContractAppService : IContractAppService
             // todo: support batch search by address list.
             var addressTokenList = await _indexerTokenProvider.GetAddressTokenListAsync(input.ChainId, info.Address,
                 "ELF", input.SkipCount, input.MaxResultCount);
-            contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].Amount : 0;
+            contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].FormatAmount : 0;
 
 
             result.List.Add(contractInfo);

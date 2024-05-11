@@ -134,23 +134,29 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
                     Query =
                         @"query($chainId:String!,$symbol:String!,$address:String!,$skipCount:Int!,$maxResultCount:Int!){
                             accountToken(input: {chainId:$chainId,symbol:$symbol,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                            id,
-                            chainId,
-                            blockHash,
-                            blockHeight,
-                            blockTime,
-                            address,
-                            token{
-                                symbol,
-                                collectionSymbol,
-                                type,
+                            totalCount
+                            items {
+                              address
+                              token {
+                                symbol
+                                collectionSymbol
+                                type
                                 decimals
-                            },
-                            amount,
-                            formatAmount,
-                            transferCount,
-                            firstNftTransactionId,
-                            firstNftTime
+                              }
+                              amount
+                              formatAmount
+                              transferCount
+                              firstNftTransactionId
+                              firstNftTime
+                              metadata {
+                                chainId
+                                block {
+                                  blockHash
+                                  blockTime
+                                  blockHeight
+                                }
+                              }
+                            }
                             }
                         }",
                     Variables = new

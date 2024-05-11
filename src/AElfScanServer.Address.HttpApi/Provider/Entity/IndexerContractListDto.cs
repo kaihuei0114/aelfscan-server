@@ -21,7 +21,7 @@ public class ContractInfoDto
     public string NameHash { get; set; }
     public string ContractVersion { get; set; }
     public int ContractCategory { get; set; }
-    public ContractType ContractType { get; set; }
+    public string ContractType { get; set; }
     public MetadataDto Metadata { get; set; } = new MetadataDto();
 }
 
@@ -41,8 +41,8 @@ public class BlockMetadataDto
     public DateTime BlockTime { get; set; }
 }
 
-public enum ContractType
-{
-    SystemContract,
-    UserContract
-}
+// public enum ContractType
+// {
+//     SystemContract,
+//     UserContract
+// }
