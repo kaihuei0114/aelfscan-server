@@ -55,21 +55,15 @@ public class ContractAppService : IContractAppService
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
 
         // todo sort by update time
-        var getContractListResult =
-            await _indexerGenesisProvider.GetContractListAsync(input.ChainId, input.SkipCount, input.MaxResultCount);
-        result.Total = getContractListResult.Count;
-
-
-        var addressInfos = await _blockChainProvider.GetAddressDictionaryAsync(new AElfAddressInput
-        {
-            ChainId = input.ChainId,
-            Addresses = new List<string>(getContractListResult.Select(t => t.Address))
-        });
-
+        // var getContractListResult =
+        //     await _indexerGenesisProvider.GetContractListAsync(input.ChainId, input.SkipCount, input.MaxResultCount);
+        // result.Total = getContractListResult.Count;
+        var getContractListResult= await MockData();
+        
 
         foreach (var info in getContractListResult)
         {
-            var transactions = await _blockChainProvider.GetTransactionsAsync(info.ChainId, info.Address);
+            // var transactions = await _blockChainProvider.GetTransactionsAsync(info.ChainId, info.Address);
 
 
             var contractInfo = new ContractDto
@@ -79,7 +73,7 @@ public class ContractAppService : IContractAppService
                 ContractVersion = info.ContractVersion,
                 LastUpdateTime = info.BlockTime != DateTime.MinValue ? info.BlockTime : DateTime.Now,
                 Type = info.ContractType,
-                TransactionCount =0,
+                TransactionCount = 0,
                 ContractName = GetContractName(info.ChainId, info.Address).Result
             };
 
@@ -88,10 +82,7 @@ public class ContractAppService : IContractAppService
                 "ELF", input.SkipCount, input.MaxResultCount);
             contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].Amount : 0;
 
-            if (addressInfos.TryGetValue(info.Address, out var addressInfo))
-            {
-                contractInfo.ContractName = addressInfo.Name;
-            }
+      
 
             result.List.Add(contractInfo);
         }
@@ -99,6 +90,40 @@ public class ContractAppService : IContractAppService
         return result;
     }
 
+
+    public async Task<List<ContractInfoDto>> MockData()
+    {
+        var contractDtos = new List<ContractInfoDto>();
+
+
+        contractDtos.Add(new ContractInfoDto()
+        {
+            Address = "2UthYi7AHRdfrqc1YCfeQnjdChDLaas65bW4WxESMGMojFiXj9",
+            ContractType = "User",
+            ContractVersion = "1.4.0.0",
+            BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
+        });
+
+        contractDtos.Add(new ContractInfoDto()
+        {
+            Address = "ZYNkxNAzswRC8UeHc6bYMdRmbmLqYDPqZv7sE5d9WuJ5rRQEi",
+            ContractType = "User",
+            ContractVersion = "1.2.1.0",
+            BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
+        });
+
+
+        contractDtos.Add(new ContractInfoDto()
+        {
+            Address = "Qx3QMZPstem3UHU6qjc1PsufaJoJcKj2kC2sCEnzsqCjAJ3At",
+            ContractType = "User",
+            ContractVersion = "1.0.0.0",
+            BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
+        });
+
+
+        return contractDtos;
+    }
 
     public async Task<string> GetContractName(string chainId, string address)
     {
