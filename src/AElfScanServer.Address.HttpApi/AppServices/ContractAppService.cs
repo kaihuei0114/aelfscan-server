@@ -66,7 +66,6 @@ public class ContractAppService : IContractAppService
         {
             // var transactions = await _blockChainProvider.GetTransactionsAsync(info.ChainId, info.Address);
 
-
             var contractInfo = new ContractDto
             {
                 Address = info.Address, // contractInfo
@@ -99,7 +98,7 @@ public class ContractAppService : IContractAppService
 
         contractDtos.Add(new ContractInfoDto()
         {
-            Address = "2UthYi7AHRdfrqc1YCfeQnjdChDLaas65bW4WxESMGMojFiXj9",
+            Address = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
             ContractType = "User",
             ContractVersion = "1.4.0.0",
             BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),

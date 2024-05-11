@@ -82,24 +82,31 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
                 {
                     Query =
                         @"query($chainId:String!,$symbol:String!,$skipCount:Int!,$maxResultCount:Int!){
-                            accountToken(input: {chainId:$chainId,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                            id,
-                            chainId,
-                            blockHash,
-                            blockHeight,
-                            blockTime,
-                            address,
-                            token{
-                                symbol,
-                                collectionSymbol,
-                                type,
-                                decimals
-                            },
-                            amount,
-                            formatAmount,
-                            transferCount,
-                            firstNftTransactionId,
-                            firstNftTime
+                            accountToken(input: {chainId:$chainId,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount})
+                           {
+                                totalCount
+                                items {
+                                  address
+                                  token {
+                                    symbol
+                                    collectionSymbol
+                                    type
+                                    decimals
+                                  }
+                                  amount
+                                  formatAmount
+                                  transferCount
+                                  firstNftTransactionId
+                                  firstNftTime
+                                  metadata {
+                                    chainId
+                                    block {
+                                      blockHash
+                                      blockTime
+                                      blockHeight
+                                    }
+                                  }
+                                }
                             }
                         }",
                     Variables = new

@@ -19,7 +19,7 @@ public class ContractDto
     public string ContractName { get; set; } = "-";
     public string Type { get; set; }
     public int Version { get; set; }
-    public long Balance { get; set; }
+    public decimal Balance { get; set; }
     public DateTime LastUpdateTime { get; set; }
     public long TransactionCount { get; set; }
     public string ContractVersion { get; set; } = "-";
