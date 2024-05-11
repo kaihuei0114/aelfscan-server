@@ -29,6 +29,8 @@ public class AElfScanServerAddressAutoMapperProfile : Profile
             ;
         CreateMap<GetAddressTokenListInput, TokenHolderInput>();
         CreateMap<GetAddressNftListInput, TokenHolderInput>();
+        CreateMap<GetTransferListInput, TokenTransferInput>();
+        
         CreateMap<IndexerTokenHolderInfoDto, TokenInfoDto>()
             .ForPath(t => t.Token.Name, m => m.MapFrom(u => u.Token.CollectionSymbol))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))

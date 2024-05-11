@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Address.HttpApi.Dtos;
@@ -9,12 +8,11 @@ using AElfScanServer.Address.HttpApi.Provider.Entity;
 using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Constant;
-using AElfScanServer.Token;
-using AElfScanServer.Token.Dtos;
-using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Dtos;
 using AElfScanServer.Helper;
 using AElfScanServer.Options;
+using AElfScanServer.Token;
+using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AElfScanServer.TokenDataFunction.Dtos.Input;
@@ -22,8 +20,8 @@ using AElfScanServer.TokenDataFunction.Provider;
 using AElfScanServer.TokenDataFunction.Service;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Volo.Abp;
 using Volo.Abp.ObjectMapping;
+using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
 namespace AElfScanServer.Address.HttpApi.AppServices;
 
@@ -46,11 +44,13 @@ public class AddressAppService : IAddressAppService
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
+    private readonly ITokenService _tokenService;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
      public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger, 
         BlockChainProvider blockChainProvider, IIndexerGenesisProvider indexerGenesisProvider, 
         ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService, 
-        ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions)
+        ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, 
+        ITokenService tokenService)
     {
         _logger = logger;
         _objectMapper = objectMapper;
@@ -60,7 +60,8 @@ public class AddressAppService : IAddressAppService
         _tokenPriceService = tokenPriceService;
         _tokenInfoProvider = tokenInfoProvider;
         _tokenInfoOptions = tokenInfoOptions;
-     }
+        _tokenService = tokenService;
+    }
 
     public async Task<GetAddressListResultDto> GetAddressListAsync(GetListInputInput input)
     {
@@ -257,40 +258,14 @@ public class AddressAppService : IAddressAppService
 
     public async Task<GetTransferListResultDto> GetTransferListAsync(GetTransferListInput input)
     {
-        try
+        var tokenTransferInput = _objectMapper.Map<GetTransferListInput, TokenTransferInput>(input);
+        tokenTransferInput.Types = new List<SymbolType> { input.TokenType };
+        var tokenTransferInfos = await _tokenService.GetTokenTransferInfosAsync(tokenTransferInput);
+        return new GetTransferListResultDto
         {
-            
-            var result = new GetTransferListResultDto();
-
-            /*_logger.LogInformation("GetTransferListByAddressAsync");
-
-            var getAddressTransferListInput = _objectMapper.Map<GetTransferListInput, TokenTransferInput>(input);
-
-            switch (input.TokenType)
-            {
-                case TokenType.Token:
-                    getAddressTransferListInput.Types = new List<SymbolType> { SymbolType.Token };
-                    var getTokenTransferListResult =
-                        await _tokenProvider.GetTransferListByAddressAsync(getAddressTransferListInput);
-                    result.Tokens = getTokenTransferListResult.List;
-                    break;
-                case TokenType.Nft:
-                    getAddressTransferListInput.Types = new List<SymbolType> { SymbolType.Nft };
-                    var getNftTransferListResult =
-                        await _tokenProvider.GetTransferListByAddressAsync(getAddressTransferListInput);
-                    result.Nfts = getNftTransferListResult.List;
-                    break;
-                default:
-                    throw new UserFriendlyException("Unsupported token type!");
-            }*/
-
-            return result;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetTransferListByAddressAsync failed");
-            throw;
-        }
+            Total = tokenTransferInfos.Total,
+            List = tokenTransferInfos.List
+        };
     }
 
     public async Task<GetTransactionListResultDto> GetTransactionListAsync(GetTransactionListInput input)
