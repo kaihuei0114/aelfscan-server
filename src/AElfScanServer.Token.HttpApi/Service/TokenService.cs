@@ -127,7 +127,7 @@ public class TokenService : ITokenService, ITransientDependency
         if (input.IsSearchAddress())
         {
             result.IsAddress = true;
-            var holderInfo = await _tokenIndexerProvider.GetHolderInfoAsync(SymbolType.Token, input.ChainId, input.Symbol, input.Search);
+            var holderInfo = await _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Symbol, input.Search);
             result.Balance = holderInfo.Balance;
             var priceDto = await _tokenPriceService.GetTokenPriceAsync(input.Symbol, CurrencyConstant.UsdCurrency);
             result.Value = Math.Round(result.Balance * priceDto.Price, CommonConstant.UsdValueDecimals);

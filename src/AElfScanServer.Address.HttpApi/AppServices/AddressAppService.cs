@@ -123,45 +123,39 @@ public class AddressAppService : IAddressAppService
                 result.ContractTransactionHash = contractRecords[0].TransactionId;
             }*/
         }
-        var holderInfo = await _tokenIndexerProvider.GetHolderInfoAsync(SymbolType.Token, input.ChainId, CurrencyConstant.ElfCurrency, input.Address);
+        var holderInfo = await _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, CurrencyConstant.ElfCurrency, input.Address);
         var priceDto = await _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
         result.ElfBalance = holderInfo.Balance;
         result.ElfPriceInUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
         result.ElfBalanceOfUsd = Math.Round(holderInfo.Balance * priceDto.Price, CommonConstant.UsdValueDecimals);
         
-        /*var getTokenListByAddressResult = await _tokenProvider.GetTokenListByAddressAsync(new GetTokenListInput
-        {
-            ChainId = input.ChainId,
-            SkipCount = 0,
-            MaxResultCount = 1000,
-            Address = input.Address
-        });
-        
-        // todo change token [list][count] to [total]
-        result.TokenHoldings = getTokenListByAddressResult.List.Count;
-        result.ElfPriceInUsd = getTokenListByAddressResult.List.Where(t => t.Token.Symbol == "ELF")
-            .Select(t => t.PriceInUsd).FirstOrDefault();
-        result.TokenTotalPriceInElf = getTokenListByAddressResult.List.Sum(t => t.TotalPriceInElf);
-        result.TokenTotalPriceInUsd = getTokenListByAddressResult.List.Sum(t => t.TotalPriceInUsd);
+        var holderInfos = await _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Address);
+        result.TokenHoldings = holderInfos.Count;
 
-        // todo 
-        result.TokenTotalPriceInUsdRate = getTokenListByAddressResult.List.Sum(t => t.UsdPercentChange);
-
-        // transfer info
-        // todo: add time sort
-        var lastTransactions = await _indexerTokenProvider.GetTransferInfoListAsync(input.ChainId, input.Address);
-        result.LastTransactionSend = new TransactionInfoDto
+        var transferInput = new TokenTransferInput()
         {
-            TransactionId = lastTransactions[0].TransactionId,
-            BlockTime = lastTransactions[0].BlockTime
+            ChainId = input.ChainId
         };
-        var firstTransactions = await _indexerTokenProvider.GetTransferInfoListAsync(input.ChainId, input.Address);
-        result.FirstTransactionSend = new TransactionInfoDto
-        {
-            TransactionId = firstTransactions[0].TransactionId,
-            BlockTime = firstTransactions[0].BlockTime
-        };*/
+        transferInput.SetDefaultSort();
+        var tokenTransferListDto = await _tokenIndexerProvider.GetTokenTransferInfoAsync(transferInput);
 
+        if (!tokenTransferListDto.Items.IsNullOrEmpty())
+        {
+            var transferInfoDto = tokenTransferListDto.Items[0];
+            result.LastTransactionSend = new TransactionInfoDto
+            {
+                TransactionId = transferInfoDto.TransactionId,
+                BlockHeight = transferInfoDto.Metadata.Block.BlockHeight,
+                BlockTime = transferInfoDto.Metadata.Block.BlockTime
+            };
+            //TODO
+            result.FirstTransactionSend = new TransactionInfoDto
+            {
+                TransactionId = transferInfoDto.TransactionId,
+                BlockHeight = transferInfoDto.Metadata.Block.BlockHeight,
+                BlockTime = transferInfoDto.Metadata.Block.BlockTime
+            };
+        }
         return result;
     }
 

@@ -33,5 +33,6 @@ public class GetAddressDetailResultDto
 public class TransactionInfoDto
 {
     public string TransactionId { get; set; }
+    public long BlockHeight { get; set; }
     public DateTime BlockTime { get; set; }
 }

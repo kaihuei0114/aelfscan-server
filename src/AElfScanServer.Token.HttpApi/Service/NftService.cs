@@ -150,7 +150,7 @@ public class NftService : INftService, ISingletonDependency
         if (input.IsSearchAddress())
         {
             result.IsAddress = true;
-            result.Items = await _tokenIndexerProvider.GetHolderInfoAsync(SymbolType.Nft, input.ChainId, input.Search);
+            result.Items = await _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Search, SymbolType.Nft);
         }
         return result;
     }
