@@ -14,10 +14,13 @@ using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Dtos;
 using AElfScanServer.Helper;
+using AElfScanServer.Options;
+using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AElfScanServer.TokenDataFunction.Dtos.Input;
 using AElfScanServer.TokenDataFunction.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -35,27 +38,27 @@ public interface IAddressAppService
 public class AddressAppService : IAddressAppService
 {
     private readonly IObjectMapper _objectMapper;
-    private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<AddressAppService> _logger;
     private readonly IBlockChainProvider _blockChainProvider;
-    private readonly IIndexerTokenProvider _indexerTokenProvider;
     private readonly IIndexerGenesisProvider _indexerGenesisProvider;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly ITokenPriceService _tokenPriceService;
-
-    public AddressAppService(IObjectMapper objectMapper, ITokenProvider tokenProvider,
-        ILogger<AddressAppService> logger, IIndexerTokenProvider indexerTokenProvider,
+    private readonly ITokenInfoProvider _tokenInfoProvider;
+    private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
+    
+    public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger, 
         BlockChainProvider blockChainProvider, IIndexerGenesisProvider indexerGenesisProvider, 
-        ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService)
+        ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService, 
+        ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions)
     {
         _logger = logger;
         _objectMapper = objectMapper;
-        _tokenProvider = tokenProvider;
         _blockChainProvider = blockChainProvider;
-        _indexerTokenProvider = indexerTokenProvider;
         _indexerGenesisProvider = indexerGenesisProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenPriceService = tokenPriceService;
+        _tokenInfoProvider = tokenInfoProvider;
+        _tokenInfoOptions = tokenInfoOptions;
     }
 
     public async Task<GetAddressListResultDto> GetAddressListAsync(GetListInputInput input)
@@ -162,29 +165,51 @@ public class AddressAppService : IAddressAppService
     public async Task<GetAddressTokenListResultDto> GetAddressTokenListAsync(
         GetAddressTokenListInput input)
     {
-        _logger.LogInformation("GetTokenListByAddressAsync");
-        var result = new GetAddressTokenListResultDto();
-
-        switch (input.TokenType)
+        var tokenHolderInput = _objectMapper.Map<GetAddressTokenListInput, TokenHolderInput>(input);
+        tokenHolderInput.SetDefaultSort();
+        var holderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
+        var list = new List<TokenInfoDto>();
+        if (holderInfos.Items.IsNullOrEmpty())
         {
-            case TokenType.Token:
-                var getAddressTokenListInput = _objectMapper.Map<GetAddressTokenListInput, GetTokenListInput>(input);
-                var getTokenListByAddressResult =
-                    await _tokenProvider.GetTokenListByAddressAsync(getAddressTokenListInput);
-                result.AssetInUsd = getTokenListByAddressResult.AssetInUsd;
-                result.Total = getTokenListByAddressResult.List.Count;
-                result.Tokens = getTokenListByAddressResult.List;
-                break;
-            case TokenType.Nft:
-                var getAddressNftListInput = _objectMapper.Map<GetAddressTokenListInput, GetNftListInput>(input);
-                var getNftListByAddressResult = await _tokenProvider.GetNftListByAddressAsync(getAddressNftListInput);
-                result.Total = getNftListByAddressResult.List.Count;
-                result.Nfts = getNftListByAddressResult.List;
-                break;
-            default:
-                throw new UserFriendlyException("Unsupported token type!");
+            return new GetAddressTokenListResultDto();
         }
-
+        var tokenDict = await _tokenIndexerProvider.GetTokenDictAsync(input.ChainId, 
+            holderInfos.Items.Select(i => i.Token.Symbol).ToList());
+        var elfPriceDto = await _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
+        foreach (var holderInfo in holderInfos.Items)
+        {
+            var symbol = holderInfo.Token.Symbol;
+            var tokenHolderInfo = _objectMapper.Map<IndexerTokenHolderInfoDto, TokenInfoDto>(holderInfo);
+            if (tokenDict.TryGetValue(symbol, out var tokenInfo))
+            {
+                //handle image url
+                tokenHolderInfo.Token.Name = tokenInfo.TokenName;
+                tokenHolderInfo.Token.ImageUrl = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
+                    () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol));    
+            }
+            if (_tokenInfoOptions.CurrentValue.NonResourceSymbols.Contains(symbol))
+            { 
+                var priceDto = await _tokenPriceService.GetTokenPriceAsync(symbol, CurrencyConstant.UsdCurrency);
+                var timestamp = TimeHelper.GetTimeStampFromDateTime(DateTime.Today);
+                var priceHisDto = await _tokenPriceService.GetTokenHistoryPriceAsync(symbol, CurrencyConstant.UsdCurrency, timestamp);
+                tokenHolderInfo.PriceOfUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
+                tokenHolderInfo.ValueOfUsd = Math.Round(tokenHolderInfo.Quantity * priceDto.Price, CommonConstant.UsdValueDecimals);
+                tokenHolderInfo.PriceOfElf = Math.Round(priceDto.Price / elfPriceDto.Price, CommonConstant.ElfValueDecimals);
+                tokenHolderInfo.ValueOfElf = Math.Round(tokenHolderInfo.Quantity * priceDto.Price / elfPriceDto.Price, CommonConstant.ElfValueDecimals);
+                if (priceHisDto.Price > 0)
+                {
+                    tokenHolderInfo.PriceOfUsdPercentChange24h = (double)Math.Round((priceDto.Price - priceHisDto.Price) / priceHisDto.Price  * 100, 
+                        CommonConstant.PercentageValueDecimals);
+                }
+            }
+            list.Add(tokenHolderInfo);
+        }
+        var result = new GetAddressTokenListResultDto
+        {
+            AssetInUsd = list.Sum(i => i.ValueOfUsd),
+            Total = holderInfos.TotalCount,
+            List = list
+        };
         return result;
     }
 
@@ -192,8 +217,10 @@ public class AddressAppService : IAddressAppService
     {
         try
         {
-            _logger.LogInformation("GetTransferListByAddressAsync");
+            
             var result = new GetTransferListResultDto();
+
+            /*_logger.LogInformation("GetTransferListByAddressAsync");
 
             var getAddressTransferListInput = _objectMapper.Map<GetTransferListInput, TokenTransferInput>(input);
 
@@ -213,7 +240,7 @@ public class AddressAppService : IAddressAppService
                     break;
                 default:
                     throw new UserFriendlyException("Unsupported token type!");
-            }
+            }*/
 
             return result;
         }

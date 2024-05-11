@@ -11,10 +11,8 @@ public class GetDetailBasicDto
 public class GetListInputBasicDto : PagedResultRequestDto
 {
     [Required] public string ChainId { get; set; }
-}
-
-public enum TokenType
-{
-    Token,
-    Nft
+    
+    public string OrderBy { get; set; }
+    
+    public string Sort { get; set; }
 }

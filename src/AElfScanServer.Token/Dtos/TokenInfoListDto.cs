@@ -9,9 +9,9 @@ public class TokenInfoDto
 {
     public TokenBaseInfo Token { set; get; }
     public decimal Quantity { set; get; }
-    public decimal PriceInUsd { set; get; }
-    public decimal UsdPercentChange { set; get; }
-    public decimal TotalPriceInUsd { set; get; }
-    public decimal PriceInElf { set; get; }
-    public decimal TotalPriceInElf { set; get; }
+    public decimal ValueOfUsd { set; get; }
+    public decimal PriceOfUsd { set; get; }
+    public double PriceOfUsdPercentChange24h { get; set; }
+    public decimal PriceOfElf { set; get; }
+    public decimal ValueOfElf { set; get; }
 }

@@ -13,6 +13,7 @@ using AElfScanServer.TokenDataFunction.Dtos.Input;
 using GraphQL;
 using Microsoft.IdentityModel.Tokens;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.ObjectMapping;
 
 namespace AElfScanServer.TokenDataFunction.Provider;
 
@@ -24,15 +25,18 @@ public interface ITokenIndexerProvider
     Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfoAsync(TokenHolderInput input);
     Task<List<HolderInfo>> GetHolderInfoAsync(string chainId, string address, SymbolType? symbolType = null);
     Task<HolderInfo> GetHolderInfoAsync(string chainId, string symbol, string address);
+    Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictAsync(string chainId, List<string> symbols);
 }
 
 public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
 {
     private readonly IGraphQlFactory _graphQlFactory;
+    private readonly IObjectMapper _objectMapper;
 
-    public TokenIndexerProvider(IGraphQlFactory graphQlFactory)
+    public TokenIndexerProvider(IGraphQlFactory graphQlFactory, IObjectMapper objectMapper)
     {
         _graphQlFactory = graphQlFactory;
+        _objectMapper = objectMapper;
     }
 
 
@@ -227,5 +231,17 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             Balance = i.FormatAmount,
             Symbol = i.Token.Symbol
         }).ToList();
+    }
+    
+    public async Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictAsync(string chainId, List<string> symbols)
+    {
+        var input = new TokenListInput
+        {
+            ChainId = chainId,
+            Symbols = symbols,
+            MaxResultCount = symbols.Count
+        };
+        var indexerTokenListDto = await GetTokenListAsync(input);
+        return indexerTokenListDto.Items.ToDictionary(token => token.Symbol, token => token);
     }
 }
