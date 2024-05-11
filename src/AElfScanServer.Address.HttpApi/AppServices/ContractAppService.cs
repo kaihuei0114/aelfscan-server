@@ -75,7 +75,7 @@ public class ContractAppService : IContractAppService
                 LastUpdateTime = info.BlockTime != DateTime.MinValue ? info.BlockTime : DateTime.Now,
                 Type = info.ContractType,
                 TransactionCount = 0,
-                ContractName = GetContractName(info.ChainId, info.Address).Result
+                ContractName = GetContractName(input.ChainId, info.Address).Result
             };
 
             // todo: support batch search by address list.
