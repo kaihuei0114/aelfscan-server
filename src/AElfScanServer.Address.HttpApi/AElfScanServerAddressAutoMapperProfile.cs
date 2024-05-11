@@ -1,6 +1,7 @@
 using AElfScanServer.Address.HttpApi.Dtos;
 using AElfScanServer.Address.HttpApi.Provider.Entity;
 using AElfScanServer.BlockChain.Dtos;
+using AElfScanServer.Helper;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
@@ -40,6 +41,20 @@ public class AElfScanServerAddressAutoMapperProfile : Profile
         CreateMap<IndexerTokenHolderInfoDto, AddressNftInfoDto>()
             .ForMember(t => t.Token, m => m.Ignore())
             .ForPath(t => t.Quantity, m => m.MapFrom(u => u.FormatAmount))
+            ;
+        CreateMap<IndexerTransferInfoDto, TokenTransferInfoDto>()
+            .ForMember(t => t.ChainId, m => m.MapFrom(u =>BaseConverter.OfChainId(u.Metadata)))
+            .ForMember(t => t.TransactionId, m => m.MapFrom(u => u.TransactionId))
+            .ForMember(t => t.Method, m => m.MapFrom(u => u.Method))
+            .ForMember(t => t.BlockHeight, m => m.MapFrom(u => BaseConverter.OfBlockHeight(u.Metadata)))
+            .ForMember(t => t.BlockTime, m => m.MapFrom(u => BaseConverter.OfBlockTime(u.Metadata)))
+            .ForMember(t => t.Quantity, m => m.MapFrom(u => u.FormatAmount))
+            .ForMember(t => t.Status, m => m.MapFrom(u => TokenInfoHelper.OfTransactionStatus(u.Status)))
+            .ForMember(t => t.From, m => m.Ignore())
+            .ForMember(t => t.To, m => m.Ignore())
+            .ForPath(t => t.From.Address, m => m.MapFrom(u => u.From))
+            .ForPath(t => t.To.Address, m => m.MapFrom(u => u.To))
+            .ReverseMap()
             ;
     }
 }

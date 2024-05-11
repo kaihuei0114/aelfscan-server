@@ -6,6 +6,7 @@ using AElfScanServer.Token;
 using AElfScanServer;
 using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.TokenDataFunction.Service;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AutoMapper;
@@ -27,6 +28,7 @@ public class AElfScanServerAddressHttpApiModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<AElfScanServerAddressHttpApiModule>(); });
         context.Services.AddSingleton<IIndexerGenesisProvider, IndexerGenesisProvider>();
         context.Services.AddTransient<IAddressAppService, AddressAppService>();
+        context.Services.AddTransient<ITokenService, TokenService>();
         context.Services.AddSingleton<IIndexerTokenProvider, IndexerTokenProvider>();
         context.Services.AddTransient<IContractAppService, ContractAppService>();
         context.Services.AddSingleton<IDecompilerProvider, DecompilerProvider>();

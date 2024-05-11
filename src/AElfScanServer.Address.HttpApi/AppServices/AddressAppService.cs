@@ -21,7 +21,6 @@ using AElfScanServer.TokenDataFunction.Service;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.ObjectMapping;
-using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
 namespace AElfScanServer.Address.HttpApi.AppServices;
 
@@ -44,13 +43,11 @@ public class AddressAppService : IAddressAppService
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
-    private readonly ITokenService _tokenService;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
      public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger, 
         BlockChainProvider blockChainProvider, IIndexerGenesisProvider indexerGenesisProvider, 
         ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService, 
-        ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, 
-        ITokenService tokenService)
+        ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions)
     {
         _logger = logger;
         _objectMapper = objectMapper;
@@ -60,7 +57,6 @@ public class AddressAppService : IAddressAppService
         _tokenPriceService = tokenPriceService;
         _tokenInfoProvider = tokenInfoProvider;
         _tokenInfoOptions = tokenInfoOptions;
-        _tokenService = tokenService;
     }
 
     public async Task<GetAddressListResultDto> GetAddressListAsync(GetListInputInput input)
@@ -260,7 +256,7 @@ public class AddressAppService : IAddressAppService
     {
         var tokenTransferInput = _objectMapper.Map<GetTransferListInput, TokenTransferInput>(input);
         tokenTransferInput.Types = new List<SymbolType> { input.TokenType };
-        var tokenTransferInfos = await _tokenService.GetTokenTransferInfosAsync(tokenTransferInput);
+        var tokenTransferInfos = await _tokenIndexerProvider.GetTokenTransfersAsync(tokenTransferInput);
         return new GetTransferListResultDto
         {
             Total = tokenTransferInfos.Total,

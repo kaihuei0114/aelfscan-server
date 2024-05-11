@@ -9,6 +9,7 @@ using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.GraphQL;
 using AElfScanServer.Helper;
+using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Dtos;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AElfScanServer.TokenDataFunction.Dtos.Input;
@@ -16,6 +17,7 @@ using GraphQL;
 using Microsoft.IdentityModel.Tokens;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
+using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
 namespace AElfScanServer.TokenDataFunction.Provider;
 
@@ -28,17 +30,20 @@ public interface ITokenIndexerProvider
     Task<List<HolderInfo>> GetHolderInfoAsync(string chainId, string address, SymbolType? symbolType = null);
     Task<HolderInfo> GetHolderInfoAsync(string chainId, string symbol, string address);
     Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictAsync(string chainId, List<string> symbols);
+    Task<TokenTransferInfosDto> GetTokenTransfersAsync(TokenTransferInput input);
 }
 
 public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
 {
     private readonly IGraphQlFactory _graphQlFactory;
     private readonly IObjectMapper _objectMapper;
-
-    public TokenIndexerProvider(IGraphQlFactory graphQlFactory, IObjectMapper objectMapper)
+    private readonly ITokenInfoProvider _tokenInfoProvider;
+    
+    public TokenIndexerProvider(IGraphQlFactory graphQlFactory, IObjectMapper objectMapper, ITokenInfoProvider tokenInfoProvider)
     {
         _graphQlFactory = graphQlFactory;
         _objectMapper = objectMapper;
+        _tokenInfoProvider = tokenInfoProvider;
     }
 
 
@@ -246,5 +251,51 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         };
         var indexerTokenListDto = await GetTokenListAsync(input);
         return indexerTokenListDto.Items.ToDictionary(token => token.Symbol, token => token);
+    }
+
+    public async Task<TokenTransferInfosDto> GetTokenTransfersAsync(TokenTransferInput input)
+    {
+        var indexerTokenTransfer = await GetTokenTransferInfoAsync(input);
+        if (indexerTokenTransfer.Items.IsNullOrEmpty())
+        {
+            return new TokenTransferInfosDto();
+        }
+        var list = await ConvertIndexerTokenTransferDtoAsync(indexerTokenTransfer.Items, input.ChainId);
+        var result = new TokenTransferInfosDto
+        {
+            Total = indexerTokenTransfer.TotalCount,
+            List = list
+        };
+        return result;
+    }
+    
+    private async Task<List<TokenTransferInfoDto>> ConvertIndexerTokenTransferDtoAsync(List<IndexerTransferInfoDto> indexerTokenTransfer, string chainId)
+    {
+        var list = new List<TokenTransferInfoDto>();
+        var priceDict = new Dictionary<string, TokenPriceDto>();
+        foreach (var indexerTransferInfoDto in indexerTokenTransfer)
+        {
+            var tokenTransferDto =
+                _objectMapper.Map<IndexerTransferInfoDto, TokenTransferInfoDto>(indexerTransferInfoDto);
+            tokenTransferDto.TransactionFeeList = await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
+            if (!indexerTransferInfoDto.From.IsNullOrEmpty())
+            {
+                tokenTransferDto.From = new CommonAddressDto
+                {
+                    Address = indexerTransferInfoDto.From
+                };
+            }
+            if (!indexerTransferInfoDto.To.IsNullOrEmpty())
+            {
+                tokenTransferDto.From = new CommonAddressDto
+                {
+                    Address = indexerTransferInfoDto.To
+                };
+            }
+
+            list.Add(tokenTransferDto);
+        }
+
+        return list;
     }
 }

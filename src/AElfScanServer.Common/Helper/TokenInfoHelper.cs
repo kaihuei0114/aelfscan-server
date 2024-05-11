@@ -73,5 +73,6 @@ public class TokenInfoHelper
         var key = EnumDescriptionHelper.GetEnumDescription(keyEnum);
         return externalInfo.Where(e => e.Key == key).Select(e => e.Value).FirstOrDefault();
     }
+    
 
 }

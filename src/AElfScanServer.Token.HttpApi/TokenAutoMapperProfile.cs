@@ -69,7 +69,7 @@ public class TokenAutoMapperProfile : Profile
             .ForMember(t => t.Amount, m => m.MapFrom(u => u.FormatAmount))
             .ForPath(t => t.Type, m => m.MapFrom(u => u.Token.Type))
             .ForMember(t => t.TransactionHash, m => m.MapFrom(u => u.TransactionId))
-            .ForPath(t => t.Timestamp, m => m.MapFrom(u => OfBlockTime(u.Metadata)))
+            .ForPath(t => t.Timestamp, m => m.MapFrom(u => BaseConverter.OfBlockTime(u.Metadata)))
             .ForMember(t => t.From, m => m.Ignore())
             .ForMember(t => t.To, m => m.Ignore())
             .ForPath(t => t.From.Address, m => m.MapFrom(u => u.From))
@@ -93,11 +93,11 @@ public class TokenAutoMapperProfile : Profile
             .ReverseMap()
             ;
         CreateMap<IndexerTransferInfoDto, TokenTransferInfoDto>()
-            .ForMember(t => t.ChainId, m => m.MapFrom(u => OfChainId(u.Metadata)))
+            .ForMember(t => t.ChainId, m => m.MapFrom(u => BaseConverter.OfChainId(u.Metadata)))
             .ForMember(t => t.TransactionId, m => m.MapFrom(u => u.TransactionId))
             .ForMember(t => t.Method, m => m.MapFrom(u => u.Method))
-            .ForMember(t => t.BlockHeight, m => m.MapFrom(u => OfBlockHeight(u.Metadata)))
-            .ForMember(t => t.BlockTime, m => m.MapFrom(u => OfBlockTime(u.Metadata)))
+            .ForMember(t => t.BlockHeight, m => m.MapFrom(u => BaseConverter.OfBlockHeight(u.Metadata)))
+            .ForMember(t => t.BlockTime, m => m.MapFrom(u => BaseConverter.OfBlockTime(u.Metadata)))
             .ForMember(t => t.Quantity, m => m.MapFrom(u => u.FormatAmount))
             .ForMember(t => t.Status, m => m.MapFrom(u => TokenInfoHelper.OfTransactionStatus(u.Status)))
             .ForMember(t => t.From, m => m.Ignore())
@@ -119,40 +119,14 @@ public class TokenAutoMapperProfile : Profile
                     string.IsNullOrEmpty(u.Owner) ? new List<string>() : new List<string> { u.Issuer }))
             .ForMember(t => t.TokenSymbol, m => m.MapFrom(u => u.Symbol))
             .ForPath(t => t.SymbolToCreate,
-                m => m.MapFrom(u => OfExternalInfoKeyValue(u.ExternalInfo, "__seed_owned_symbol")))
+                m => m.MapFrom(u => BaseConverter.OfExternalInfoKeyValue(u.ExternalInfo, "__seed_owned_symbol")))
             .ForPath(t => t.ExpireTime,
-                m => m.MapFrom(u => OfExternalInfoKeyValue(u.ExternalInfo, "__seed_exp_time")))
+                m => m.MapFrom(u => BaseConverter.OfExternalInfoKeyValue(u.ExternalInfo, "__seed_exp_time")))
             .ForPath(t => t.Description,
-                m => m.MapFrom(u => OfExternalInfoKeyValue(u.ExternalInfo, "Description")))
+                m => m.MapFrom(u => BaseConverter.OfExternalInfoKeyValue(u.ExternalInfo, "Description")))
             .ReverseMap()
             ;
         CreateMap<NftItemHolderInfoInput, TokenHolderInput>();
         CreateMap<TokenCommonDto, TokenDetailDto>();
     }
-    
-    private static string OfChainId(MetadataDto metadata)
-    {
-        return metadata?.ChainId;
-    }
-    private static long OfBlockHeight(MetadataDto metadata)
-    {
-        return metadata?.Block?.BlockHeight ?? 0;
-    }
-    
-    private static long OfBlockTime(MetadataDto metadata)
-    {
-        var blockTime = metadata?.Block?.BlockTime;
-        if (blockTime == null)
-        {
-            return 0;
-        }
-        var blockTimeNew = blockTime.Value;
-        return TimeHelper.GetTimeStampFromDateTimeInSeconds(blockTimeNew);
-    }
-    
-    private static string OfExternalInfoKeyValue(List<ExternalInfoDto> externalInfo, string key)
-    {
-        return externalInfo.Where(e => e.Key == key).Select(e => e.Value).FirstOrDefault();
-    }
-    
 }

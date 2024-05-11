@@ -19,7 +19,6 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
-using TokenTransferInfoDto = AElfScanServer.Token.Dtos.TokenTransferInfoDto;
 
 namespace AElfScanServer.TokenDataFunction.Service;
 
@@ -110,17 +109,7 @@ public class TokenService : ITokenService, ITransientDependency
 
     public async Task<TokenTransferInfosDto> GetTokenTransferInfosAsync(TokenTransferInput input)
     {
-        var indexerTokenTransfer = await _tokenIndexerProvider.GetTokenTransferInfoAsync(input);
-        if (indexerTokenTransfer.Items.IsNullOrEmpty())
-        {
-            return new TokenTransferInfosDto();
-        }
-        var list = await ConvertIndexerTokenTransferDtoAsync(indexerTokenTransfer.Items, input.ChainId);
-        var result = new TokenTransferInfosDto
-        {
-            Total = indexerTokenTransfer.TotalCount,
-            List = list
-        };
+        var result = await _tokenIndexerProvider.GetTokenTransfersAsync(input);
         if (input.IsSearchAddress())
         {
             result.IsAddress = true;
@@ -200,37 +189,6 @@ public class TokenService : ITokenService, ITransientDependency
         }
         return list;
     }
-    
-    private async Task<List<TokenTransferInfoDto>> ConvertIndexerTokenTransferDtoAsync(
-        List<IndexerTransferInfoDto> indexerTokenTransfer, string chainId)
-    {
-        var list = new List<TokenTransferInfoDto>();
-        var priceDict = new Dictionary<string, TokenPriceDto>();
-        foreach (var indexerTransferInfoDto in indexerTokenTransfer)
-        {
-            var tokenTransferDto =
-                _objectMapper.Map<IndexerTransferInfoDto, TokenTransferInfoDto>(indexerTransferInfoDto);
-            tokenTransferDto.TransactionFeeList = await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
-            if (!indexerTransferInfoDto.From.IsNullOrEmpty())
-            {
-                tokenTransferDto.From = new CommonAddressDto
-                {
-                    Address = indexerTransferInfoDto.From
-                };
-            }
-            if (!indexerTransferInfoDto.To.IsNullOrEmpty())
-            {
-                tokenTransferDto.From = new CommonAddressDto
-                {
-                    Address = indexerTransferInfoDto.To
-                };
-            }
-
-            list.Add(tokenTransferDto);
-        }
-
-        return list;
-    }
 
     private async Task<List<TokenCommonDto>> ConvertIndexerTokenDtoAsync(List<IndexerTokenInfoDto> indexerTokenList,
         string chainId)
@@ -258,16 +216,5 @@ public class TokenService : ITokenService, ITransientDependency
 
         return list;
     }
-
-    private async Task<Dictionary<string, TokenCommonDto>> GetTokenDicAsync(List<string> symbols, string chainId)
-    {
-        var input = new TokenListInput()
-        {
-            ChainId = chainId,
-            Symbols = symbols
-        };
-        var indexerTokenListDto = await _tokenIndexerProvider.GetTokenListAsync(input);
-        var tokenInfoDtoList = _objectMapper.Map<List<IndexerTokenInfoDto>, List<TokenCommonDto>>(indexerTokenListDto.Items);
-        return tokenInfoDtoList.ToDictionary(token => token.Token.Symbol, token => token);
-    }
+    
 }
