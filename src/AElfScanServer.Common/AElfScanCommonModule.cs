@@ -6,12 +6,14 @@ using AElfScanServer.ThirdPart.Exchange;
 using AElfScanServer.Token.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
 
 namespace AElfScanServer;
 
 [DependsOn(
-    typeof(AbpAutoMapperModule)
+    typeof(AbpAutoMapperModule),
+    typeof(AbpCachingStackExchangeRedisModule)
 )]
 public class AElfScanCommonModule : AbpModule
 {
