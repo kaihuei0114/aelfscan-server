@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.Constant;
 using AElfScanServer.Dtos;
+using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using Microsoft.Extensions.Options;
@@ -12,8 +13,10 @@ namespace AElfScanServer.Token.Provider;
 
 public interface ITokenInfoProvider
 {
+    TokenBaseInfo OfTokenBaseInfo(IndexerTokenInfoDto tokenInfo);
+    
     string BuildImageUrl(string symbol, bool useAssetUrl = false);
-
+    
     Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, TokenPriceDto> priceDict, List<ExternalInfoDto> externalInfos);
 }
 
@@ -28,6 +31,18 @@ public class TokenInfoProvider : ITokenInfoProvider, ISingletonDependency
         _tokenInfoOptionsMonitor = tokenInfoOptions;
         _assetsInfoOptionsMonitor = assetsInfoOptions;
         _tokenPriceService = tokenPriceService;
+    }
+
+    public TokenBaseInfo OfTokenBaseInfo(IndexerTokenInfoDto tokenInfo)
+    {
+        return new TokenBaseInfo
+        {
+            Name = tokenInfo.TokenName,
+            Symbol = tokenInfo.Symbol,
+            Decimals = tokenInfo.Decimals,
+            ImageUrl = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
+                () => BuildImageUrl(tokenInfo.Symbol))
+        };
     }
 
     public string BuildImageUrl(string symbol, bool useAssetUrl = false)

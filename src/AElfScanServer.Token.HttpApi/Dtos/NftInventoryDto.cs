@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AElfScanServer.Dtos;
 using AElfScanServer.Token.Dtos;
 
 namespace AElfScanServer.TokenDataFunction.Dtos;

@@ -53,7 +53,8 @@ public class TokenInfoHelper
         {
             TokenCreatedExternalInfoEnum.NFTLogoImageUrl,
             TokenCreatedExternalInfoEnum.SpecialInscriptionImage,
-            TokenCreatedExternalInfoEnum.NFTImageUri
+            TokenCreatedExternalInfoEnum.NFTImageUri,
+            TokenCreatedExternalInfoEnum.NFTImageUrl
         };
 
         foreach (var key in keysToCheck)

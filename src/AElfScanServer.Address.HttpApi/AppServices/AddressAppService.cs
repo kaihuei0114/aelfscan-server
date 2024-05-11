@@ -19,6 +19,7 @@ using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AElfScanServer.TokenDataFunction.Dtos.Input;
 using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.TokenDataFunction.Service;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -31,6 +32,7 @@ public interface IAddressAppService
     Task<GetAddressListResultDto> GetAddressListAsync(GetListInputInput input);
     Task<GetAddressDetailResultDto> GetAddressDetailAsync(GetAddressDetailInput input);
     Task<GetAddressTokenListResultDto> GetAddressTokenListAsync(GetAddressTokenListInput input);
+    Task<GetAddressNftListResultDto> GetAddressNftListAsync(GetAddressNftListInput input);
     Task<GetTransferListResultDto> GetTransferListAsync(GetTransferListInput input);
     Task<GetTransactionListResultDto> GetTransactionListAsync(GetTransactionListInput input);
 }
@@ -45,8 +47,7 @@ public class AddressAppService : IAddressAppService
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
-    
-    public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger, 
+     public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger, 
         BlockChainProvider blockChainProvider, IIndexerGenesisProvider indexerGenesisProvider, 
         ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService, 
         ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions)
@@ -59,7 +60,7 @@ public class AddressAppService : IAddressAppService
         _tokenPriceService = tokenPriceService;
         _tokenInfoProvider = tokenInfoProvider;
         _tokenInfoOptions = tokenInfoOptions;
-    }
+     }
 
     public async Task<GetAddressListResultDto> GetAddressListAsync(GetListInputInput input)
     {
@@ -168,7 +169,6 @@ public class AddressAppService : IAddressAppService
         var tokenHolderInput = _objectMapper.Map<GetAddressTokenListInput, TokenHolderInput>(input);
         tokenHolderInput.SetDefaultSort();
         var holderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
-        var list = new List<TokenInfoDto>();
         if (holderInfos.Items.IsNullOrEmpty())
         {
             return new GetAddressTokenListResultDto();
@@ -176,6 +176,7 @@ public class AddressAppService : IAddressAppService
         var tokenDict = await _tokenIndexerProvider.GetTokenDictAsync(input.ChainId, 
             holderInfos.Items.Select(i => i.Token.Symbol).ToList());
         var elfPriceDto = await _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
+        var list = new List<TokenInfoDto>();
         foreach (var holderInfo in holderInfos.Items)
         {
             var symbol = holderInfo.Token.Symbol;
@@ -207,6 +208,47 @@ public class AddressAppService : IAddressAppService
         var result = new GetAddressTokenListResultDto
         {
             AssetInUsd = list.Sum(i => i.ValueOfUsd),
+            Total = holderInfos.TotalCount,
+            List = list
+        };
+        return result;
+    }
+
+    public async Task<GetAddressNftListResultDto> GetAddressNftListAsync(GetAddressNftListInput input)
+    {
+        var tokenHolderInput = _objectMapper.Map<GetAddressNftListInput, TokenHolderInput>(input);
+        tokenHolderInput.Types = new List<SymbolType> { SymbolType.Nft };
+        tokenHolderInput.SetDefaultSort();
+        var holderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
+        if (holderInfos.Items.IsNullOrEmpty())
+        {
+            return new GetAddressNftListResultDto();
+        }
+        var tokenDictTask = _tokenIndexerProvider.GetTokenDictAsync(input.ChainId, 
+            holderInfos.Items.Select(i => i.Token.Symbol).ToList());
+        var collectionSymbols = holderInfos.Items.Select(i => i.Token.CollectionSymbol).ToHashSet();
+        var collectionDictTask = _tokenIndexerProvider.GetTokenDictAsync(input.ChainId, new List<string>(collectionSymbols));
+        await Task.WhenAll(tokenDictTask, collectionDictTask);
+        var tokenDict = await tokenDictTask;
+        var collectionDict = await collectionDictTask;
+        var list = new List<AddressNftInfoDto>();
+        foreach (var holderInfo in holderInfos.Items)
+        {
+            var symbol = holderInfo.Token.Symbol;
+            var collectionSymbol = holderInfo.Token.CollectionSymbol;
+            var tokenHolderInfo = _objectMapper.Map<IndexerTokenHolderInfoDto, AddressNftInfoDto>(holderInfo);
+            if (tokenDict.TryGetValue(symbol, out var tokenInfo))
+            {
+                tokenHolderInfo.Token = _tokenInfoProvider.OfTokenBaseInfo(tokenInfo);
+            }
+            if (collectionDict.TryGetValue(collectionSymbol, out var collectionInfo))
+            { 
+                tokenHolderInfo.NftCollection = _tokenInfoProvider.OfTokenBaseInfo(collectionInfo);
+            }
+            list.Add(tokenHolderInfo);
+        }
+        var result = new GetAddressNftListResultDto
+        {
             Total = holderInfos.TotalCount,
             List = list
         };

@@ -92,12 +92,6 @@ public class TokenAutoMapperProfile : Profile
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
             .ReverseMap()
             ;
-        CreateMap<IndexerTokenHolderInfoDto, AddressNftInfoDto>()
-            .ForMember(t => t.Quantity, m => m.MapFrom(u => u.FormatAmount))
-            .ForMember(t => t.Timestamp, m => m.MapFrom(u => u.FirstNftTime.Value.Millisecond))
-            .ForPath(t => t.CollectionSymbol, m => m.MapFrom(u => u.Token.CollectionSymbol))
-            .ReverseMap()
-            ;
         CreateMap<IndexerTransferInfoDto, TokenTransferInfoDto>()
             .ForMember(t => t.ChainId, m => m.MapFrom(u => OfChainId(u.Metadata)))
             .ForMember(t => t.TransactionId, m => m.MapFrom(u => u.TransactionId))
