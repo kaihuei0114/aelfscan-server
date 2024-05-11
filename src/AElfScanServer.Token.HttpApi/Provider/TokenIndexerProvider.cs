@@ -45,8 +45,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         _objectMapper = objectMapper;
         _tokenInfoProvider = tokenInfoProvider;
     }
-
-
+    
     public async Task<IndexerTokenInfoListDto> GetTokenListAsync(TokenListInput input)
     {
         var graphQlHelper = GetGraphQlHelper();
