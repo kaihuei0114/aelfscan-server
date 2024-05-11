@@ -21,6 +21,6 @@ public class ContractDto
     public int Version { get; set; }
     public decimal Balance { get; set; }
     public DateTime LastUpdateTime { get; set; }
-    public long TransactionCount { get; set; }
+    public long Txns { get; set; }
     public string ContractVersion { get; set; } = "-";
 }

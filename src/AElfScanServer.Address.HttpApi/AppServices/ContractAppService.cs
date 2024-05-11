@@ -73,7 +73,7 @@ public class ContractAppService : IContractAppService
                 ContractVersion = info.ContractVersion,
                 LastUpdateTime = info.BlockTime != DateTime.MinValue ? info.BlockTime : DateTime.Now,
                 Type = info.ContractType,
-                TransactionCount = 0,
+                Txns = 0,
                 ContractName = GetContractName(input.ChainId, info.Address).Result
             };
 
