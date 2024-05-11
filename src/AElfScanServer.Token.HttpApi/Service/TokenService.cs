@@ -45,19 +45,19 @@ public class TokenService : ITokenService, ITransientDependency
     private readonly IOptionsMonitor<ChainOptions> _chainOptions;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
     private readonly ITokenPriceService _tokenPriceService;
-    private readonly ITokenImageProvider _tokenImageProvider;
+    private readonly ITokenInfoProvider _tokenInfoProvider;
     
 
     public TokenService(ITokenIndexerProvider tokenIndexerProvider, IBlockChainProvider blockChainProvider,
         ITokenHolderPercentProvider tokenHolderPercentProvider, IObjectMapper objectMapper,
         IOptionsMonitor<ChainOptions> chainOptions, ITokenPriceService tokenPriceService, 
-        IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenImageProvider tokenImageProvider)
+        IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenInfoProvider tokenInfoProvider)
     {
         _objectMapper = objectMapper;
         _chainOptions = chainOptions;
         _tokenPriceService = tokenPriceService;
         _tokenInfoOptions = tokenInfoOptions;
-        _tokenImageProvider = tokenImageProvider;
+        _tokenInfoProvider = tokenInfoProvider;
         _blockChainProvider = blockChainProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenHolderPercentProvider = tokenHolderPercentProvider;
@@ -114,20 +114,16 @@ public class TokenService : ITokenService, ITransientDependency
     public async Task<TokenTransferInfosDto> GetTokenTransferInfosAsync(TokenTransferInput input)
     {
         var indexerTokenTransfer = await _tokenIndexerProvider.GetTokenTransferInfoAsync(input);
-        
         if (indexerTokenTransfer.Items.IsNullOrEmpty())
         {
             return new TokenTransferInfosDto();
         }
-        
         var list = await ConvertIndexerTokenTransferDtoAsync(indexerTokenTransfer.Items, input.ChainId);
-
         var result = new TokenTransferInfosDto
         {
             Total = indexerTokenTransfer.TotalCount,
             List = list
         };
-        
         if (input.IsSearchAddress())
         {
             result.IsAddress = true;
@@ -268,11 +264,12 @@ public class TokenService : ITokenService, ITransientDependency
         List<IndexerTransferInfoDto> indexerTokenTransfer, string chainId)
     {
         var list = new List<TokenTransferInfoDto>();
+        var priceDict = new Dictionary<string, TokenPriceDto>();
         foreach (var indexerTransferInfoDto in indexerTokenTransfer)
         {
             var tokenTransferDto =
                 _objectMapper.Map<IndexerTransferInfoDto, TokenTransferInfoDto>(indexerTransferInfoDto);
-
+            tokenTransferDto.TransactionFeeList = await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
             if (!indexerTransferInfoDto.From.IsNullOrEmpty())
             {
                 tokenTransferDto.From = new CommonAddressDto
@@ -304,11 +301,11 @@ public class TokenService : ITokenService, ITransientDependency
         foreach (var indexerTokenInfoDto in indexerTokenList)
         {
             var tokenListDto = _objectMapper.Map<IndexerTokenInfoDto, TokenCommonDto>(indexerTokenInfoDto);
-            tokenListDto.TotalSupply = DecimalHelper.DivideLong(tokenListDto.TotalSupply, indexerTokenInfoDto.Decimals);
-            tokenListDto.CirculatingSupply = DecimalHelper.DivideLong(tokenListDto.CirculatingSupply, indexerTokenInfoDto.Decimals);
+            tokenListDto.TotalSupply = DecimalHelper.Divide(tokenListDto.TotalSupply, indexerTokenInfoDto.Decimals);
+            tokenListDto.CirculatingSupply = DecimalHelper.Divide(tokenListDto.CirculatingSupply, indexerTokenInfoDto.Decimals);
             //handle image url
             tokenListDto.Token.ImageUrl = TokenInfoHelper.GetImageUrl(indexerTokenInfoDto.ExternalInfo,
-                () => _tokenImageProvider.BuildImageUrl(indexerTokenInfoDto.Symbol));
+                () => _tokenInfoProvider.BuildImageUrl(indexerTokenInfoDto.Symbol));
             if (tokenHolderCountDic.TryGetValue(indexerTokenInfoDto.Symbol, out var beforeCount) && beforeCount != 0)
             {
                 tokenListDto.HolderPercentChange24H = Math.Round(

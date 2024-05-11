@@ -22,7 +22,7 @@ public class AddressController : AElfScanServerAddressController
     }
 
     // address common
-    [HttpGet("address")]
+    [HttpGet("address-detail")]
     public async Task<GetAddressDetailResultDto> GetAddressDetailAsync(GetAddressDetailInput input)
         => await _addressAppService.GetAddressDetailAsync(input);
 

@@ -3,6 +3,7 @@ using AElfScanServer.Address.HttpApi.Provider.Entity;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Dtos.Input;
+using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AutoMapper;
 using ContractRecordDto = AElfScanServer.Address.HttpApi.Dtos.ContractRecordDto;
 
@@ -20,5 +21,10 @@ public class AElfScanServerAddressAutoMapperProfile : Profile
         CreateMap<ContractInfoDto, ContractRecordDto>();
         CreateMap<TransactionsResponseDto, GetTransactionListResultDto>();
         CreateMap<LogEventResponseDto, GetContractEventListResultDto>();
+            
+        CreateMap<IndexerTokenHolderInfoDto, GetAddressInfoResultDto>()
+            .ForPath(t => t.Balance, m => m.MapFrom(u => u.FormatAmount))
+            .ForPath(t => t.TransactionCount, m => m.MapFrom(u => u.TransferCount))
+            ;
     }
 }

@@ -37,9 +37,11 @@ public class BlockChainProvider : IBlockChainProvider, ISingletonDependency
         _option = apiClientOption.Value;
     }
 
-    public async Task<Dictionary<string, CommonAddressDto>> GetAddressDictionaryAsync(AElfAddressInput input)
+    /*public async Task<Dictionary<string, CommonAddressDto>> GetAddressDictionaryAsync(AElfAddressInput input)
         => await _httpProvider.PostInternalServerAsync<Dictionary<string, CommonAddressDto>>(
-            GenerateUrl(BlockChainConstant.AddressDicApi), input);
+            GenerateUrl(BlockChainConstant.AddressDicApi), input);*/
+    public async Task<Dictionary<string, CommonAddressDto>> GetAddressDictionaryAsync(AElfAddressInput input)
+        => new ();
 
     public async Task<TransactionsResponseDto> GetTransactionsAsync(string chainId, string address,
         string transactionId) => await _httpProvider.PostInternalServerAsync<TransactionsResponseDto>(

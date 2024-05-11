@@ -48,6 +48,7 @@ public class TokenAutoMapperProfile : Profile
             .ForPath(t => t.Item.Symbol, m => m.MapFrom(u => u.Token.Symbol))
             .ForMember(t => t.TransactionId, m => m.MapFrom(u => u.TransactionId))
             .ForMember(t => t.Value, m => m.MapFrom(u => u.FormatAmount))
+            .ForMember(t => t.Status, m => m.MapFrom(u => TokenInfoHelper.OfTransactionStatus(u.Status)))
             .ReverseMap()
             ;
         CreateMap<IndexerTokenHolderInfoDto, NftInventoryDto>()
@@ -104,6 +105,7 @@ public class TokenAutoMapperProfile : Profile
             .ForMember(t => t.BlockHeight, m => m.MapFrom(u => OfBlockHeight(u.Metadata)))
             .ForMember(t => t.BlockTime, m => m.MapFrom(u => OfBlockTime(u.Metadata)))
             .ForMember(t => t.Quantity, m => m.MapFrom(u => u.FormatAmount))
+            .ForMember(t => t.Status, m => m.MapFrom(u => TokenInfoHelper.OfTransactionStatus(u.Status)))
             .ForMember(t => t.From, m => m.Ignore())
             .ForMember(t => t.To, m => m.Ignore())
             .ForPath(t => t.From.Address, m => m.MapFrom(u => u.From))

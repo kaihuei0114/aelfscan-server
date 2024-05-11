@@ -53,7 +53,6 @@ public class TokenHttpApiHostModule : AbpModule
     {
         var app = context.GetApplicationBuilder();
         context.AddBackgroundWorkerAsync<TokenHolderPercentWorker>();
-
         app.UseHttpsRedirection();
         app.UseCorrelationId();
         app.UseStaticFiles();
