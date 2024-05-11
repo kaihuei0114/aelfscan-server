@@ -54,13 +54,26 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("GetContractListAsync");
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
 
-        
+
         // todo sort by update time
-        // var getContractListResult =
-        //     await _indexerGenesisProvider.GetContractListAsync(input.ChainId, input.SkipCount, input.MaxResultCount);
-        // result.Total = getContractListResult.Count;
-        var getContractListResult= await MockData();
-        
+        var getContractListResult =
+            await _indexerGenesisProvider.GetContractListAsync(input.ChainId, input.SkipCount, input.MaxResultCount);
+        result.Total = getContractListResult.Count;
+        // var getContractListResult= await MockData();
+
+        getContractListResult.Add(new ContractInfoDto()
+        {
+            Address = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+            ContractVersion = "1.0",
+            Metadata = new MetadataDto()
+            {
+                Block = new BlockMetadataDto()
+                {
+                    BlockTime = DateTime.Now
+                }
+            },
+            ContractType = ContractType.UserContract
+        });
 
         foreach (var info in getContractListResult)
         {
@@ -69,10 +82,9 @@ public class ContractAppService : IContractAppService
             var contractInfo = new ContractDto
             {
                 Address = info.Address, // contractInfo
-                Version = info.Version,
-                ContractVersion = info.ContractVersion,
-                LastUpdateTime = info.BlockTime != DateTime.MinValue ? info.BlockTime : DateTime.Now,
-                Type = info.ContractType,
+                ContractVersion = info.ContractVersion == "" ? info.Version.ToString() : info.ContractVersion,
+                LastUpdateTime = info.Metadata.Block.BlockTime,
+                Type = nameof(info.ContractType),
                 Txns = 0,
                 ContractName = GetContractName(input.ChainId, info.Address).Result
             };
@@ -82,48 +94,48 @@ public class ContractAppService : IContractAppService
                 "ELF", input.SkipCount, input.MaxResultCount);
             contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].Amount : 0;
 
-      
 
             result.List.Add(contractInfo);
         }
+
 
         return result;
     }
 
 
-    public async Task<List<ContractInfoDto>> MockData()
-    {
-        var contractDtos = new List<ContractInfoDto>();
-
-
-        contractDtos.Add(new ContractInfoDto()
-        {
-            Address = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
-            ContractType = "User",
-            ContractVersion = "1.4.0.0",
-            BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
-        });
-
-        contractDtos.Add(new ContractInfoDto()
-        {
-            Address = "ZYNkxNAzswRC8UeHc6bYMdRmbmLqYDPqZv7sE5d9WuJ5rRQEi",
-            ContractType = "User",
-            ContractVersion = "1.2.1.0",
-            BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
-        });
-
-
-        contractDtos.Add(new ContractInfoDto()
-        {
-            Address = "Qx3QMZPstem3UHU6qjc1PsufaJoJcKj2kC2sCEnzsqCjAJ3At",
-            ContractType = "User",
-            ContractVersion = "1.0.0.0",
-            BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
-        });
-
-
-        return contractDtos;
-    }
+    // public async Task<List<ContractInfoDto>> MockData()
+    // {
+    //     var contractDtos = new List<ContractInfoDto>();
+    //
+    //
+    //     contractDtos.Add(new ContractInfoDto()
+    //     {
+    //         Address = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+    //         ContractType = "User",
+    //         ContractVersion = "1.4.0.0",
+    //         BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
+    //     });
+    //
+    //     contractDtos.Add(new ContractInfoDto()
+    //     {
+    //         Address = "ZYNkxNAzswRC8UeHc6bYMdRmbmLqYDPqZv7sE5d9WuJ5rRQEi",
+    //         ContractType = "User",
+    //         ContractVersion = "1.2.1.0",
+    //         BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
+    //     });
+    //
+    //
+    //     contractDtos.Add(new ContractInfoDto()
+    //     {
+    //         Address = "Qx3QMZPstem3UHU6qjc1PsufaJoJcKj2kC2sCEnzsqCjAJ3At",
+    //         ContractType = "User",
+    //         ContractVersion = "1.0.0.0",
+    //         BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
+    //     });
+    //
+    //
+    //     return contractDtos;
+    // }
 
     public async Task<string> GetContractName(string chainId, string address)
     {

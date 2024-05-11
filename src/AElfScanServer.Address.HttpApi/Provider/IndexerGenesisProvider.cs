@@ -44,19 +44,18 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                     Query =
                         @"query($chainId:String!,$skipCount:Int!,$maxResultCount:Int!){
                             contractInfo(input: {chainId:$chainId,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                                id,
-                                chainId,
-                                blockHash,
-                                blockHeight,
-                                blockTime,
-                                codeHash,
-                                address,
-                                author,
-                                version,
-                                nameHash,
-                                contractVersion,
-                                contractCategory,
+                                address
+                                contractVersion
+                                version
                                 contractType
+                                metadata {
+                                  chainId
+                                  block {
+                                    blockHash
+                                    blockTime
+                                    blockHeight
+                                  }
+                                }
                             }
                         }",
                     Variables = new
