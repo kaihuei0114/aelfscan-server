@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain;
-using AElfScanServer.Token.Constant;
 using AElfScanServer.Token.Dtos;
-using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Constant;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
@@ -31,7 +29,6 @@ public interface ITokenService
     public Task<TokenDetailDto> GetTokenDetailAsync(string symbol, string chainId);
     public Task<TokenTransferInfosDto> GetTokenTransferInfosAsync(TokenTransferInput input);
     public Task<ListResponseDto<TokenHolderInfoDto>> GetTokenHolderInfosAsync(TokenHolderInput input);
-    Task<TokenInfoListDto> GetAddressTokenListAsync(GetTokenListInput input);
     Task<TokenPriceDto> GetTokenPriceInfoAsync(CurrencyDto input);
     Task<IndexerTokenInfoDto> GetTokenBaseInfoAsync(string symbol, string chainId);
 }
@@ -150,22 +147,6 @@ public class TokenService : ITokenService, ITransientDependency
         };
     }
 
-    public async Task<TokenInfoListDto> GetAddressTokenListAsync(GetTokenListInput input)
-    {
-        var tokenHolderInput = _objectMapper.Map<GetTokenListInput, TokenHolderInput>(input);
-
-        var indexerAddressTokens = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
-
-        var list = await ConvertAddressTokenAsync(indexerAddressTokens.Items, input.ChainId);
-
-        return new TokenInfoListDto
-        {
-            AssetInUsd = 0,
-            Total = indexerAddressTokens.TotalCount,
-            List = list
-        };
-    }
-
     public async Task<TokenPriceDto> GetTokenPriceInfoAsync(CurrencyDto input)
     {
         return await _tokenPriceService.GetTokenPriceAsync(input.BaseCurrency, input.QuoteCurrency);
@@ -219,47 +200,7 @@ public class TokenService : ITokenService, ITransientDependency
         }
         return list;
     }
-
-    private async Task<List<TokenInfoDto>> ConvertAddressTokenAsync(
-        List<IndexerTokenHolderInfoDto> indexerAddressTokens, string chainId)
-    {
-        var symbolList = indexerAddressTokens.Select(dto => dto.Token.Symbol).Distinct().ToList();
-        var tokenDic = await GetTokenDicAsync(symbolList, chainId);
-
-        var currencies = symbolList.SelectMany(symbol => new List<CurrencyDto>
-        {
-            new() { BaseCurrency = symbol.ToUpper(), QuoteCurrency = CurrencyConstant.UsdCurrency },
-            new() { BaseCurrency = symbol.ToUpper(), QuoteCurrency = CurrencyConstant.ElfCurrency }
-        }).ToList();
-
-        var list = new List<TokenInfoDto>();
-        // var priceDic = await _tokenPriceProvider.GetPriceListAsync(tokenPriceDto);
-        //
-        // var list = new List<TokenInfoDto>();
-        // foreach (var indexerAddressToken in indexerAddressTokens)
-        // {
-        //     var addressTokenDto =
-        //         _objectMapper.Map<IndexerTokenHolderInfoDto, TokenInfoDto>(indexerAddressToken);
-        //
-        //     if (tokenDic.TryGetValue(indexerAddressToken.Token.Symbol, out var item))
-        //     {
-        //         addressTokenDto.Token = item.Token;
-        //     }
-        //
-        //     var usdKey = $"{indexerAddressToken.Token.Symbol.ToUpper()}{CurrencyConstant.UsdCurrency}";
-        //     var elfKey = $"{indexerAddressToken.Token.Symbol.ToUpper()}{CurrencyConstant.ElfCurrency}";
-        //     var flag = priceDic.TryGetValue(usdKey, out var usdPrice);
-        //     addressTokenDto.PriceInUsd = flag ? usdPrice.LastPrice : 0;
-        //     addressTokenDto.PriceInElf = priceDic.TryGetValue(elfKey, out var elfPrice) ? elfPrice.LastPrice : 0;
-        //     addressTokenDto.TotalPriceInUsd = addressTokenDto.PriceInUsd * addressTokenDto.Quantity;
-        //     addressTokenDto.TotalPriceInElf = addressTokenDto.PriceInElf * addressTokenDto.Quantity;
-        //     addressTokenDto.UsdPercentChange = flag ? usdPrice.PriceChangePercent : 0;
-        //     list.Add(addressTokenDto);
-        // }
-
-        return list;
-    }
-
+    
     private async Task<List<TokenTransferInfoDto>> ConvertIndexerTokenTransferDtoAsync(
         List<IndexerTransferInfoDto> indexerTokenTransfer, string chainId)
     {
