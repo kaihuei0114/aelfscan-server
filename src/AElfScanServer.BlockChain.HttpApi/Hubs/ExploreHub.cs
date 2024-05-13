@@ -39,7 +39,7 @@ public class ExploreHub : AbpHub
         var resp = await _blockChainService.GetTransactionsAsync(new TransactionsRequestDto()
         {
             ChainId = request.ChainId,
-            MaxResultCount = request.MaxResultCount > 0 ? request.MaxResultCount : 25
+            MaxResultCount = 6
         });
 
         await Groups.AddToGroupAsync(Context.ConnectionId,
@@ -72,7 +72,7 @@ public class ExploreHub : AbpHub
                 var resp = await _blockChainService.GetTransactionsAsync(new TransactionsRequestDto()
                 {
                     ChainId = chainId,
-                    MaxResultCount = 25
+                    MaxResultCount = 6
                 });
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetLatestTransactionsGroupName(chainId))
@@ -114,7 +114,7 @@ public class ExploreHub : AbpHub
         var resp = await _blockChainService.GetBlocksAsync(new BlocksRequestDto()
         {
             ChainId = request.ChainId,
-            MaxResultCount = 25
+            MaxResultCount = 6
         });
 
 
@@ -148,7 +148,7 @@ public class ExploreHub : AbpHub
                 var resp = await _blockChainService.GetBlocksAsync(new BlocksRequestDto()
                 {
                     ChainId = chainId,
-                    MaxResultCount = 25
+                    MaxResultCount = 6
                 });
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetLatestBlocksGroupName(chainId))
