@@ -24,4 +24,5 @@ public class ContractRecordDto
     public string NameHash { get; set; }
     public string ContractType { get; set; } // 0: SystemContract 1: UserContract
     public string TransactionId { get; set; }
+    public long BlockHeight { get; set; }
 }
