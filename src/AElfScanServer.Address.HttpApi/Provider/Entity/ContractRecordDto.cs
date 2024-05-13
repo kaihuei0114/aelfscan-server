@@ -6,4 +6,5 @@ public class ContractRecordDto : GraphQLDto
     public string Operator { get; set; }
     public string TransactionId { get; set; }
     public ContractInfoDto ContractInfo { get; set; }
+    public MetadataDto Metadata { get; set; }
 }

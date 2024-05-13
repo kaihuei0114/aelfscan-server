@@ -121,24 +121,28 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                     Query =
                         @"query($chainId:String!,$address:String!,$skipCount:Int!,$maxResultCount:Int!){
                             contractRecord(input: {chainId:$chainId,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                                id,
-                                chainId,
-                                blockHash,
-                                blockHeight,
-                                blockTime,
-                                operationType,
-                                operator,
-                                transactionId,
-                                contractInfo{
-                                    address,
-                                    codeHash,
-                                    author,
-                                    version,
-                                    nameHash,
-                                    contractVersion,
-                                    contractCategory,
-                                    contractType
-                                }
+                             operator
+                            operationType
+                            transactionId
+                            contractInfo {
+                              address
+                              codeHash
+                              author
+                              version
+                              nameHash
+                              contractVersion
+                              contractCategory
+                              contractType
+                            }
+                            metadata {
+                              chainId
+                              block {
+                                blockHash
+                                blockTime
+                                blockHeight
+                              }
+                            }
+                                                        
                             }
                         }",
                     Variables = new

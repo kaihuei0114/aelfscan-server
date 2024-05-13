@@ -185,7 +185,7 @@ public class ContractAppService : IContractAppService
         result.Record = getContractRecordResult.Select(t =>
         {
             var tempContractRecord = _objectMapper.Map<ContractInfoDto, ContractRecordDto>(t.ContractInfo);
-            tempContractRecord.BlockTime = t.BlockTime;
+            tempContractRecord.BlockTime = t.Metadata.Block.BlockTime;
             tempContractRecord.TransactionId = t.TransactionId;
             return tempContractRecord;
         }).OrderByDescending(t => t.Version).ToList();
