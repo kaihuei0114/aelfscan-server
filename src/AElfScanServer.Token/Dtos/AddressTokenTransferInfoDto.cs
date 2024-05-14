@@ -9,6 +9,9 @@ public class AddressTokenTransferInfoDto
     public TokenBaseInfo Asset { set; get; }
     public SymbolType Type { set; get; }
 
+    public string Symbol { set; get; }
+    public string SymbolName { set; get; }
+
     public string TransactionHash { get; set; }
     public string Method { get; set; }
     public string BlockHeight { get; set; }
@@ -21,4 +24,3 @@ public class TokenTransferInfoListDto : ListResponseDto<AddressTokenTransferInfo
 {
     public double AssetInUsd { set; get; }
 }
-

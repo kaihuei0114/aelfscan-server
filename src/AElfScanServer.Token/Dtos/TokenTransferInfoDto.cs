@@ -11,12 +11,16 @@ public class TokenTransferInfoDto
     public string Method { get; set; }
     public long BlockHeight { get; set; }
     public long BlockTime { get; set; }
+
+    public string Symbol { get; set; }
+
+    public string SymbolName { get; set; }
     public CommonAddressDto From { get; set; }
     public CommonAddressDto To { get; set; }
     public decimal Quantity { get; set; }
-    
+
     public TransactionStatus Status { get; set; }
-    
+
     public List<TransactionFeeDto> TransactionFeeList { get; set; }
 }
 

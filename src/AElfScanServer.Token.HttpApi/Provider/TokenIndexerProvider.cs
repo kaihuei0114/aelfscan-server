@@ -276,21 +276,10 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         {
             var tokenTransferDto =
                 _objectMapper.Map<IndexerTransferInfoDto, TokenTransferInfoDto>(indexerTransferInfoDto);
+            tokenTransferDto.Symbol = indexerTransferInfoDto.Token.Symbol;
+            tokenTransferDto.SymbolName = indexerTransferInfoDto.Token.Symbol;
             tokenTransferDto.TransactionFeeList = await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
-            if (!indexerTransferInfoDto.From.IsNullOrEmpty())
-            {
-                tokenTransferDto.From = new CommonAddressDto
-                {
-                    Address = indexerTransferInfoDto.From
-                };
-            }
-            if (!indexerTransferInfoDto.To.IsNullOrEmpty())
-            {
-                tokenTransferDto.From = new CommonAddressDto
-                {
-                    Address = indexerTransferInfoDto.To
-                };
-            }
+           
 
             list.Add(tokenTransferDto);
         }
