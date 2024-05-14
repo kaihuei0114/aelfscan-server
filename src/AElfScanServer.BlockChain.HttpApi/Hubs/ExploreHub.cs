@@ -93,7 +93,6 @@ public class ExploreHub : AbpHub
 
     public async Task UnsubscribeLatestTransactions(string chainId)
     {
-        
         await Groups.RemoveFromGroupAsync(Context.ConnectionId,
             HubGroupHelper.GetLatestTransactionsGroupName(chainId));
     }
@@ -148,8 +147,13 @@ public class ExploreHub : AbpHub
                 var resp = await _blockChainService.GetBlocksAsync(new BlocksRequestDto()
                 {
                     ChainId = chainId,
-                    MaxResultCount = 6
+                    MaxResultCount = 10
                 });
+
+                if (resp.Blocks.Count > 6)
+                {
+                    resp.Blocks = resp.Blocks.GetRange(0, 6);
+                }
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetLatestBlocksGroupName(chainId))
                     .SendAsync("ReceiveLatestBlocks", resp);
