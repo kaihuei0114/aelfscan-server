@@ -121,7 +121,7 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                     Query =
                         @"query($chainId:String!,$address:String!,$skipCount:Int!,$maxResultCount:Int!){
                             contractRecord(input: {chainId:$chainId,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                             operator
+                            operator
                             operationType
                             transactionId
                             contractInfo {

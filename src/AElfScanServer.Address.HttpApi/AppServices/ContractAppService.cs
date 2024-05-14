@@ -188,6 +188,7 @@ public class ContractAppService : IContractAppService
             tempContractRecord.BlockTime = t.Metadata.Block.BlockTime;
             tempContractRecord.TransactionId = t.TransactionId;
             tempContractRecord.BlockHeight= t.Metadata.Block.BlockHeight;
+            tempContractRecord.ContractOperationType = t.OperationType;
             return tempContractRecord;
         }).OrderByDescending(t => t.Version).ToList();
 

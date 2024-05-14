@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using AElfScanServer.Address.HttpApi.Provider.Entity;
 
 namespace AElfScanServer.Address.HttpApi.Dtos;
 
@@ -25,4 +26,6 @@ public class ContractRecordDto
     public string ContractType { get; set; } // 0: SystemContract 1: UserContract
     public string TransactionId { get; set; }
     public long BlockHeight { get; set; }
+
+    public string ContractOperationType { get; set; }
 }

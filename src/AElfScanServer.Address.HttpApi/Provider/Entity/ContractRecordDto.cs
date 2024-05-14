@@ -8,3 +8,10 @@ public class ContractRecordDto : GraphQLDto
     public ContractInfoDto ContractInfo { get; set; }
     public MetadataDto Metadata { get; set; }
 }
+
+public enum ContractOperationType
+{
+    DeployContract,
+    UpdateContract,
+    SetAuthor
+}
