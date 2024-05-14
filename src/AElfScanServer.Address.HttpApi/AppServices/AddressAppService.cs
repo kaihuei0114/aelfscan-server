@@ -259,9 +259,11 @@ public class AddressAppService : IAddressAppService
             }
             tokenDict = nftInfos.ToDictionary(i => i.Symbol, i => i);
             var searchSymbols = tokenDict.Keys.ToList();
-            collectionSymbols = new List<string>(collectionInfos.Select(i => i.Symbol).ToHashSet());
-            searchSymbols.AddRange(collectionSymbols);
-             
+            var searchCollectionSymbols = new List<string>(collectionInfos.Select(i => i.Symbol).ToHashSet());
+            searchSymbols.AddRange(searchCollectionSymbols);
+            //for convert result 
+            collectionSymbols = new List<string>(nftInfos.Select(i => i.CollectionSymbol).ToHashSet());
+            collectionSymbols.AddRange(searchCollectionSymbols);
             holderInfos = await GetTokenHolderInfosAsync(input, types, searchSymbols: searchSymbols);
             if (holderInfos.Items.IsNullOrEmpty())
             {
