@@ -10,6 +10,7 @@ using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Constant;
 using AElfScanServer.Dtos;
+using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using AElfScanServer.Token;
@@ -21,7 +22,9 @@ using AElfScanServer.TokenDataFunction.Provider;
 using AElfScanServer.TokenDataFunction.Service;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Volo.Abp.ObjectMapping;
+using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
 namespace AElfScanServer.Address.HttpApi.AppServices;
 
@@ -30,7 +33,7 @@ public interface IAddressAppService
     Task<GetAddressListResultDto> GetAddressListAsync(GetListInputInput input);
     Task<GetAddressDetailResultDto> GetAddressDetailAsync(GetAddressDetailInput input);
     Task<GetAddressTokenListResultDto> GetAddressTokenListAsync(GetAddressTokenListInput input);
-    Task<GetAddressNftListResultDto> GetAddressNftListAsync(GetAddressNftListInput input);
+    Task<GetAddressNftListResultDto> GetAddressNftListAsync(GetAddressTokenListInput input);
     Task<GetTransferListResultDto> GetTransferListAsync(GetTransferListInput input);
     Task<GetTransactionListResultDto> GetTransactionListAsync(GetTransactionListInput input);
 }
@@ -81,6 +84,7 @@ public class AddressAppService : IAddressAppService
             Total = indexerTokenHolderInfo.TotalCount,
             TotalBalance = DecimalHelper.Divide(tokenInfo.Supply, tokenInfo.Decimals)
         };
+        //TODO to get address infos
         var addressInfos = await _blockChainProvider.GetAddressDictionaryAsync(new AElfAddressInput
         {
             ChainId = input.ChainId,
@@ -151,8 +155,9 @@ public class AddressAppService : IAddressAppService
         result.ElfBalance = holderInfo.Balance;
         result.ElfPriceInUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
         result.ElfBalanceOfUsd = Math.Round(holderInfo.Balance * priceDto.Price, CommonConstant.UsdValueDecimals);
-
-        var holderInfos = await _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Address);
+      
+        var types = new List<SymbolType> { SymbolType.Token, SymbolType.Nft };
+        var holderInfos = await _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Address, types);
         result.TokenHoldings = holderInfos.Count;
 
         var transferInput = new TokenTransferInput()
@@ -182,110 +187,107 @@ public class AddressAppService : IAddressAppService
 
         return result;
     }
-
+    
     public async Task<GetAddressTokenListResultDto> GetAddressTokenListAsync(
         GetAddressTokenListInput input)
     {
-        var tokenHolderInput = _objectMapper.Map<GetAddressTokenListInput, TokenHolderInput>(input);
-        tokenHolderInput.SetDefaultSort();
-        var holderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
-        if (holderInfos.Items.IsNullOrEmpty())
+        Dictionary<string, IndexerTokenInfoDto> tokenDict;
+        IndexerTokenHolderInfoListDto holderInfos;
+        //search token name or symbol
+        if (!input.Search.IsNullOrWhiteSpace())
         {
-            return new GetAddressTokenListResultDto();
+            var tokenListInput = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
+            var tokenInfos = await _tokenIndexerProvider.GetAllTokenInfosAsync(tokenListInput);
+            if (tokenInfos.IsNullOrEmpty())
+            {
+                return new GetAddressTokenListResultDto();
+            }
+            tokenDict = tokenInfos.ToDictionary(i => i.Symbol, i => i);
+            holderInfos = await GetTokenHolderInfosAsync(input, searchSymbols: tokenDict.Keys.ToList());
+            if (holderInfos.Items.IsNullOrEmpty())
+            {
+                return new GetAddressTokenListResultDto();
+            }
         }
-
-        var tokenDict = await _tokenIndexerProvider.GetTokenDictAsync(input.ChainId,
-            holderInfos.Items.Select(i => i.Token.Symbol).ToList());
+        else
+        {
+            holderInfos = await GetTokenHolderInfosAsync(input);
+            if (holderInfos.Items.IsNullOrEmpty())
+            {
+                return new GetAddressTokenListResultDto();
+            }
+            tokenDict = await _tokenIndexerProvider.GetTokenDictAsync(input.ChainId,
+                holderInfos.Items.Select(i => i.Token.Symbol).ToList());
+        }
+        
         var elfPriceDto =
             await _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
-        var list = new List<TokenInfoDto>();
-        foreach (var holderInfo in holderInfos.Items)
+        var tokenInfoList = await GetTokenInfoListAsync(holderInfos.Items, tokenDict, elfPriceDto);
+
+        return new GetAddressTokenListResultDto
         {
-            var symbol = holderInfo.Token.Symbol;
-            var tokenHolderInfo = _objectMapper.Map<IndexerTokenHolderInfoDto, TokenInfoDto>(holderInfo);
-            if (tokenDict.TryGetValue(symbol, out var tokenInfo))
-            {
-                //handle image url
-                tokenHolderInfo.Token.Name = tokenInfo.TokenName;
-                tokenHolderInfo.Token.ImageUrl = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
-                    () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol));
-            }
-
-            if (_tokenInfoOptions.CurrentValue.NonResourceSymbols.Contains(symbol))
-            {
-                var priceDto = await _tokenPriceService.GetTokenPriceAsync(symbol, CurrencyConstant.UsdCurrency);
-                var timestamp = TimeHelper.GetTimeStampFromDateTime(DateTime.Today);
-                var priceHisDto =
-                    await _tokenPriceService.GetTokenHistoryPriceAsync(symbol, CurrencyConstant.UsdCurrency, timestamp);
-                tokenHolderInfo.PriceOfUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
-                tokenHolderInfo.ValueOfUsd = Math.Round(tokenHolderInfo.Quantity * priceDto.Price,
-                    CommonConstant.UsdValueDecimals);
-                tokenHolderInfo.PriceOfElf =
-                    Math.Round(priceDto.Price / elfPriceDto.Price, CommonConstant.ElfValueDecimals);
-                tokenHolderInfo.ValueOfElf = Math.Round(tokenHolderInfo.Quantity * priceDto.Price / elfPriceDto.Price,
-                    CommonConstant.ElfValueDecimals);
-                if (priceHisDto.Price > 0)
-                {
-                    tokenHolderInfo.PriceOfUsdPercentChange24h = (double)Math.Round(
-                        (priceDto.Price - priceHisDto.Price) / priceHisDto.Price * 100,
-                        CommonConstant.PercentageValueDecimals);
-                }
-            }
-
-            list.Add(tokenHolderInfo);
-        }
-
-        var result = new GetAddressTokenListResultDto
-        {
-            AssetInUsd = list.Sum(i => i.ValueOfUsd),
+            AssetInUsd = tokenInfoList.Sum(i => i.ValueOfUsd),
             Total = holderInfos.TotalCount,
-            List = list
+            List = tokenInfoList
         };
-        return result;
     }
 
-    public async Task<GetAddressNftListResultDto> GetAddressNftListAsync(GetAddressNftListInput input)
+    public async Task<GetAddressNftListResultDto> GetAddressNftListAsync(GetAddressTokenListInput input)
     {
-        var tokenHolderInput = _objectMapper.Map<GetAddressNftListInput, TokenHolderInput>(input);
-        tokenHolderInput.Types = new List<SymbolType> { SymbolType.Nft };
-        tokenHolderInput.SetDefaultSort();
-        var holderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
-        if (holderInfos.Items.IsNullOrEmpty())
+        Dictionary<string, IndexerTokenInfoDto> tokenDict;
+        IndexerTokenHolderInfoListDto holderInfos;
+        List<string> collectionSymbols;
+        var types = new List<SymbolType> { SymbolType.Nft };
+        if (!input.Search.IsNullOrWhiteSpace())
         {
-            return new GetAddressNftListResultDto();
-        }
+            var tokenListInputNft = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
+            tokenListInputNft.Types = new List<SymbolType> { SymbolType.Nft };
+        
+            var tokenListInputCollection = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
+            tokenListInputCollection.Types = new List<SymbolType> { SymbolType.Nft_Collection };
 
-        var tokenDictTask = _tokenIndexerProvider.GetTokenDictAsync(input.ChainId,
-            holderInfos.Items.Select(i => i.Token.Symbol).ToList());
-        var collectionSymbols = holderInfos.Items.Select(i => i.Token.CollectionSymbol).ToHashSet();
-        var collectionDictTask =
-            _tokenIndexerProvider.GetTokenDictAsync(input.ChainId, new List<string>(collectionSymbols));
-        await Task.WhenAll(tokenDictTask, collectionDictTask);
-        var tokenDict = await tokenDictTask;
-        var collectionDict = await collectionDictTask;
-        var list = new List<AddressNftInfoDto>();
-        foreach (var holderInfo in holderInfos.Items)
+            var nftInfosTask = _tokenIndexerProvider.GetAllTokenInfosAsync(tokenListInputNft);
+            var collectionInfosTask = _tokenIndexerProvider.GetAllTokenInfosAsync(tokenListInputCollection);
+            await Task.WhenAll(nftInfosTask, collectionInfosTask);
+
+            var nftInfos = nftInfosTask.Result;
+            var collectionInfos = collectionInfosTask.Result;
+            
+            if (nftInfos.IsNullOrEmpty() && collectionInfos.IsNullOrEmpty())
+            {
+                return new GetAddressNftListResultDto();
+            }
+            tokenDict = nftInfos.ToDictionary(i => i.Symbol, i => i);
+            var searchSymbols = tokenDict.Keys.ToList();
+            collectionSymbols = new List<string>(collectionInfos.Select(i => i.Symbol).ToHashSet());
+            searchSymbols.AddRange(collectionSymbols);
+             
+            holderInfos = await GetTokenHolderInfosAsync(input, types, searchSymbols: searchSymbols);
+            if (holderInfos.Items.IsNullOrEmpty())
+            {
+                return new GetAddressNftListResultDto();
+            }
+        }
+        else
         {
-            var symbol = holderInfo.Token.Symbol;
-            var collectionSymbol = holderInfo.Token.CollectionSymbol;
-            var tokenHolderInfo = _objectMapper.Map<IndexerTokenHolderInfoDto, AddressNftInfoDto>(holderInfo);
-            if (tokenDict.TryGetValue(symbol, out var tokenInfo))
+            holderInfos = await GetTokenHolderInfosAsync(input, types);
+            if (holderInfos.Items.IsNullOrEmpty())
             {
-                tokenHolderInfo.Token = _tokenInfoProvider.OfTokenBaseInfo(tokenInfo);
+                return new GetAddressNftListResultDto();
             }
-
-            if (collectionDict.TryGetValue(collectionSymbol, out var collectionInfo))
-            {
-                tokenHolderInfo.NftCollection = _tokenInfoProvider.OfTokenBaseInfo(collectionInfo);
-            }
-
-            list.Add(tokenHolderInfo);
+            collectionSymbols = new List<string>(holderInfos.Items.Select(i => i.Token.CollectionSymbol).ToHashSet());
+            tokenDict = await _tokenIndexerProvider.GetTokenDictAsync(input.ChainId,
+                holderInfos.Items.Select(i => i.Token.Symbol).ToList());
         }
+        var collectionDictTask = _tokenIndexerProvider.GetTokenDictAsync(input.ChainId, collectionSymbols);
+        var listTask = CreateNftInfoListAsync(holderInfos.Items, tokenDict, collectionDictTask);
+
+        await Task.WhenAll(collectionDictTask, listTask);
 
         var result = new GetAddressNftListResultDto
         {
             Total = holderInfos.TotalCount,
-            List = list
+            List = listTask.Result
         };
         return result;
     }
@@ -305,4 +307,105 @@ public class AddressAppService : IAddressAppService
     public async Task<GetTransactionListResultDto> GetTransactionListAsync(GetTransactionListInput input)
         => _objectMapper.Map<TransactionsResponseDto, GetTransactionListResultDto>(
             await _blockChainProvider.GetTransactionsAsync(input.ChainId, input.Address));
+    
+    private async Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictionaryAsync(GetAddressTokenListInput input)
+    {
+        var tokenListInput = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
+        var tokenInfos = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
+        return tokenInfos.Items.ToDictionary(i => i.Symbol, i => i);
+    }
+    
+    private async Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfosAsync(GetAddressTokenListInput input, List<SymbolType> types = null, 
+        List<string> searchSymbols = null)
+    {
+        var tokenHolderInput = _objectMapper.Map<GetAddressTokenListInput, TokenHolderInput>(input);
+        tokenHolderInput.SetDefaultSort();
+        if (types != null)
+        {
+            tokenHolderInput.Types = types;
+        }
+
+        if (searchSymbols != null)
+        {
+            tokenHolderInput.SearchSymbols = searchSymbols;
+        }
+
+        return await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
+    }
+
+    private async Task<List<TokenInfoDto>> GetTokenInfoListAsync(IEnumerable<IndexerTokenHolderInfoDto> holderInfos,
+        Dictionary<string, IndexerTokenInfoDto> tokenDict, TokenPriceDto elfPriceDto)
+    {
+        var list = new List<TokenInfoDto>();
+
+        var tasks = holderInfos.Select(async holderInfo =>
+        {
+            var tokenHolderInfo = _objectMapper.Map<IndexerTokenHolderInfoDto, TokenInfoDto>(holderInfo);
+            var symbol = holderInfo.Token.Symbol;
+
+            if (tokenDict.TryGetValue(symbol, out var tokenInfo))
+            {
+                // handle image url
+                tokenHolderInfo.Token.Name = tokenInfo.TokenName;
+                tokenHolderInfo.Token.ImageUrl = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
+                    () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol));
+            }
+
+            if (_tokenInfoOptions.CurrentValue.NonResourceSymbols.Contains(symbol))
+            {
+                var priceDto = await _tokenPriceService.GetTokenPriceAsync(symbol, CurrencyConstant.UsdCurrency);
+                var timestamp = TimeHelper.GetTimeStampFromDateTime(DateTime.Today);
+                var priceHisDto =
+                    await _tokenPriceService.GetTokenHistoryPriceAsync(symbol, CurrencyConstant.UsdCurrency, timestamp);
+
+                tokenHolderInfo.PriceOfUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
+                tokenHolderInfo.ValueOfUsd = Math.Round(tokenHolderInfo.Quantity * priceDto.Price,
+                    CommonConstant.UsdValueDecimals);
+                tokenHolderInfo.PriceOfElf =
+                    Math.Round(priceDto.Price / elfPriceDto.Price, CommonConstant.ElfValueDecimals);
+                tokenHolderInfo.ValueOfElf = Math.Round(tokenHolderInfo.Quantity * priceDto.Price / elfPriceDto.Price,
+                    CommonConstant.ElfValueDecimals);
+
+                if (priceHisDto.Price > 0)
+                {
+                    tokenHolderInfo.PriceOfUsdPercentChange24h = (double)Math.Round(
+                        (priceDto.Price - priceHisDto.Price) / priceHisDto.Price * 100,
+                        CommonConstant.PercentageValueDecimals);
+                }
+            }
+            return tokenHolderInfo;
+        }).ToList();
+
+        list.AddRange(await Task.WhenAll(tasks));
+        return list;
+    }
+
+    private async Task<List<AddressNftInfoDto>> CreateNftInfoListAsync(
+        List<IndexerTokenHolderInfoDto> holderInfos,
+        Dictionary<string, IndexerTokenInfoDto> tokenDict,
+        Task<Dictionary<string, IndexerTokenInfoDto>> collectionDictTask)
+    {
+        var collectionDict = await collectionDictTask;
+
+        var tasks = holderInfos.Select(async holderInfo =>
+        {
+            var tokenHolderInfo = _objectMapper.Map<IndexerTokenHolderInfoDto, AddressNftInfoDto>(holderInfo);
+            var symbol = holderInfo.Token.Symbol;
+            var collectionSymbol = holderInfo.Token.CollectionSymbol;
+
+            if (tokenDict.TryGetValue(symbol, out var tokenInfo))
+            {
+                tokenHolderInfo.Token = _tokenInfoProvider.OfTokenBaseInfo(tokenInfo);
+            }
+
+            if (collectionDict.TryGetValue(collectionSymbol, out var collectionInfo))
+            {
+                tokenHolderInfo.NftCollection = _tokenInfoProvider.OfTokenBaseInfo(collectionInfo);
+            }
+
+            return tokenHolderInfo;
+        });
+
+        return (await Task.WhenAll(tasks)).ToList();
+    }
 }

@@ -9,6 +9,7 @@ public static class CommonConstant
     public const int ElfValueDecimals = 8;
     public const int PercentageValueDecimals = 4;
     public const string DefaultMarket = "Forest";
+    public const long DefaultMaxResultCount = 1000;
 }
 
 

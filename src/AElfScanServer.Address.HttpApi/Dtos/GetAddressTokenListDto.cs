@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AElfScanServer.Token.Dtos;
-using Scriban.Parsing;
 
 namespace AElfScanServer.Address.HttpApi.Dtos;
 
 public class GetAddressTokenListInput : GetListInputBasicDto
 {
     [Required] public string Address { get; set; }
+    
+    public string Search { get; set; } = "";
 }
 
 public class GetAddressTokenListResultDto

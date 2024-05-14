@@ -29,7 +29,7 @@ public class AElfScanServerAddressAutoMapperProfile : Profile
             .ForPath(t => t.TransactionCount, m => m.MapFrom(u => u.TransferCount))
             ;
         CreateMap<GetAddressTokenListInput, TokenHolderInput>();
-        CreateMap<GetAddressNftListInput, TokenHolderInput>();
+        CreateMap<GetAddressTokenListInput, TokenListInput>();
         CreateMap<GetTransferListInput, TokenTransferInput>();
         
         CreateMap<IndexerTokenHolderInfoDto, TokenInfoDto>()

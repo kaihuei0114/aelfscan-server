@@ -137,7 +137,8 @@ public class NftService : INftService, ISingletonDependency
 
     public async Task<NftTransferInfosDto> GetNftCollectionTransferInfosAsync(TokenTransferInput input)
     {
-        input.Types = new List<SymbolType> { SymbolType.Nft };
+        var types = new List<SymbolType> { SymbolType.Nft };
+        input.Types = types;
         var indexerNftTransfer = await _tokenIndexerProvider.GetTokenTransferInfoAsync(input);
 
         var list = await ConvertIndexerNftTransferDtoAsync(indexerNftTransfer.Items, input.ChainId);
@@ -150,7 +151,7 @@ public class NftService : INftService, ISingletonDependency
         if (input.IsSearchAddress())
         {
             result.IsAddress = true;
-            result.Items = await _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Search, SymbolType.Nft);
+            result.Items = await _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Search, types);
         }
         return result;
     }
