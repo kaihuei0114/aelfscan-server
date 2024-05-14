@@ -16,6 +16,11 @@ public class TokenHolderInput : BaseInput
 
     public List<SymbolType> Types { get; set; } =  new() { SymbolType.Token };
     
+    public List<string> Symbols { get; set; } = new();
+    
+    //symbol or collection symbol
+    public List<string> SearchSymbols { get; set; } = new();
+    
     public void SetDefaultSort()
     {
         if (!Sort.IsNullOrEmpty())

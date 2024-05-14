@@ -14,6 +14,8 @@ public class TokenListInput : BaseInput
     
     public List<string> CollectionSymbols { get; set; }
     
+    public string Search { get; set; } = "";
+
     public void SetDefaultSort()
     {
         if (!Sort.IsNullOrEmpty())
