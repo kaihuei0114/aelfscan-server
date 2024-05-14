@@ -227,6 +227,7 @@ public class AddressAppService : IAddressAppService
         return new GetAddressTokenListResultDto
         {
             AssetInUsd = tokenInfoList.Sum(i => i.ValueOfUsd),
+            AssetInElf = tokenInfoList.Sum(i => i.ValueOfElf),
             Total = holderInfos.TotalCount,
             List = tokenInfoList
         };

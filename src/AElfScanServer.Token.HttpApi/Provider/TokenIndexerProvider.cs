@@ -266,15 +266,33 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
     
     public async Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictAsync(string chainId, List<string> symbols)
     {
-        var input = new TokenListInput
+        const int maxResultCount = CommonConstant.DefaultMaxResultCount;
+        var allTokenInfos = new List<IndexerTokenInfoDto>();
+        var skipCount = 0;
+
+        while (skipCount < symbols.Count)
         {
-            ChainId = chainId,
-            Symbols = symbols,
-            Types =  EnumConverter.GetEnumValuesList<SymbolType>(),
-            MaxResultCount = symbols.Count
-        };
-        var indexerTokenListDto = await GetTokenListAsync(input);
-        return indexerTokenListDto.Items.ToDictionary(token => token.Symbol, token => token);
+            var symbolsBatch = symbols.Skip(skipCount).Take(maxResultCount).ToList();
+        
+            var input = new TokenListInput
+            {
+                ChainId = chainId,
+                Symbols = symbolsBatch,
+                Types = EnumConverter.GetEnumValuesList<SymbolType>(),
+                MaxResultCount = maxResultCount
+            };
+
+            var indexerTokenListDto = await GetTokenListAsync(input);
+            if (indexerTokenListDto.Items.IsNullOrEmpty())
+            {
+                break;
+            }
+
+            allTokenInfos.AddRange(indexerTokenListDto.Items);
+            skipCount += maxResultCount;
+        }
+
+        return allTokenInfos.ToDictionary(token => token.Symbol, token => token);
     }
 
     public async Task<TokenTransferInfosDto> GetTokenTransfersAsync(TokenTransferInput input)

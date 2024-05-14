@@ -14,6 +14,7 @@ public class GetAddressTokenListInput : GetListInputBasicDto
 public class GetAddressTokenListResultDto
 {
     public decimal AssetInUsd { get; set; }
+    public decimal AssetInElf { get; set; }
     public long Total { get; set; }
     public List<TokenInfoDto> List { get; set; }
 }
