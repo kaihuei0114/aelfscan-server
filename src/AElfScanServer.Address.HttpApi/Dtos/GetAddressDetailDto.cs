@@ -16,9 +16,10 @@ public class GetAddressDetailResultDto
     public decimal ElfBalanceOfUsd { get; set; }
     public decimal ElfPriceInUsd { get; set; }
     public long TokenHoldings { get; set; }
-    public decimal TokenTotalPriceInUsd { get; set; }
-    public decimal TokenTotalPriceInUsdRate { get; set; }
-    public decimal TokenTotalPriceInElf { get; set; }
+    
+    public decimal TotalValueOfUsd { get; set; }
+    public decimal TotalValueOfElf { get; set; }
+    public decimal TotalValueOfUsdChangeRate { get; set; }
 
     // only address type is caAddress|eocAddress
     public TransactionInfoDto FirstTransactionSend { get; set; }

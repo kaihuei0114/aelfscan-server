@@ -301,14 +301,7 @@ public class AddressAppService : IAddressAppService
     public async Task<GetTransactionListResultDto> GetTransactionListAsync(GetTransactionListInput input)
         => _objectMapper.Map<TransactionsResponseDto, GetTransactionListResultDto>(
             await _blockChainProvider.GetTransactionsAsync(input.ChainId, input.Address));
-    
-    private async Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictionaryAsync(GetAddressTokenListInput input)
-    {
-        var tokenListInput = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
-        var tokenInfos = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
-        return tokenInfos.Items.ToDictionary(i => i.Symbol, i => i);
-    }
-    
+
     private async Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfosAsync(GetAddressTokenListInput input, List<SymbolType> types = null, 
         List<string> searchSymbols = null)
     {
