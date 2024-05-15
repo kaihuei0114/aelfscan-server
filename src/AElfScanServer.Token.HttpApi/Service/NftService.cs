@@ -223,19 +223,44 @@ public class NftService : INftService, ISingletonDependency
 
     public async Task<NftInventorysDto> GetNftCollectionInventoryAsync(NftInventoryInput input)
     {
-        var tokenHolderInput = _objectMapper.Map<NftInventoryInput, TokenHolderInput>(input);
-        tokenHolderInput.Types = new List<SymbolType> { SymbolType.Nft };
         //TODO set order by BlockTime Desc
-        var indexerNftHolder = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
-        var list = await ConvertIndexerNftInventoryDtoAsync(indexerNftHolder.Items, input.ChainId);
+        List<IndexerTokenInfoDto> indexerTokenInfoList;
+        long totalCount;
+        List<IndexerTokenHolderInfoDto> indexerNftHolder = new();
+        if (input.IsSearchAddress())
+        {
+            var tokenHolderInput = _objectMapper.Map<NftInventoryInput, TokenHolderInput>(input);
+            tokenHolderInput.Types = new List<SymbolType> { SymbolType.Nft };
+            var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
+            var symbols = tokenHolderInfos.Items.Select(i => i.Token.Symbol).ToList();
+            var tokenListInput = new TokenListInput()
+            {
+                ChainId = input.ChainId,
+                Symbols = symbols,
+                Types = new List<SymbolType> { SymbolType.Nft }
+            };
+            indexerNftHolder = tokenHolderInfos.Items;
+            totalCount = tokenHolderInfos.TotalCount;
+            indexerTokenInfoList = await _tokenIndexerProvider.GetAllTokenInfosAsync(tokenListInput);
+        }
+        else
+        {
+            var tokenListInput = _objectMapper.Map<NftInventoryInput, TokenListInput>(input);
+            tokenListInput.Types = new List<SymbolType> { SymbolType.Nft };
+            var indexerTokenInfoListDto = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
+            totalCount = indexerTokenInfoListDto.TotalCount;
+            indexerTokenInfoList = indexerTokenInfoListDto.Items;
+        }
+
+        var list = await ConvertIndexerNftInventoryDtoAsync(indexerTokenInfoList, input.ChainId);
         var result = new NftInventorysDto
         {
-            Total = indexerNftHolder.TotalCount, List = list
+            Total = totalCount, List = list
         };
         if (input.IsSearchAddress())
         {
             result.IsAddress = true;
-            result.Items = indexerNftHolder.Items.Select(i => new HolderInfo
+            result.Items = indexerNftHolder.Select(i => new HolderInfo
             {
                 Balance = i.FormatAmount, Symbol = i.Token.Symbol
             }).ToList();
@@ -390,29 +415,22 @@ public class NftService : INftService, ISingletonDependency
     }
 
     private async Task<List<NftInventoryDto>> ConvertIndexerNftInventoryDtoAsync(
-        List<IndexerTokenHolderInfoDto> indexerNftHolder, string chainId)
+        List<IndexerTokenInfoDto> tokenInfos, string chainId)
     {
         var list = new List<NftInventoryDto>();
-        if (indexerNftHolder.IsNullOrEmpty())
+        if (tokenInfos.IsNullOrEmpty())
         {
             return list;
         }
         var priceDict = new Dictionary<string, TokenPriceDto>();
-        var symbols = indexerNftHolder.Select(dto => dto.Token.Symbol).Distinct().ToList();
-        //query token infos
-        var tokenInput = new TokenListInput()
-        {
-            ChainId = chainId,
-            Symbols = symbols
-        };
-        var tokenInfos = await _tokenIndexerProvider.GetAllTokenInfosAsync(tokenInput);
+        var symbols = tokenInfos.Select(i => i.Symbol).Distinct().ToList(); 
         var itemInfosDict = tokenInfos.ToDictionary(i => i.Symbol, i => i);
         //batch query symbol last sale info
         var lastSaleInfoDict = await _nftInfoProvider.GetLatestPriceAsync(chainId, symbols);
-        foreach (var indexerTokenHolderInfoDto in indexerNftHolder)
+        foreach (var tokenInfo in tokenInfos)
         {
             var nftInventoryDto =
-                _objectMapper.Map<IndexerTokenHolderInfoDto, NftInventoryDto>(indexerTokenHolderInfoDto);
+                _objectMapper.Map<IndexerTokenInfoDto, NftInventoryDto>(tokenInfo);
             var symbol = nftInventoryDto.Item.Symbol;
             if (itemInfosDict.TryGetValue(symbol, out var itemInfo))
             {
@@ -430,6 +448,10 @@ public class NftService : INftService, ISingletonDependency
                 nftInventoryDto.LastSalePrice = lastSaleInfo.Price;
                 nftInventoryDto.LastSaleAmount = lastSaleInfo.Amount;
                 nftInventoryDto.LastSaleAmountSymbol = saleAmountSymbol;
+                if (saleAmountSymbol.IsNullOrEmpty())
+                {
+                   continue;
+                }
                 if (!priceDict.TryGetValue(saleAmountSymbol, out var priceDto))
                 {
                     priceDto = await _tokenPriceService.GetTokenPriceAsync(saleAmountSymbol,

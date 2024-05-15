@@ -163,20 +163,21 @@ public class NftInfoProvider : INftInfoProvider, ISingletonDependency
         {
             { "skipCount", 0 },
             { "maxResultCount", 1 },
-            { "types", new List<NftActivityType> { NftActivityType.Sale } }
+            { "types", new List<int> { (int)NftActivityType.Sale } }
         };
 
         foreach (var symbol in symbols)
         {
             var nftInfoId = IdGeneratorHelper.GetNftInfoId(chainId, symbol);
+            var fieldName = symbol.Replace("-", "_"); // replace valid char
             queries.Add($@"
-            {symbol}: nftActivityList(input: {{
+            {fieldName}: nftActivityList(input: {{
                 skipCount: $skipCount, 
                 maxResultCount: $maxResultCount, 
                 types: $types, 
                 nFTInfoId: ""{nftInfoId}""
             }}) {{
-                items {{
+                items:data {{
                     nftInfoId,
                     type,
                     from,
@@ -215,9 +216,13 @@ public class NftInfoProvider : INftInfoProvider, ISingletonDependency
 
         var result = symbols.ToDictionary(
             symbol => symbol,
-            symbol => indexerResult.TryGetValue(symbol, out var activityList) && activityList.Items.Any()
-                ? activityList.Items.First() : new NftActivityItem()
-        );
+            symbol =>
+            {
+                var fieldName = symbol.Replace("-", "_");
+                return indexerResult.TryGetValue(fieldName, out var activityList) && activityList.Items.Any()
+                    ? activityList.Items.First()
+                    : new NftActivityItem();
+            });
 
         return result;
     }

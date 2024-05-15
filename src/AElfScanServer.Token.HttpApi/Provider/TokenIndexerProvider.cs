@@ -169,9 +169,9 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         {
             Query =
                 @"query($chainId:String!,$symbol:String!,$collectionSymbol:String,$skipCount:Int!,$maxResultCount:Int!,$address:String,
-                    $types:[SymbolType!],$symbols:[String],$searchSymbols:[String],$sort:String,$orderBy:String){
+                    $search:String,$types:[SymbolType!],$symbols:[String],$searchSymbols:[String],$sort:String,$orderBy:String){
                     accountToken(input: {chainId:$chainId,symbol:$symbol,collectionSymbol:$collectionSymbol,skipCount:$skipCount,types:$types,
-                    symbols:$symbols,searchSymbols:$searchSymbols,maxResultCount:$maxResultCount,address:$address,sort:$sort,orderBy:$orderBy}){
+                    search:$search,symbols:$symbols,searchSymbols:$searchSymbols,maxResultCount:$maxResultCount,address:$address,sort:$sort,orderBy:$orderBy}){
                     totalCount,
                     items{
                         address,
@@ -194,7 +194,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                 chainId = input.ChainId, symbol = input.Symbol, collectionSymbol = input.CollectionSymbol,
                 skipCount = input.SkipCount, maxResultCount = input.MaxResultCount, address = input.Address,
                 types = input.Types, symbols = input.Symbols, searchSymbols = input.SearchSymbols, 
-                sort = input.Sort, orderBy = input.OrderBy
+                search = input.Search, sort = input.Sort, orderBy = input.OrderBy
             }
         });
         return indexerResult == null ? new IndexerTokenHolderInfoListDto() : indexerResult.AccountToken;
