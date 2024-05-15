@@ -139,5 +139,6 @@ public class TokenAutoMapperProfile : Profile
             .ForMember(t => t.From, m => m.Ignore())
             .ForMember(t => t.To, m => m.Ignore())
             ;
+        CreateMap<NftInventoryInput, TokenHolderInput>();
     }
 }

@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Constant;
+using AElfScanServer.Enums;
 using AElfScanServer.GraphQL;
+using AElfScanServer.Helper;
 using AElfScanServer.HttpClient;
 using AElfScanServer.Options;
 using AElfScanServer.Token.Constant;
@@ -24,6 +26,8 @@ public interface INftInfoProvider
     public Task<IndexerNftListingInfoDto> GetNftListingsAsync(GetNFTListingsDto input);
 
     public Task<IndexerNftActivityInfo> GetNftActivityListAsync(GetActivitiesInput input);
+
+    public Task<Dictionary<string, NftActivityItem>> GetLatestPriceAsync(string chainId, List<string> symbols);
     
     public Task<Dictionary<string, NftCollectionInfoDto>> GetNftCollectionInfoAsync(GetNftCollectionInfoInput input);
 }
@@ -151,6 +155,73 @@ public class NftInfoProvider : INftInfoProvider, ISingletonDependency
         return indexerResult?.NftActivityList ?? new IndexerNftActivityInfo();
     }
 
+    public async Task<Dictionary<string, NftActivityItem>> GetLatestPriceAsync(string chainId, List<string> symbols)
+    {
+        var graphQlHelper = GetGraphQlHelper();
+        var queries = new List<string>();
+        var variables = new Dictionary<string, object>
+        {
+            { "skipCount", 0 },
+            { "maxResultCount", 1 },
+            { "types", new List<NftActivityType> { NftActivityType.Sale } }
+        };
+
+        foreach (var symbol in symbols)
+        {
+            var nftInfoId = IdGeneratorHelper.GetNftInfoId(chainId, symbol);
+            queries.Add($@"
+            {symbol}: nftActivityList(input: {{
+                skipCount: $skipCount, 
+                maxResultCount: $maxResultCount, 
+                types: $types, 
+                nFTInfoId: ""{nftInfoId}""
+            }}) {{
+                items {{
+                    nftInfoId,
+                    type,
+                    from,
+                    to,
+                    amount,
+                    price,
+                    transactionHash,
+                    timestamp,
+                    priceTokenInfo {{
+                        id,
+                        chainId,
+                        blockHash,
+                        blockHeight,
+                        previousBlockHash,
+                        symbol
+                    }}
+                }}
+            }}");
+        }
+
+        var query = $@"
+            query($skipCount:Int!, $maxResultCount:Int!, $types:[Int!]) {{
+            {string.Join("\n", queries)}
+        }}";
+
+        var indexerResult = await graphQlHelper.QueryAsync<Dictionary<string, IndexerNftActivityInfo>>(new GraphQLRequest
+        {
+            Query = query,
+            Variables = variables
+        });
+        
+        if (indexerResult == null)
+        {
+            return new Dictionary<string, NftActivityItem>();
+        }
+
+        var result = symbols.ToDictionary(
+            symbol => symbol,
+            symbol => indexerResult.TryGetValue(symbol, out var activityList) && activityList.Items.Any()
+                ? activityList.Items.First() : new NftActivityItem()
+        );
+
+        return result;
+    }
+    
     public async Task<Dictionary<string, NftCollectionInfoDto>> GetNftCollectionInfoAsync(
         GetNftCollectionInfoInput input)
     {

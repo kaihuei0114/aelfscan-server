@@ -8,6 +8,8 @@ public class NftInventoryDto
 {
     public TokenBaseInfo Item { get; set; }
     public decimal LastSalePriceInUsd { get; set; }
+    
+    public decimal LastSalePrice { get; set; }
     public decimal LastSaleAmount { get; set; }
     
     public string LastSaleAmountSymbol { get; set; }
