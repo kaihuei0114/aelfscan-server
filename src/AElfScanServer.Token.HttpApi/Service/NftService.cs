@@ -108,11 +108,16 @@ public class NftService : INftService, ISingletonDependency
     public async Task<NftDetailDto> GetNftCollectionDetailAsync(string chainId, string collectionSymbol)
     {
         var getCollectionInfoTask = _tokenIndexerProvider.GetTokenDetailAsync(chainId, collectionSymbol);
-        var getFloorPricePairTask = GetNftFloorPriceAsync(chainId, collectionSymbol);
+        var nftCollectionInfoInput = new GetNftCollectionInfoInput
+        {
+            ChainId = chainId,
+            CollectionSymbolList = new List<string> { collectionSymbol }
+        };
+        var nftCollectionInfoTask = _nftInfoProvider.GetNftCollectionInfoAsync(nftCollectionInfoInput);
         var collectionSymbols = new List<string> { collectionSymbol };
         var groupAndSumSupplyTask = GetCollectionSupplyAsync(chainId, collectionSymbols);
 
-        await Task.WhenAll(getCollectionInfoTask, getFloorPricePairTask, groupAndSumSupplyTask);
+        await Task.WhenAll(getCollectionInfoTask, nftCollectionInfoTask, groupAndSumSupplyTask);
 
         var collectionInfoDtos = await getCollectionInfoTask;
         AssertHelper.NotEmpty(collectionInfoDtos, "this nft not exist");
@@ -124,14 +129,19 @@ public class NftService : INftService, ISingletonDependency
             () => _tokenInfoProvider.BuildImageUrl(collectionInfo.Symbol));
         nftDetailDto.Items = (await groupAndSumSupplyTask).TryGetValue(collectionInfo.Symbol, out var sumSupply) ? sumSupply : 0;
         //of floor price
-        var floorPricePair = await getFloorPricePairTask;
-        nftDetailDto.FloorPrice = floorPricePair.Item1;
-        if (floorPricePair.Item2.IsNullOrEmpty() || nftDetailDto.FloorPrice == -1)
+        var nftCollectionInfo = await nftCollectionInfoTask;
+        if (nftCollectionInfo.TryGetValue(collectionSymbol, out var nftCollection))
         {
-            return nftDetailDto;
+            var priceDto =
+                await _tokenPriceService.GetTokenPriceAsync(nftCollection.FloorPriceSymbol, CurrencyConstant.UsdCurrency);
+            nftDetailDto.FloorPrice = nftCollection.FloorPrice;
+            nftDetailDto.FloorPriceOfUsd =
+                Math.Round(nftCollection.FloorPrice * priceDto.Price, CommonConstant.UsdPriceValueDecimals);
         }
-        var priceDto = await _tokenPriceService.GetTokenPriceAsync(floorPricePair.Item2, CurrencyConstant.UsdCurrency);
-        nftDetailDto.FloorPriceOfUsd = Math.Round(nftDetailDto.FloorPrice * priceDto.Price, CommonConstant.UsdValueDecimals);
+        else
+        {
+            nftDetailDto.FloorPrice = -1m;
+        }
         return nftDetailDto;
     }
 
@@ -367,7 +377,7 @@ public class NftService : INftService, ISingletonDependency
                         CurrencyConstant.UsdCurrency);
                     priceDict[priceSymbol] = priceDto;
                 }
-                activityDto.PriceOfUsd = Math.Round(activityDto.Price * priceDto.Price, CommonConstant.UsdValueDecimals);
+                activityDto.PriceOfUsd = Math.Round(activityDto.Price * priceDto.Price, CommonConstant.UsdPriceValueDecimals);
             }
             list.Add(activityDto);
         }
