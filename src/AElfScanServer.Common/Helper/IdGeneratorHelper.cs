@@ -6,6 +6,17 @@ namespace AElfScanServer.Helper;
 public static class IdGeneratorHelper
 {
     public static string GenerateId(params object[] ids) => ids.JoinAsString("-");
+    
+    
+    public static string GetId(params object[] inputs)
+    {
+        return inputs.JoinAsString("-");
+    }
+    
+    public static string GetNftInfoId(string chainId, string symbol)
+    {
+        return GetId(chainId, symbol);
+    }
 }
 
 public static class DateTimeHelper

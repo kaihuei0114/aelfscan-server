@@ -31,4 +31,15 @@ public class BaseConverter
     {
         return externalInfo.Where(e => e.Key == key).Select(e => e.Value).FirstOrDefault();
     }
+    
+    
+    public static long OfBlockHeight(TokenBaseInfoDto baseInfoDto)
+    {
+        return baseInfoDto?.BlockHeight ?? 0;
+    }
+    
+    public static string OfSymbol(TokenBaseInfoDto baseInfoDto)
+    {
+        return baseInfoDto?.Symbol;
+    }
 }

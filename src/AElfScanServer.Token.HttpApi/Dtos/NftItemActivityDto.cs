@@ -1,13 +1,15 @@
+using System;
 using AElfScanServer.Dtos;
+using AElfScanServer.Enums;
 
 namespace AElfScanServer.TokenDataFunction.Dtos;
 
 public class NftItemActivityDto
 {
     public string TransactionId { get; set; }
-    public string Status { get; set; }
+    public TransactionStatus Status { get; set; }
     public string Action { get; set; }
-    public long BlockTime { get; set; }
+    public DateTime BlockTime { get; set; }
     public long BlockHeight { get; set; }
     public decimal PriceOfUsd { get; set; }
     public decimal Price { get; set; }

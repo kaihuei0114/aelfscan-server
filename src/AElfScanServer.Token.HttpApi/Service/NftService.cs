@@ -24,7 +24,7 @@ using Volo.Abp.ObjectMapping;
 using NftInfoDto = AElfScanServer.Token.Dtos.NftInfoDto;
 using SymbolType = AElfScanServer.Dtos.SymbolType;
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
-
+using TransactionStatus = AElfScanServer.Enums.TransactionStatus;
 namespace AElfScanServer.TokenDataFunction.Service;
 
 public interface INftService
@@ -266,7 +266,13 @@ public class NftService : INftService, ISingletonDependency
 
     public async Task<ListResponseDto<NftItemActivityDto>> GetNftItemActivityAsync(NftItemActivityInput input)
     {
-        var list = await ConvertNftItemActivityAsync(input.ChainId);
+        var activitiesInput = _objectMapper.Map<NftItemActivityInput, GetActivitiesInput>(input);
+        activitiesInput.Types = _tokenInfoOptionsMonitor.CurrentValue.ActivityTypes;
+        activitiesInput.NftInfoId = IdGeneratorHelper.GetNftInfoId(input.ChainId, input.Symbol);
+     
+        var nftActivityInfo = await _nftInfoProvider.GetNftActivityListAsync(activitiesInput);
+        
+        var list = await ConvertNftItemActivityAsync(input.ChainId, nftActivityInfo);
 
         return new ListResponseDto<NftItemActivityDto>
         {
@@ -342,36 +348,27 @@ public class NftService : INftService, ISingletonDependency
         }
     }
 
-    private async Task<List<NftItemActivityDto>> ConvertNftItemActivityAsync(string chainId)
+    private async Task<List<NftItemActivityDto>> ConvertNftItemActivityAsync(string chainId, IndexerNftActivityInfo nftActivityInfo)
     {
         var list = new List<NftItemActivityDto>();
         var priceDict = new Dictionary<string, TokenPriceDto>();
-        for (int i = 2; i > 0; i--)
+        foreach (var item in nftActivityInfo.Items)
         {
-            var priceSymbol = "ELF";
-            var activityDto = new NftItemActivityDto()
+            var activityDto = _objectMapper.Map<NftActivityItem, NftItemActivityDto>(item);
+            activityDto.From = new CommonAddressDto { Address = item.From };
+            activityDto.To = new CommonAddressDto { Address = item.To };
+            activityDto.Status = TransactionStatus.Mined;
+            var priceSymbol = activityDto.PriceSymbol;
+            if (!priceSymbol.IsNullOrEmpty())
             {
-                Action = "Sale",
-                From = new CommonAddressDto() { Address = "CeQt2cD4rG3Un1QW6FAzGJcdGYoyE987dE7Gr816mWDQw1HRN" },
-                To = new CommonAddressDto() { Address = "2jwoGHSPUWuCu49eCgnmEy9qewT4APEA1eoYzg5WbU3Mm2nzt" },
-                Price = new decimal(i * 1.2),
-                PriceSymbol = priceSymbol,
-                Status = "Success",
-                Quantity = i + 10,
-                TransactionId = i == 1
-                    ? "f0bed7aba6f177818eb18a07cdffd4f0e52aed22bf5fea5c48973c06b7e9bb0d"
-                    : "6a52874dddc313c9efb8b633b5318ef0582b7e72c028b0f85754bff463c5d14f",
-                BlockHeight = 1,
-                BlockTime = 1713619225346 + i    
-            };
-            
-            if (!priceDict.TryGetValue(priceSymbol, out var priceDto))
-            {
-                priceDto = await _tokenPriceService.GetTokenPriceAsync(priceSymbol,
-                    CurrencyConstant.UsdCurrency);
-                priceDict[priceSymbol] = priceDto;
+                if (!priceDict.TryGetValue(priceSymbol, out var priceDto))
+                {
+                    priceDto = await _tokenPriceService.GetTokenPriceAsync(priceSymbol,
+                        CurrencyConstant.UsdCurrency);
+                    priceDict[priceSymbol] = priceDto;
+                }
+                activityDto.PriceOfUsd = Math.Round(activityDto.Price * priceDto.Price, CommonConstant.UsdValueDecimals);
             }
-            activityDto.PriceOfUsd = Math.Round(activityDto.Price * priceDto.Price, CommonConstant.UsdValueDecimals);
             list.Add(activityDto);
         }
         return list;

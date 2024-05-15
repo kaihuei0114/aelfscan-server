@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Constant;
 using AElfScanServer.GraphQL;
+using AElfScanServer.Token.Dtos.Input;
+using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
@@ -12,6 +14,8 @@ namespace AElfScanServer.TokenDataFunction.Provider;
 public interface INftInfoProvider
 {
     public Task<IndexerNftListingInfoDto> GetNftListingsAsync(GetNFTListingsDto input);
+
+    public Task<IndexerNftActivityInfo> GetNftActivityListAsync(GetActivitiesInput input);
 }
 
 public class NftInfoProvider : INftInfoProvider, ISingletonDependency
@@ -23,6 +27,11 @@ public class NftInfoProvider : INftInfoProvider, ISingletonDependency
     {
         _graphQlFactory = graphQlFactory;
         _logger = logger;
+    }
+    
+    private IGraphQlHelper GetGraphQlHelper()
+    {
+        return _graphQlFactory.GetGraphQlHelper(AElfIndexerConstant.ForestIndexer);
     }
 
     public async Task<IndexerNftListingInfoDto> GetNftListingsAsync(GetNFTListingsDto input)
@@ -81,8 +90,43 @@ public class NftInfoProvider : INftInfoProvider, ISingletonDependency
         }
     }
 
-    private IGraphQlHelper GetGraphQlHelper()
+    public async Task<IndexerNftActivityInfo> GetNftActivityListAsync(GetActivitiesInput input)
     {
-        return _graphQlFactory.GetGraphQlHelper(AElfIndexerConstant.ForestIndexer);
+        var graphQlHelper = GetGraphQlHelper();
+
+        var indexerResult = await graphQlHelper.QueryAsync<IndexerNftActivityInfos>(new GraphQLRequest
+        {
+            Query = @"
+			    query($skipCount:Int!,$maxResultCount:Int!,$types:[Int!],$timestampMin:Long,$timestampMax:Long,$nFTInfoId:String) {
+                    nftActivityList(input:{skipCount: $skipCount,maxResultCount:$maxResultCount,types:$types,timestampMin:$timestampMin,timestampMax:$timestampMax,nFTInfoId:$nFTInfoId}){
+                        totalCount:totalRecordCount,
+                        items:data{
+                                            nftInfoId,
+                                            type,
+                                            from,
+                                            to,
+                                            amount,
+                                            price,
+                                            transactionHash,
+                                            timestamp,
+                                            priceTokenInfo{
+                                              id,
+                                              chainId,
+                                              blockHash,
+                                              blockHeight,
+                                              previousBlockHash,
+                                              symbol
+                                            }
+                         }
+                    }
+                }",
+            Variables = new
+            {
+                skipCount = input.SkipCount, maxResultCount = input.MaxResultCount, types = input.Types,
+                timestampMin = input.TimestampMin, timestampMax = input.TimestampMax,
+                nFTInfoId = input.NftInfoId
+            }
+        });
+        return indexerResult?.NftActivityList ?? new IndexerNftActivityInfo();
     }
 }
