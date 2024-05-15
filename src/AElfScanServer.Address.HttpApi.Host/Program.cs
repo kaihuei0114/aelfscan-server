@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using AElfScanServer.Address.HttpApi.Host.Extension;
+using Serilog;
 using Serilog.Events;
 
 namespace AElfScanServer.Address.HttpApi.Host;
@@ -29,8 +30,10 @@ public class Program
         {
             Log.Information("Starting web host.");
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddJsonFile("apollo.appsettings.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
+                .UseApollo()
                 .UseSerilog();
             await builder.AddApplicationAsync<AddressHttpApiHostModule>();
             var app = builder.Build();
