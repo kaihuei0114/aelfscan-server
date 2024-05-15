@@ -74,7 +74,7 @@ public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
             {
                 startBlockHeight = await _transactionService.GetLastBlockHeight(chainId);
 
-                var start = summariesAsync.First().LatestBlockHeight - 10000;
+                var start = summariesAsync.First().LatestBlockHeight - 10;
                 startBlockHeight = startBlockHeight > start ? startBlockHeight : start;
 
                 WorkerFirstStart = false;

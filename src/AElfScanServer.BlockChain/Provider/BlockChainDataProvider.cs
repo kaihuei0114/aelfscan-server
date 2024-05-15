@@ -197,6 +197,35 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
         return "";
     }
 
+    public async Task<BinancePriceDto> GetTokenUsd24ChangeAsync(string symbol)
+    {
+        // var market = new Market(_blockChainOptions.BNBaseUrl, _blockChainOptions.BNApiKey,
+        //     _blockChainOptions.BNSecretKey);
+
+        try
+        {
+            _logger.LogInformation("[TokenPriceProvider] [Binance] Start.");
+            var market = new Market();
+
+            // await ConnectAsync();
+            // var redisValue = await RedisDatabase.StringGetAsync(symbol);
+            // if (redisValue.HasValue)
+            // {
+            //     return _serializer.Deserialize<BinancePriceDto>(redisValue);
+            // }
+
+            var symbolPriceTicker = await market.TwentyFourHrTickerPriceChangeStatistics(symbol+"USDT");
+            var binancePriceDto = JsonConvert.DeserializeObject<BinancePriceDto>(symbolPriceTicker);
+            // await RedisDatabase.StringSetAsync(symbol, _serializer.Serialize(binancePriceDto), TimeSpan.FromHours(2));
+            return binancePriceDto;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[TokenPriceProvider] [Binance] Parse response error.");
+            return new BinancePriceDto();
+        }
+    }
+    
 
     public async Task<string> GetTokenImageBase64Async(string symbol)
     {

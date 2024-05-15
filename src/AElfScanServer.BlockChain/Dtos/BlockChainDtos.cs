@@ -70,17 +70,24 @@ public class BlockchainOverviewRequestDto
     public string ChainId { get; set; }
 }
 
+public class BinancePriceDto
+{
+    public string Symbol { get; set; }
+    public decimal PriceChangePercent { get; set; }
+    public decimal LastPrice { get; set; }
+}
+
 public class HomeOverviewResponseDto
 {
-    public string TokenPriceInUsd { get; set; }
-    public string TokenPriceRate24h { get; set; }
+    public decimal TokenPriceInUsd { get; set; }
+    public decimal TokenPriceRate24h { get; set; }
     public long Transactions { get; set; }
-    public string Tps { get; set; }
+    public long Tps { get; set; }
 
     public DateTime TpsTime { get; set; }
     public string Reward { get; set; }
     public long BlockHeight { get; set; }
-    public long Accounts { get; set; }
+    public int Accounts { get; set; }
     public string CitizenWelfare { get; set; }
 }
 

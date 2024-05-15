@@ -17,4 +17,10 @@ public class HubGroupHelper
     {
         return $"{chainId}_latest_blocks";
     }
+    
+    
+    public static string GetBlockOverviewGroupName(string chainId)
+    {
+        return $"{chainId}_block_overview";
+    }
 }

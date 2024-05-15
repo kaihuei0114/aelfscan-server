@@ -21,8 +21,10 @@ public class ExploreHub : AbpHub
     private static Timer _timer = new Timer();
     private static readonly object _lockTransactionsObject = new object();
     private static readonly object _lockBlocksObject = new object();
+    private static readonly object _lockBlockOverviewObject = new object();
     private static bool _isPushTransactionsRunning = false;
     private static bool _isPushBlocksRunning = false;
+    private static bool _isPushBlockOverviewRunning = false;
 
     public ExploreHub(IHomePageService homePageService, ILogger<ExploreHub> logger,
         IBlockChainService blockChainService, IHubContext<ExploreHub> hubContext)
@@ -103,8 +105,44 @@ public class ExploreHub : AbpHub
         var resp = await _HomePageService.GetBlockchainOverviewAsync(request);
 
         await Groups.AddToGroupAsync(Context.ConnectionId,
-            $"BlockchainOverview_{request.ChainId}");
+            HubGroupHelper.GetBlockOverviewGroupName(request.ChainId));
         await Clients.Caller.SendAsync("ReceiveBlockchainOverview", resp);
+        PushBlockOverViewAsync(request.ChainId);
+    }
+
+    public async Task PushBlockOverViewAsync(string chainId)
+    {
+        lock (_lockBlockOverviewObject)
+        {
+            if (_isPushBlockOverviewRunning)
+            {
+                return;
+            }
+
+            _isPushBlockOverviewRunning = true;
+        }
+
+
+        while (true)
+        {
+            Thread.Sleep(3000);
+
+            try
+            {
+                var resp = await _HomePageService.GetBlockchainOverviewAsync(new BlockchainOverviewRequestDto()
+                {
+                    ChainId = chainId
+                });
+
+
+                await _hubContext.Clients.Groups(HubGroupHelper.GetBlockOverviewGroupName(chainId))
+                    .SendAsync("ReceiveBlockchainOverview", resp);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("push block overview error: {error}", e.Message);
+            }
+        }
     }
 
 
@@ -124,6 +162,7 @@ public class ExploreHub : AbpHub
 
         PushLatestBlocksAsync(request.ChainId);
     }
+
 
     public async Task PushLatestBlocksAsync(string chainId)
     {

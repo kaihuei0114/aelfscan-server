@@ -34,23 +34,27 @@ public class AELFIndexerProvider : ISingletonDependency
     private readonly AELFIndexerOptions _aelfIndexerOptions;
     private readonly IHttpProvider _httpProvider;
     private readonly IDistributedCache<string> _tokenCache;
+    private readonly IDistributedCache<string> _blockHeightCache;
+
 
     public const string TokenCacheKey = "AELFIndexerToken";
+    public const string BlockHeightCacheKey = "AELFIndexerBlockHeight";
 
     public AELFIndexerProvider(ILogger<AELFIndexerProvider> logger,
         IOptionsMonitor<AELFIndexerOptions> aelfIndexerOptions, IHttpProvider httpProvider,
-        IDistributedCache<string> tokenCache)
+        IDistributedCache<string> tokenCache, IDistributedCache<string> blockHeightCache)
     {
         _logger = logger;
         _aelfIndexerOptions = aelfIndexerOptions.CurrentValue;
         _httpProvider = httpProvider;
         _tokenCache = tokenCache;
+        _blockHeightCache = blockHeightCache;
     }
 
     public async Task<string> GetAccessTokenAsync()
     {
         var token = await _tokenCache.GetAsync(TokenCacheKey);
-        
+
         if (!token.IsNullOrEmpty())
         {
             return token;
@@ -76,7 +80,7 @@ public class AELFIndexerProvider : ISingletonDependency
             AbsoluteExpiration =
                 DateTimeOffset.UtcNow.AddSeconds(_aelfIndexerOptions.AccessTokenExpireDurationSeconds)
         });
-        
+
         return response?.AccessToken;
     }
 
@@ -104,6 +108,41 @@ public class AELFIndexerProvider : ISingletonDependency
     }
 
 
+    public async Task<long> GetLatestBlockHeightAsync(string chainId)
+    {
+        var blockhieght = await _blockHeightCache.GetAsync(BlockHeightCacheKey);
+
+        if (!blockhieght.IsNullOrEmpty())
+        {
+            return long.Parse(blockhieght);
+        }
+
+        var accessTokenAsync = await GetAccessTokenAsync();
+        var response =
+            await _httpProvider.PostAsync<List<IndexSummaries>>(
+                _aelfIndexerOptions.AELFIndexerHost + AELFIndexerApi.GetLatestBlockHeight.Path,
+                RequestMediaType.Json, new Dictionary<string, object>
+                {
+                    ["chainId"] = chainId
+                },
+                new Dictionary<string, string>
+                {
+                    ["content-type"] = "application/json",
+                    ["accept"] = "application/json",
+                    ["Authorization"] = $"Bearer {accessTokenAsync}"
+                });
+
+        var latestBlockHeight = response[0].LatestBlockHeight;
+        await _blockHeightCache.SetAsync(BlockHeightCacheKey, latestBlockHeight.ToString(),
+            new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration =
+                    DateTimeOffset.UtcNow.AddSeconds(2)
+            });
+
+        return latestBlockHeight;
+    }
+
     public async Task<List<IndexSummaries>> GetLatestSummariesAsync(string chainId)
     {
         var accessTokenAsync = await GetAccessTokenAsync();
@@ -120,7 +159,7 @@ public class AELFIndexerProvider : ISingletonDependency
                     ["accept"] = "application/json",
                     ["Authorization"] = $"Bearer {accessTokenAsync}"
                 });
-        
+
 
         return response;
     }
@@ -194,7 +233,7 @@ public class AELFIndexerProvider : ISingletonDependency
 
         return response;
     }
-    
+
     public async Task<List<IndexerLogEventDto>> GetTokenCreatedLogEventAsync(string chainId, long startBlockHeight,
         long endBlockHeight)
     {

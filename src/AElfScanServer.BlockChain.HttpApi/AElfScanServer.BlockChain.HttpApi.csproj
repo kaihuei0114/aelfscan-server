@@ -11,6 +11,7 @@
         <ProjectReference Include="..\AElfScanServer.Domain\AElfScanServer.Domain.csproj" />
         <ProjectReference Include="..\AElfScanServer.Token\AElfScanServer.Token.csproj" />
         <ProjectReference Include="..\AElfScanServer.BlockChain\AElfScanServer.BlockChain.csproj" />
+        <ProjectReference Include="..\AElfScanServer.Token.HttpApi\AElfScanServer.Token.HttpApi.csproj" />
     </ItemGroup>
 
     <ItemGroup>

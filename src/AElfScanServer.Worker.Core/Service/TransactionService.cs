@@ -34,7 +34,6 @@ public interface ITransactionService
     public Task PullTokenData();
     public Task HandlerTransactionAsync(string chainId, long startBlockHeight, long endBlockHeight);
 
-    public Task UpdateTransactionRateAsync();
 
     public Task<long> GetLastBlockHeight(string chainId);
 }
@@ -116,7 +115,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         return searchResponse.Documents.First().BlockHeight;
     }
 
-    public async Task UpdateTransactionRateAsync() => await _homePageProvider.UpdateTransactionRateAsync();
 
     public void SetAddressIndex(string address, string chainId, List<AddressIndex> addressIndices)
     {
