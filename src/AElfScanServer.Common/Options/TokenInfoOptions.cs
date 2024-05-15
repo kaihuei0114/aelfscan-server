@@ -12,6 +12,8 @@ public class TokenInfoOptions
     
     public List<MarketInfoDto> MarketInfos { get; set; }= new();
     
+    public List<int> ActivityTypes { get; set; }= new();
+    
     public MarketInfoDto GetMarketInfo(string marketName)
     {
         return MarketInfos.FirstOrDefault(item => item.MarketName.Equals(marketName));

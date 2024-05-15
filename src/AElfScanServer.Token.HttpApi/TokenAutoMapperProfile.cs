@@ -51,11 +51,10 @@ public class TokenAutoMapperProfile : Profile
             .ForMember(t => t.Status, m => m.MapFrom(u => TokenInfoHelper.OfTransactionStatus(u.Status)))
             .ReverseMap()
             ;
-        CreateMap<IndexerTokenHolderInfoDto, NftInventoryDto>()
-            .ForPath(t => t.Item.Name, m => m.MapFrom(u => u.Token.CollectionSymbol))
-            .ForPath(t => t.Item.Decimals, m => m.MapFrom(u => u.Token.Decimals))
-            .ForPath(t => t.Item.Symbol, m => m.MapFrom(u => u.Token.Symbol))
-            .ReverseMap()
+        CreateMap<IndexerTokenInfoDto, NftInventoryDto>()
+            .ForPath(t => t.Item.Name, m => m.MapFrom(u => u.TokenName))
+            .ForPath(t => t.Item.Decimals, m => m.MapFrom(u => u.Decimals))
+            .ForPath(t => t.Item.Symbol, m => m.MapFrom(u => u.Symbol))
             ;
         CreateMap<GetTransferInfoListInput, TokenTransferInput>()
             .ForPath(t => t.Types,
@@ -128,5 +127,18 @@ public class TokenAutoMapperProfile : Profile
             ;
         CreateMap<NftItemHolderInfoInput, TokenHolderInput>();
         CreateMap<TokenCommonDto, TokenDetailDto>();
+        CreateMap<NftItemActivityInput, GetActivitiesInput>();
+        CreateMap<NftActivityItem, NftItemActivityDto>()
+            .ForMember(t => t.Action, m => m.MapFrom(u => u.Type.ToString()))
+            .ForMember(t => t.Quantity, m => m.MapFrom(u => u.Amount))
+            .ForPath(t => t.PriceSymbol, m => m.MapFrom(u => BaseConverter.OfSymbol(u.PriceTokenInfo)))
+            .ForPath(t => t.BlockHeight, m => m.MapFrom(u => BaseConverter.OfBlockHeight(u.PriceTokenInfo)))
+            .ForPath(t => t.BlockTime, m => m.MapFrom(u => u.Timestamp))
+            .ForPath(t => t.TransactionId, m => m.MapFrom(u => u.TransactionHash))
+            .ForMember(t => t.From, m => m.Ignore())
+            .ForMember(t => t.To, m => m.Ignore())
+            ;
+        CreateMap<NftInventoryInput, TokenListInput>();
+        CreateMap<NftInventoryInput, TokenHolderInput>();
     }
 }

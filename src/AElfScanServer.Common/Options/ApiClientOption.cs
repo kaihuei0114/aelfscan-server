@@ -1,10 +1,16 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AElfScanServer.Options;
 
 public class ApiClientOption
 {
-    public List<ApiServer> ApiServers { get; set; }
+    public List<ApiServer> ApiServers { get; set; } = new();
+    
+    public ApiServer GetApiServer(string serverName)
+    {
+        return ApiServers.FirstOrDefault(s => s.ServerName == serverName);
+    }
 }
 
 public class ApiServer

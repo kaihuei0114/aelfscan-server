@@ -227,6 +227,7 @@ public class AddressAppService : IAddressAppService
         return new GetAddressTokenListResultDto
         {
             AssetInUsd = tokenInfoList.Sum(i => i.ValueOfUsd),
+            AssetInElf = tokenInfoList.Sum(i => i.ValueOfElf),
             Total = holderInfos.TotalCount,
             List = tokenInfoList
         };
@@ -234,14 +235,12 @@ public class AddressAppService : IAddressAppService
 
     public async Task<GetAddressNftListResultDto> GetAddressNftListAsync(GetAddressTokenListInput input)
     {
-        Dictionary<string, IndexerTokenInfoDto> tokenDict;
         IndexerTokenHolderInfoListDto holderInfos;
-        List<string> collectionSymbols;
         var types = new List<SymbolType> { SymbolType.Nft };
         if (!input.Search.IsNullOrWhiteSpace())
         {
             var tokenListInputNft = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
-            tokenListInputNft.Types = new List<SymbolType> { SymbolType.Nft };
+            tokenListInputNft.Types = types;
         
             var tokenListInputCollection = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
             tokenListInputCollection.Types = new List<SymbolType> { SymbolType.Nft_Collection };
@@ -257,11 +256,9 @@ public class AddressAppService : IAddressAppService
             {
                 return new GetAddressNftListResultDto();
             }
-            tokenDict = nftInfos.ToDictionary(i => i.Symbol, i => i);
-            var searchSymbols = tokenDict.Keys.ToList();
-            collectionSymbols = new List<string>(collectionInfos.Select(i => i.Symbol).ToHashSet());
-            searchSymbols.AddRange(collectionSymbols);
-             
+            var searchSymbols = new List<string>(nftInfos.Select(i => i.Symbol).ToHashSet());;
+            var searchCollectionSymbols = new List<string>(collectionInfos.Select(i => i.Symbol).ToHashSet());
+            searchSymbols.AddRange(searchCollectionSymbols);
             holderInfos = await GetTokenHolderInfosAsync(input, types, searchSymbols: searchSymbols);
             if (holderInfos.Items.IsNullOrEmpty())
             {
@@ -275,19 +272,16 @@ public class AddressAppService : IAddressAppService
             {
                 return new GetAddressNftListResultDto();
             }
-            collectionSymbols = new List<string>(holderInfos.Items.Select(i => i.Token.CollectionSymbol).ToHashSet());
-            tokenDict = await _tokenIndexerProvider.GetTokenDictAsync(input.ChainId,
-                holderInfos.Items.Select(i => i.Token.Symbol).ToList());
         }
-        var collectionDictTask = _tokenIndexerProvider.GetTokenDictAsync(input.ChainId, collectionSymbols);
-        var listTask = CreateNftInfoListAsync(holderInfos.Items, tokenDict, collectionDictTask);
-
-        await Task.WhenAll(collectionDictTask, listTask);
-
+        var collectionSymbols = new List<string>(holderInfos.Items.Select(i => i.Token.CollectionSymbol).ToHashSet());
+        var symbols = new List<string>(holderInfos.Items.Select(i => i.Token.Symbol).ToHashSet());
+        symbols.AddRange(collectionSymbols);
+        var tokenDict = await _tokenIndexerProvider.GetTokenDictAsync(input.ChainId, symbols);
+        var list = await CreateNftInfoListAsync(holderInfos.Items, tokenDict);
         var result = new GetAddressNftListResultDto
         {
             Total = holderInfos.TotalCount,
-            List = listTask.Result
+            List = list
         };
         return result;
     }
@@ -307,14 +301,7 @@ public class AddressAppService : IAddressAppService
     public async Task<GetTransactionListResultDto> GetTransactionListAsync(GetTransactionListInput input)
         => _objectMapper.Map<TransactionsResponseDto, GetTransactionListResultDto>(
             await _blockChainProvider.GetTransactionsAsync(input.ChainId, input.Address));
-    
-    private async Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictionaryAsync(GetAddressTokenListInput input)
-    {
-        var tokenListInput = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
-        var tokenInfos = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
-        return tokenInfos.Items.ToDictionary(i => i.Symbol, i => i);
-    }
-    
+
     private async Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfosAsync(GetAddressTokenListInput input, List<SymbolType> types = null, 
         List<string> searchSymbols = null)
     {
@@ -381,12 +368,8 @@ public class AddressAppService : IAddressAppService
     }
 
     private async Task<List<AddressNftInfoDto>> CreateNftInfoListAsync(
-        List<IndexerTokenHolderInfoDto> holderInfos,
-        Dictionary<string, IndexerTokenInfoDto> tokenDict,
-        Task<Dictionary<string, IndexerTokenInfoDto>> collectionDictTask)
+        List<IndexerTokenHolderInfoDto> holderInfos, Dictionary<string, IndexerTokenInfoDto> tokenDict)
     {
-        var collectionDict = await collectionDictTask;
-
         var tasks = holderInfos.Select(async holderInfo =>
         {
             var tokenHolderInfo = _objectMapper.Map<IndexerTokenHolderInfoDto, AddressNftInfoDto>(holderInfo);
@@ -398,7 +381,7 @@ public class AddressAppService : IAddressAppService
                 tokenHolderInfo.Token = _tokenInfoProvider.OfTokenBaseInfo(tokenInfo);
             }
 
-            if (collectionDict.TryGetValue(collectionSymbol, out var collectionInfo))
+            if (tokenDict.TryGetValue(collectionSymbol, out var collectionInfo))
             {
                 tokenHolderInfo.NftCollection = _tokenInfoProvider.OfTokenBaseInfo(collectionInfo);
             }
