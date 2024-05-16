@@ -1,0 +1,38 @@
+using AElf.EntityMapping.Elasticsearch;
+using AElf.Indexing.Elasticsearch;
+using AElfScanServer.BlockChain.Options;
+using AElfScanServer.BlockChain.Provider;
+using AElfScanServer;
+using AElfScanServer.Options;
+using Microsoft.Extensions.DependencyInjection;
+using Volo.Abp.AutoMapper;
+using Volo.Abp.Modularity;
+
+namespace AElfScanServer.BlockChain;
+
+[DependsOn(
+    typeof(AbpAutoMapperModule),
+    typeof(AElfEntityMappingElasticsearchModule),
+    typeof(AElfScanCommonModule)
+)]
+public class AElfScanServerBlockChainModule : AbpModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        var configuration = context.Services.GetConfiguration();
+        Configure<BlockChainOption>(context.Services.GetConfiguration().GetSection("BlockChainServer"));
+        context.Services.AddSingleton<IBlockChainProvider, BlockChainProvider>();
+
+
+        Configure<AELFIndexerOptions>(configuration.GetSection("AELFIndexer"));
+        Configure<BlockChainOptions>(configuration.GetSection("BlockChain"));
+        Configure<ElasticsearchOptions>(configuration.GetSection("Elasticsearch"));
+
+
+        context.Services.AddSingleton<AELFIndexerProvider, AELFIndexerProvider>();
+        context.Services.AddSingleton<BlockChainProvider, BlockChainProvider>();
+        context.Services.AddSingleton<HomePageProvider, HomePageProvider>();
+        context.Services.AddSingleton<LogEventProvider, LogEventProvider>();
+        context.Services.AddSingleton<BlockChainDataProvider, BlockChainDataProvider>();
+    }
+}
