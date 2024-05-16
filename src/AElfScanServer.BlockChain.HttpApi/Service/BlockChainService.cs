@@ -877,13 +877,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                     },
                 };
 
-            if (requestDto.SkipCount + requestDto.MaxResultCount > 10000)
-            {
-                
-                
-                
-            }
-
+           
             searchRequest.From = requestDto.SkipCount;
             
             if (requestDto.BlockHeight > 0 && !requestDto.TransactionId.IsNullOrEmpty())
