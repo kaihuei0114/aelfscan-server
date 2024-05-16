@@ -89,30 +89,59 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         _elasticClient = new ElasticClient(settings);
-       
     }
 
-  
 
     public async Task<long> GetLastBlockHeight(string chainId)
     {
-        var searchRequest =
-            new SearchRequest(BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId))
-            {
-                Query = new MatchAllQuery(),
-                Size = 1,
-                Sort = new List<ISort>
-                {
-                    new FieldSort() { Field = "blockHeight", Order = SortOrder.Descending },
-                },
-            };
-        var searchResponse = _elasticClient.Search<TransactionIndex>(searchRequest);
-        if (searchResponse.IsValid)
+        try
         {
-            return 0;
+            var searchRequest =
+                new SearchRequest(BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId))
+                {
+                    Query = new MatchAllQuery(),
+                    Size = 1,
+                    Sort = new List<ISort>
+                    {
+                        new FieldSort() { Field = "blockHeight", Order = SortOrder.Descending },
+                    },
+                };
+            var searchResponse = _elasticClient.Search<TransactionIndex>(searchRequest);
+            if (searchResponse.IsValid)
+            {
+                await HandleIndex(chainId);
+                return 0;
+            }
+
+            return searchResponse.Documents.First().BlockHeight;
+        }
+        catch (Exception e)
+        {
+            await HandleIndex(chainId);
+
+            _logger.LogError("get last block height err:{e}", e);
         }
 
-        return searchResponse.Documents.First().BlockHeight;
+        return 0;
+    }
+
+    public async Task HandleIndex(string chainId)
+    {
+        if (!_elasticClient.Indices
+                .Exists(BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId))
+                .Exists)
+        {
+            var indexResponse = _elasticClient.Indices.Create(
+                BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId), c => c
+                    .Settings(s => s
+                        .Setting("max_result_window", _blockChainOptions.TransactionListMaxCount)
+                    )
+                    .Map<TransactionIndex>(m => m.AutoMap()));
+            if (!indexResponse.IsValid)
+            {
+                throw new Exception($"Failed to index object: {indexResponse.DebugInformation}");
+            }
+        }
     }
 
 
@@ -544,19 +573,20 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         //     await _tokenInfoIndexRepository.AddOrUpdateManyAsync(tokenInfoIndices,
         //         BlockChainIndexNameHelper.GenerateTokenIndexName(chainId));
         // }
-          
+
         var stopwatch = new Stopwatch();
         stopwatch.Start();
         _logger.LogInformation("start add or update transaction list,chainId:{0},count:{1},blockRange:[{2},{3}]",
             chainId,
             transactionIndices.Count, startBlockHeight, endBlockHeight);
-        var bulkResponse = _elasticClient.Bulk(b=>b.Index(BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId)).IndexMany(transactionIndices));
+        var bulkResponse = _elasticClient.Bulk(b =>
+            b.Index(BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId)).IndexMany(transactionIndices));
         if (!bulkResponse.IsValid)
         {
             _logger.LogError("bulk transaction error:{e}", bulkResponse.ServerError.Error.Reason);
             return;
         }
-    
+
         //
         // await _transactionIndexRepository.AddOrUpdateManyAsync(transactionIndices,
         //     BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId));
