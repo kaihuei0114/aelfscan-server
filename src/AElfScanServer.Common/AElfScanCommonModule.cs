@@ -1,12 +1,18 @@
+using AElfScanServer.Address.Provider;
 using AutoResponseWrapper;
 using AElfScanServer.GraphQL;
-using AElfScanServer.Helper;
 using AElfScanServer.HttpClient;
 using AElfScanServer.Options;
 using AElfScanServer.ThirdPart.Exchange;
 using AElfScanServer.Token.Provider;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using StackExchange.Redis;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
 
@@ -35,6 +41,7 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<IExchangeProvider, CoinGeckoProvider>();
         context.Services.AddTransient<ITokenExchangeProvider, TokenExchangeProvider>();
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
+        context.Services.AddTransient<IAddressInfoProvider, AddressInfoProvider>();
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();

@@ -14,6 +14,8 @@ using AElfScanServer.Worker.Core.Service;
 using AElfScanServer.Worker.Core.Worker;
 using Elasticsearch.Net;
 using AElfScanServer;
+using AElfScanServer.Token;
+using AElfScanServer.TokenDataFunction.Provider;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nest;
@@ -50,6 +52,12 @@ public class AElfScanServerWorkerModule : AbpModule
         ConfigureEsIndex(configuration);
         ConfigureContractNameIndex(configuration);
         context.Services.AddSingleton<ITransactionService, TransactionService>();
+        context.Services.AddSingleton<ITokenIndexerProvider, TokenIndexerProvider>();
+        context.Services.AddSingleton<INftInfoProvider, NftInfoProvider>();
+        context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
+        context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
+        context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
+        
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AElfScanWorker:"; });
         Configure<BlockChainProducerInfoSyncWorkerOptions>(configuration.GetSection("BlockChainProducer"));
         Configure<ContractInfoSyncWorkerOptions>(configuration.GetSection("Contract"));
@@ -193,6 +201,7 @@ public class AElfScanServerWorkerModule : AbpModule
     {
         context.AddBackgroundWorkerAsync<TransactionWorker>();
         context.AddBackgroundWorkerAsync<TransactionRateWorker>();
+        context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
         // context.AddBackgroundWorkerAsync<BlockChainProducerInfoSyncWorker>();
         // context.AddBackgroundWorkerAsync<ContractInfoSyncWorker>();
     }
