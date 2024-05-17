@@ -4,6 +4,7 @@ using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.BlockChain;
 using AElfScanServer.Token;
 using AElfScanServer;
+using AElfScanServer.Address.Provider;
 using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Provider;
 using AElfScanServer.TokenDataFunction.Service;
@@ -33,7 +34,10 @@ public class AElfScanServerAddressHttpApiModule : AbpModule
         context.Services.AddTransient<IContractAppService, ContractAppService>();
         context.Services.AddSingleton<IDecompilerProvider, DecompilerProvider>();
         context.Services.AddSingleton<ITokenIndexerProvider, TokenIndexerProvider>();
-        
+        context.Services.AddSingleton<INftInfoProvider, NftInfoProvider>();
+        context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
+        context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
+
         var configuration = context.Services.GetConfiguration();
         
         Configure<BlockChainOptions>(configuration.GetSection("BlockChain"));

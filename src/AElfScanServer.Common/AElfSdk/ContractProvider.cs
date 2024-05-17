@@ -125,7 +125,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var transaction = new Transaction
         {
             From = account.Address,
-            To = Address.FromBase58(address),
+            To = AElf.Types.Address.FromBase58(address),
             MethodName = methodName,
             Params = param.ToByteString(),
             RefBlockNumber = height,
@@ -169,12 +169,12 @@ public class AddressConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {
-        return objectType == typeof(Address);
+        return objectType == typeof(AElf.Types.Address);
     }
 
     public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
     {
-        return Address.FromBase58(reader.Value as string);
+        return AElf.Types.Address.FromBase58(reader.Value as string);
     }
 
     public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

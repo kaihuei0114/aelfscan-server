@@ -223,10 +223,10 @@ public class NftService : INftService, ISingletonDependency
 
     public async Task<NftInventorysDto> GetNftCollectionInventoryAsync(NftInventoryInput input)
     {
+        var result = new NftInventorysDto();
         //TODO set order by BlockTime Desc
         List<IndexerTokenInfoDto> indexerTokenInfoList;
         long totalCount;
-        List<IndexerTokenHolderInfoDto> indexerNftHolder = new();
         if (input.IsSearchAddress())
         {
             var tokenHolderInput = _objectMapper.Map<NftInventoryInput, TokenHolderInput>(input);
@@ -239,9 +239,13 @@ public class NftService : INftService, ISingletonDependency
                 Symbols = symbols,
                 Types = new List<SymbolType> { SymbolType.Nft }
             };
-            indexerNftHolder = tokenHolderInfos.Items;
-            totalCount = tokenHolderInfos.TotalCount;
             indexerTokenInfoList = await _tokenIndexerProvider.GetAllTokenInfosAsync(tokenListInput);
+            result.IsAddress = true;
+            result.Items = tokenHolderInfos.Items.Select(i => new HolderInfo
+            {
+                Balance = i.FormatAmount, Symbol = i.Token.Symbol
+            }).ToList();
+            totalCount = tokenHolderInfos.TotalCount;
         }
         else
         {
@@ -251,20 +255,9 @@ public class NftService : INftService, ISingletonDependency
             totalCount = indexerTokenInfoListDto.TotalCount;
             indexerTokenInfoList = indexerTokenInfoListDto.Items;
         }
-
         var list = await ConvertIndexerNftInventoryDtoAsync(indexerTokenInfoList, input.ChainId);
-        var result = new NftInventorysDto
-        {
-            Total = totalCount, List = list
-        };
-        if (input.IsSearchAddress())
-        {
-            result.IsAddress = true;
-            result.Items = indexerNftHolder.Select(i => new HolderInfo
-            {
-                Balance = i.FormatAmount, Symbol = i.Token.Symbol
-            }).ToList();
-        }
+        result.Total = totalCount;
+        result.List = list;
         return result;
     }
     
