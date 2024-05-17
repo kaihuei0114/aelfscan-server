@@ -74,17 +74,17 @@ public class JsonSettingsBuilder
 
 
 // AElf.Types.Address
-public class AElfAddressConverter : JsonConverter<Address>
+public class AElfAddressConverter : JsonConverter<AElf.Types.Address>
 {
-    public override void WriteJson(JsonWriter writer, Address value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, AElf.Types.Address value, JsonSerializer serializer)
     {
         writer.WriteValue(value.ToBase58());
     }
 
-    public override Address ReadJson(JsonReader reader, Type objectType, Address existingValue, bool hasExistingValue,
+    public override AElf.Types.Address ReadJson(JsonReader reader, Type objectType, AElf.Types.Address existingValue, bool hasExistingValue,
         JsonSerializer serializer)
     {
-        return reader?.Value == null ? null : Address.FromBase58(reader?.Value.ToString());
+        return reader?.Value == null ? null : AElf.Types.Address.FromBase58(reader?.Value.ToString());
     }
 }
 

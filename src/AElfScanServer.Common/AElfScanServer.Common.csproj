@@ -9,6 +9,7 @@
         <PackageReference Include="AElf.CSharp.Core" Version="1.5.0" />
         <PackageReference Include="AElf.Sdk.CSharp" Version="1.5.0" />
         <PackageReference Include="AElf.Client" Version="1.1.0" />
+        <PackageReference Include="AElf.Types" Version="1.5.0" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
         <PackageReference Include="GraphQL" Version="7.4.1" />
         <PackageReference Include="GraphQL.Client.Abstractions" Version="6.0.0" />
@@ -20,9 +21,6 @@
         <PackageReference Include="Volo.Abp.AutoMapper" Version="7.0.0" />
         <PackageReference Include="Nethereum.Util" Version="4.0.5" />
         <PackageReference Include="Volo.Abp.AutoMapper" Version="7.0.0" />
-        <PackageReference Include="AElf.CSharp.Core" Version="1.5.0" />
-        <PackageReference Include="AElf.Sdk.CSharp" Version="1.5.0" />
-        <PackageReference Include="AElf.Client" Version="1.1.0" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
         <PackageReference Include="GraphQL" Version="7.4.1" />
         <PackageReference Include="GraphQL.Client.Abstractions" Version="6.0.0" />
@@ -36,5 +34,6 @@
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
         <PackageReference Include="Volo.Abp.Caching" Version="7.0.2" />
         <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="7.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="6.0.7" />
     </ItemGroup>
 </Project>

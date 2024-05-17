@@ -9,12 +9,12 @@ namespace AElfScanServer.AElfSdk.Dtos;
 public class SenderAccount
 {
     private readonly ECKeyPair _keyPair;
-    public Address Address { get; set; }
+    public AElf.Types.Address Address { get; set; }
 
     public SenderAccount(string privateKey)
     {
         _keyPair = CryptoHelper.FromPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey));
-        Address = Address.FromPublicKey(_keyPair.PublicKey);
+        Address = AElf.Types.Address.FromPublicKey(_keyPair.PublicKey);
     }
 
     public ByteString GetSignatureWith(byte[] txData)

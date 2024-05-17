@@ -26,3 +26,34 @@ public class CommonAddressDto
     public bool IsManager { get; set; }
     public bool IsProducer { get; set; }
 }
+
+public class AddressAssetDto
+{
+    public string Address { get; set; }
+    
+    public double TotalTokenValueOfElf { get; set; }
+    
+    public double TotalNftValueOfElf { get; set; }
+
+    public double GetTotalValueOfElf()
+    {
+        return TotalTokenValueOfElf + TotalNftValueOfElf;
+    }
+
+    public AddressAssetDto()
+    {
+    }
+
+    public void Accumulate(AddressAssetDto assetDto)
+    {
+        TotalTokenValueOfElf += assetDto.TotalTokenValueOfElf;
+        TotalNftValueOfElf += assetDto.TotalNftValueOfElf;
+    }
+
+    public AddressAssetDto(string address, double totalTokenValueOfElf, double totalNftValueOfElf)
+    {
+        Address = address;
+        TotalTokenValueOfElf = totalTokenValueOfElf;
+        TotalNftValueOfElf = totalNftValueOfElf;
+    }
+}
