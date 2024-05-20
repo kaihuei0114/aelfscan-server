@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElfScanServer.BlockChain;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Constant;
+using AElfScanServer.Contract.Provider;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
@@ -42,18 +43,20 @@ public class TokenService : ITokenService, ITransientDependency
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
-    
+    private readonly IContractProvider _contractProvider;
+
 
     public TokenService(ITokenIndexerProvider tokenIndexerProvider, IBlockChainProvider blockChainProvider,
         ITokenHolderPercentProvider tokenHolderPercentProvider, IObjectMapper objectMapper,
         IOptionsMonitor<ChainOptions> chainOptions, ITokenPriceService tokenPriceService, 
-        IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenInfoProvider tokenInfoProvider)
+        IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenInfoProvider tokenInfoProvider, IContractProvider contractProvider)
     {
         _objectMapper = objectMapper;
         _chainOptions = chainOptions;
         _tokenPriceService = tokenPriceService;
         _tokenInfoOptions = tokenInfoOptions;
         _tokenInfoProvider = tokenInfoProvider;
+        _contractProvider = contractProvider;
         _blockChainProvider = blockChainProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenHolderPercentProvider = tokenHolderPercentProvider;
@@ -163,21 +166,23 @@ public class TokenService : ITokenService, ITransientDependency
         }
 
         var tokenSupply = indexerTokenList[0].Supply;
-        
-        var priceDto = await _tokenPriceService.GetTokenPriceAsync(symbol, CurrencyConstant.UsdCurrency);
-        
+        var addressList = indexerTokenHolderInfo
+            .Where(value => !string.IsNullOrEmpty(value.Address))
+            .Select(value => value.Address).Distinct().ToList();
+
+        var priceDtoTask = _tokenPriceService.GetTokenPriceAsync(symbol, CurrencyConstant.UsdCurrency);
+        var contractInfoDictTask = _contractProvider.GetContractListAsync(chainId, addressList);
+
+        await Task.WhenAll(priceDtoTask, contractInfoDictTask);
+
+        var priceDto = await priceDtoTask;
+        var contractInfoDict = await contractInfoDictTask;
         foreach (var indexerTokenHolderInfoDto in indexerTokenHolderInfo)
         {
             var tokenHolderInfoDto =
                 _objectMapper.Map<IndexerTokenHolderInfoDto, TokenHolderInfoDto>(indexerTokenHolderInfoDto);
-
-            if (!indexerTokenHolderInfoDto.Address.IsNullOrEmpty())
-            {
-                tokenHolderInfoDto.Address = new CommonAddressDto
-                {
-                    Address = indexerTokenHolderInfoDto.Address
-                };
-            }
+            tokenHolderInfoDto.Address =
+                BaseConverter.OfCommonAddress(indexerTokenHolderInfoDto.Address, contractInfoDict);
             if (tokenSupply != 0)
             {
                 tokenHolderInfoDto.Percentage =
