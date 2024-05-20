@@ -17,7 +17,7 @@ public class GetAddressListResultDto
 public class GetAddressInfoResultDto
 {
     public string Address { get; set; }
-    public long Balance { get; set; } // auto map to balance
+    public decimal Balance { get; set; } // auto map to balance
     public long TransactionCount { get; set; }
     public decimal Percentage { get; set; }
     public AddressType AddressType { get; set; } = AddressType.EoaAddress; //0 => Address | 1 => Contract Address

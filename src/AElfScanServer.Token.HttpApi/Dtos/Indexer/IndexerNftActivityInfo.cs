@@ -16,6 +16,7 @@ public class NftActivityItem
     public TokenBaseInfoDto PriceTokenInfo { get; set; }
     public decimal Price { get; set; }
     public string TransactionHash { get; set; }
+    public long  BlockHeight { get; set; }
     public DateTime Timestamp { get; set; }
 }
 

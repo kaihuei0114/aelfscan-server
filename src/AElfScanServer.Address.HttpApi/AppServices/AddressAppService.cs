@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 using AElfScanServer.Address.HttpApi.Dtos;
 using AElfScanServer.Address.HttpApi.Options;
 using AElfScanServer.Address.HttpApi.Provider;
-using AElfScanServer.Address.HttpApi.Provider.Entity;
 using AElfScanServer.Address.Provider;
 using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Constant;
+using AElfScanServer.Contract.Provider;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Enums;
@@ -22,10 +22,8 @@ using AElfScanServer.TokenDataFunction.Dtos;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AElfScanServer.TokenDataFunction.Dtos.Input;
 using AElfScanServer.TokenDataFunction.Provider;
-using AElfScanServer.TokenDataFunction.Service;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Volo.Abp.ObjectMapping;
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
@@ -54,6 +52,7 @@ public class AddressAppService : IAddressAppService
     private readonly BlockChainOptions _blockChainOptions;
     private readonly ITokenAssetProvider _tokenAssetProvider;
     private readonly IAddressInfoProvider _addressInfoProvider;
+    private readonly IContractProvider _contractProvider;
 
 
     public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger,
@@ -61,7 +60,7 @@ public class AddressAppService : IAddressAppService
         ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService,
         ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
         IOptionsSnapshot<BlockChainOptions> blockChainOptions, ITokenAssetProvider tokenAssetProvider, 
-        IAddressInfoProvider addressInfoProvider)
+        IAddressInfoProvider addressInfoProvider, IContractProvider contractProvider)
     {
         _logger = logger;
         _objectMapper = objectMapper;
@@ -73,6 +72,7 @@ public class AddressAppService : IAddressAppService
         _tokenInfoOptions = tokenInfoOptions;
         _tokenAssetProvider = tokenAssetProvider;
         _addressInfoProvider = addressInfoProvider;
+        _contractProvider = contractProvider;
         _blockChainOptions = blockChainOptions.Value;
     }
 
@@ -84,35 +84,35 @@ public class AddressAppService : IAddressAppService
             SkipCount = input.SkipCount, MaxResultCount = input.MaxResultCount
         };
         holderInput.SetDefaultSort();
-        var indexerTokenHolderInfo = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
-        var indexerTokenList =
-            await _tokenIndexerProvider.GetTokenDetailAsync(input.ChainId, CurrencyConstant.ElfCurrency);
+        
+        var tokenHolderInfoTask = _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
+        var tokenDetailTask = _tokenIndexerProvider.GetTokenDetailAsync(input.ChainId, CurrencyConstant.ElfCurrency);
+
+        await Task.WhenAll(tokenHolderInfoTask, tokenDetailTask);
+
+        var indexerTokenHolderInfo = await tokenHolderInfoTask;
+        var indexerTokenList = await tokenDetailTask;
         var tokenInfo = indexerTokenList[0];
+
         var result = new GetAddressListResultDto
         {
             Total = indexerTokenHolderInfo.TotalCount,
             TotalBalance = DecimalHelper.Divide(tokenInfo.Supply, tokenInfo.Decimals)
         };
-        //TODO to get address infos
-        var addressInfos = await _blockChainProvider.GetAddressDictionaryAsync(new AElfAddressInput
-        {
-            ChainId = input.ChainId,
-            Addresses = indexerTokenHolderInfo.Items.Select(address => address.Address).ToList()
-        });
+        var contractInfosDict = await _contractProvider
+            .GetContractListAsync(input.ChainId, indexerTokenHolderInfo.Items.Select(address => address.Address).ToList());
+        
         var addressList = new List<GetAddressInfoResultDto>();
         foreach (var info in indexerTokenHolderInfo.Items)
         {
             var addressResult = _objectMapper.Map<IndexerTokenHolderInfoDto, GetAddressInfoResultDto>(info);
             addressResult.Percentage = Math.Round((decimal)info.Amount / tokenInfo.Supply * 100,
                 CommonConstant.PercentageValueDecimals);
-            if (addressInfos.TryGetValue(info.Address, out var addressInfo))
-            {
-                addressResult.AddressType = addressInfo.AddressType;
-            }
-
+            addressResult.AddressType = contractInfosDict.TryGetValue(info.Address, out var addressInfo)
+                ? AddressType.ContractAddress
+                : AddressType.EoaAddress;
             addressList.Add(addressResult);
         }
-
         //add sort 
         addressList = addressList.OrderByDescending(item => item.Balance)
             .ThenByDescending(item => item.TransactionCount)
