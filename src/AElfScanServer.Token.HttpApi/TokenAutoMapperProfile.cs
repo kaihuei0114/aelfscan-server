@@ -132,7 +132,6 @@ public class TokenAutoMapperProfile : Profile
             .ForMember(t => t.Action, m => m.MapFrom(u => u.Type.ToString()))
             .ForMember(t => t.Quantity, m => m.MapFrom(u => u.Amount))
             .ForPath(t => t.PriceSymbol, m => m.MapFrom(u => BaseConverter.OfSymbol(u.PriceTokenInfo)))
-            .ForPath(t => t.BlockHeight, m => m.MapFrom(u => BaseConverter.OfBlockHeight(u.PriceTokenInfo)))
             .ForPath(t => t.BlockTime, m => m.MapFrom(u => u.Timestamp))
             .ForPath(t => t.TransactionId, m => m.MapFrom(u => u.TransactionHash))
             .ForMember(t => t.From, m => m.Ignore())

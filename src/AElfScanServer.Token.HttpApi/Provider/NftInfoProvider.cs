@@ -134,6 +134,7 @@ public class NftInfoProvider : INftInfoProvider, ISingletonDependency
                                             price,
                                             transactionHash,
                                             timestamp,
+                                            blockHeight,
                                             priceTokenInfo{
                                               id,
                                               chainId,
@@ -157,20 +158,22 @@ public class NftInfoProvider : INftInfoProvider, ISingletonDependency
 
     public async Task<Dictionary<string, NftActivityItem>> GetLatestPriceAsync(string chainId, List<string> symbols)
     {
-        var graphQlHelper = GetGraphQlHelper();
-        var queries = new List<string>();
-        var variables = new Dictionary<string, object>
+        try
         {
-            { "skipCount", 0 },
-            { "maxResultCount", 1 },
-            { "types", new List<int> { (int)NftActivityType.Sale } }
-        };
+            var graphQlHelper = GetGraphQlHelper();
+            var queries = new List<string>();
+            var variables = new Dictionary<string, object>
+            {
+                { "skipCount", 0 },
+                { "maxResultCount", 1 },
+                { "types", new List<int> { (int)NftActivityType.Sale } }
+            };
 
-        foreach (var symbol in symbols)
-        {
-            var nftInfoId = IdGeneratorHelper.GetNftInfoId(chainId, symbol);
-            var fieldName = symbol.Replace("-", "_"); // replace valid char
-            queries.Add($@"
+            foreach (var symbol in symbols)
+            {
+                var nftInfoId = IdGeneratorHelper.GetNftInfoId(chainId, symbol);
+                var fieldName = symbol.Replace("-", "_"); // replace valid char
+                queries.Add($@"
             {fieldName}: nftActivityList(input: {{
                 skipCount: $skipCount, 
                 maxResultCount: $maxResultCount, 
@@ -186,6 +189,7 @@ public class NftInfoProvider : INftInfoProvider, ISingletonDependency
                     price,
                     transactionHash,
                     timestamp,
+                    blockHeight,
                     priceTokenInfo {{
                         id,
                         chainId,
@@ -196,35 +200,41 @@ public class NftInfoProvider : INftInfoProvider, ISingletonDependency
                     }}
                 }}
             }}");
-        }
+            }
 
-        var query = $@"
+            var query = $@"
             query($skipCount:Int!, $maxResultCount:Int!, $types:[Int!]) {{
             {string.Join("\n", queries)}
         }}";
 
-        var indexerResult = await graphQlHelper.QueryAsync<Dictionary<string, IndexerNftActivityInfo>>(new GraphQLRequest
-        {
-            Query = query,
-            Variables = variables
-        });
+            var indexerResult = await graphQlHelper.QueryAsync<Dictionary<string, IndexerNftActivityInfo>>(new GraphQLRequest
+            {
+                Query = query,
+                Variables = variables
+            });
         
-        if (indexerResult == null)
+            if (indexerResult == null)
+            {
+                return new Dictionary<string, NftActivityItem>();
+            }
+
+            var result = symbols.ToDictionary(
+                symbol => symbol,
+                symbol =>
+                {
+                    var fieldName = symbol.Replace("-", "_");
+                    return indexerResult.TryGetValue(fieldName, out var activityList) && activityList.Items.Any()
+                        ? activityList.Items.First()
+                        : new NftActivityItem();
+                });
+
+            return result;
+        }
+        catch (Exception e)
         {
+            _logger.LogError(e, "GetLatestPrice error");
             return new Dictionary<string, NftActivityItem>();
         }
-
-        var result = symbols.ToDictionary(
-            symbol => symbol,
-            symbol =>
-            {
-                var fieldName = symbol.Replace("-", "_");
-                return indexerResult.TryGetValue(fieldName, out var activityList) && activityList.Items.Any()
-                    ? activityList.Items.First()
-                    : new NftActivityItem();
-            });
-
-        return result;
     }
     
     public async Task<Dictionary<string, NftCollectionInfoDto>> GetNftCollectionInfoAsync(

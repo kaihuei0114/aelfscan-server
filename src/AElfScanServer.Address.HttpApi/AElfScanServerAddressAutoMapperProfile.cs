@@ -1,6 +1,7 @@
 using AElfScanServer.Address.HttpApi.Dtos;
 using AElfScanServer.Address.HttpApi.Provider.Entity;
 using AElfScanServer.BlockChain.Dtos;
+using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Dtos.Input;

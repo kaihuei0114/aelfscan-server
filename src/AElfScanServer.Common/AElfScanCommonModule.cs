@@ -1,4 +1,5 @@
 using AElfScanServer.Address.Provider;
+using AElfScanServer.Contract.Provider;
 using AutoResponseWrapper;
 using AElfScanServer.GraphQL;
 using AElfScanServer.HttpClient;
@@ -42,6 +43,7 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<ITokenExchangeProvider, TokenExchangeProvider>();
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
         context.Services.AddTransient<IAddressInfoProvider, AddressInfoProvider>();
+        context.Services.AddTransient<IContractProvider, ContractProvider>();
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();

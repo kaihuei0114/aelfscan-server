@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Constant;
+using AElfScanServer.Contract.Provider;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.GraphQL;
@@ -40,13 +41,15 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
     private readonly IGraphQlFactory _graphQlFactory;
     private readonly IObjectMapper _objectMapper;
     private readonly ITokenInfoProvider _tokenInfoProvider;
+    private readonly IContractProvider _contractProvider;
 
     public TokenIndexerProvider(IGraphQlFactory graphQlFactory, IObjectMapper objectMapper,
-        ITokenInfoProvider tokenInfoProvider)
+        ITokenInfoProvider tokenInfoProvider, IContractProvider contractProvider)
     {
         _graphQlFactory = graphQlFactory;
         _objectMapper = objectMapper;
         _tokenInfoProvider = tokenInfoProvider;
+        _contractProvider = contractProvider;
     }
 
 
@@ -322,6 +325,10 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
     {
         var list = new List<TokenTransferInfoDto>();
         var priceDict = new Dictionary<string, TokenPriceDto>();
+        var addressList = indexerTokenTransfer
+            .SelectMany(c => new[] { c.From, c.To })
+            .Where(value => !string.IsNullOrEmpty(value)).Distinct().ToList();
+        var contractInfoDict = await _contractProvider.GetContractListAsync(chainId, addressList);
         foreach (var indexerTransferInfoDto in indexerTokenTransfer)
         {
             var tokenTransferDto =
@@ -330,11 +337,10 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             tokenTransferDto.SymbolName = indexerTransferInfoDto.Token.Symbol;
             tokenTransferDto.TransactionFeeList =
                 await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
-
-
+            tokenTransferDto.From = BaseConverter.OfCommonAddress(indexerTransferInfoDto.From, contractInfoDict);
+            tokenTransferDto.To = BaseConverter.OfCommonAddress(indexerTransferInfoDto.To, contractInfoDict);
             list.Add(tokenTransferDto);
         }
-
         return list;
     }
     

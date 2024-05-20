@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.Address.HttpApi.Provider.Entity;
 using AElfScanServer.Constant;
+using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.GraphQL;
 using GraphQL;
 using Microsoft.Extensions.Logging;
