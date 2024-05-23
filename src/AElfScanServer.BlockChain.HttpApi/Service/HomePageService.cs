@@ -523,11 +523,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
     public async Task<LatestTransactionsResponseSto> GetLatestTransactionsAsync(LatestTransactionsReq req)
     {
         var result = new LatestTransactionsResponseSto();
-        // if (!_blockChainOptions.ValidChainIds.Exists(s => s == req.ChainId) || req.MaxResultCount <= 0 ||
-        //     req.MaxResultCount > _blockChainOptions.MaxResultCount)
-        // {
-        //     return result;
-        // }
+       
 
 
         result.Transactions = new List<TransactionResponseDto>();
