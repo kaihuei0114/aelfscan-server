@@ -13,6 +13,12 @@ public class HubGroupHelper
         return $"{chainId}_latest_transactions";
     }
     
+    public static string GetTransactionCountPerMinuteGroupName(string chainId)
+    {
+        return $"{chainId}_transactions_count_per_minute";
+    }
+
+    
     public static string GetLatestBlocksGroupName(string chainId)
     {
         return $"{chainId}_latest_blocks";

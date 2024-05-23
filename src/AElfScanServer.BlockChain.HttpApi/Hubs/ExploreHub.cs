@@ -22,9 +22,11 @@ public class ExploreHub : AbpHub
     private static readonly object _lockTransactionsObject = new object();
     private static readonly object _lockBlocksObject = new object();
     private static readonly object _lockBlockOverviewObject = new object();
+    private static readonly object _lockTransactionCountPerMinuteObject = new object();
     private static bool _isPushTransactionsRunning = false;
     private static bool _isPushBlocksRunning = false;
     private static bool _isPushBlockOverviewRunning = false;
+    private static bool _isPushTransactionCountPerMinuteRunning = false;
 
     public ExploreHub(IHomePageService homePageService, ILogger<ExploreHub> logger,
         IBlockChainService blockChainService, IHubContext<ExploreHub> hubContext)
@@ -112,6 +114,11 @@ public class ExploreHub : AbpHub
 
     public async Task PushBlockOverViewAsync(string chainId)
     {
+        if (_isPushBlocksRunning)
+        {
+            return;
+        }
+
         lock (_lockBlockOverviewObject)
         {
             if (_isPushBlockOverviewRunning)
@@ -166,6 +173,11 @@ public class ExploreHub : AbpHub
 
     public async Task PushLatestBlocksAsync(string chainId)
     {
+        if (_isPushBlocksRunning)
+        {
+            return;
+        }
+
         lock (_lockBlocksObject)
         {
             if (_isPushBlocksRunning)
@@ -175,7 +187,6 @@ public class ExploreHub : AbpHub
 
             _isPushBlocksRunning = true;
         }
-
 
         while (true)
         {
@@ -199,7 +210,7 @@ public class ExploreHub : AbpHub
             }
             catch (Exception e)
             {
-                _logger.LogError("push blocks error: {error}", e.Message);
+                _logger.LogError("Push blocks error: {error}", e.Message);
             }
         }
     }
@@ -207,9 +218,49 @@ public class ExploreHub : AbpHub
 
     public async Task RequestTransactionDataChart(GetTransactionPerMinuteRequestDto request)
     {
-        var resp = await _HomePageService.GetTransactionPerMinuteAsync(request);
+        var resp = await _HomePageService.GetTransactionPerMinuteAsync(request.ChainId);
+
+        await Groups.AddToGroupAsync(Context.ConnectionId,
+            HubGroupHelper.GetTransactionCountPerMinuteGroupName(request.ChainId));
 
         _logger.LogInformation("RequestTransactionDataChart: {chainId}", request.ChainId);
         await Clients.Caller.SendAsync("ReceiveTransactionDataChart", resp);
+        PushTransactionCountPerMinuteAsync(request.ChainId);
+    }
+
+
+    public async Task PushTransactionCountPerMinuteAsync(string chainId)
+    {
+        if (_isPushTransactionCountPerMinuteRunning)
+        {
+            return;
+        }
+
+        lock (_lockTransactionCountPerMinuteObject)
+        {
+            if (_isPushTransactionCountPerMinuteRunning)
+            {
+                return;
+            }
+
+            _isPushTransactionCountPerMinuteRunning = true;
+        }
+
+        while (true)
+        {
+            Thread.Sleep(60 * 1000);
+
+            try
+            {
+                var resp = await _HomePageService.GetTransactionPerMinuteAsync(chainId);
+
+                await _hubContext.Clients.Groups(HubGroupHelper.GetTransactionCountPerMinuteGroupName(chainId))
+                    .SendAsync("ReceiveTransactionDataChart", resp);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("Push transaction count per minute error: {error}", e.Message);
+            }
+        }
     }
 }

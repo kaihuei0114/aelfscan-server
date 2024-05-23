@@ -86,6 +86,7 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                             contractInfo(input: {chainId:$chainId,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                                 address
                                 author
+                                codeHash
                                 contractType
                                 metadata {
                                   chainId
@@ -171,16 +172,8 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                     Query =
                         @"query($chainId:String!,$codeHash:String!){
                             contractRegistration(input: {chainId:$chainId,codeHash:$codeHash}){
-                                id,
-                                chainId,
-                                blockHash,
-                                blockHeight,
-                                blockTime,
                                 codeHash,
-                                code,
-                                proposedContractInputHash,
-                                contractCategory,
-                                contractType
+                                code  
                             }
                         }",
                     Variables = new
