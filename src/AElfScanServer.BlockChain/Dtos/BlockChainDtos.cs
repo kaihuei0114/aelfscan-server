@@ -421,6 +421,8 @@ public class TransactionPerMinuteResponseDto
 public class TransactionCountPerMinuteDto
 {
     public long Start { get; set; }
+
+    public long End { get; set; }
     public long Count { get; set; }
 }
 

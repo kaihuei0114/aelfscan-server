@@ -42,7 +42,7 @@ namespace AElfScanServer.BlockChain.Provider;
 public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 {
     private readonly INESTRepository<AddressIndex, string> _addressIndexRepository;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly GlobalOptions _globalOptions;
     private readonly IHttpProvider _httpProvider;
     private readonly IDistributedCache<string> _tokenUsdPriceCache;
 
@@ -53,7 +53,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     private readonly ILogger<BlockChainDataProvider> _logger;
 
     public BlockChainDataProvider(
-        ILogger<BlockChainDataProvider> logger, IOptionsMonitor<BlockChainOptions> blockChainOptions,
+        ILogger<BlockChainDataProvider> logger, IOptionsMonitor<GlobalOptions> blockChainOptions,
         IOptions<ElasticsearchOptions> options,
         INESTRepository<AddressIndex, string> addressIndexRepository,
         IOptions<RedisCacheOptions> optionsAccessor,
@@ -62,7 +62,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     ) : base(optionsAccessor)
     {
         _logger = logger;
-        _blockChainOptions = blockChainOptions.CurrentValue;
+        _globalOptions = blockChainOptions.CurrentValue;
         _httpProvider = httpProvider;
         var uris = options.Value.Url.ConvertAll(x => new Uri(x));
         // var connectionPool = new StaticConnectionPool(uris);
@@ -90,7 +90,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            var elfClient = new AElfClient(_blockChainOptions.ChainNodeHosts[chainId]);
+            var elfClient = new AElfClient(_globalOptions.ChainNodeHosts[chainId]);
 
 
             var name = chainId == "AELF" ? "Treasury" : "Consensus";
@@ -99,15 +99,15 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
             int64Value.Value = blockHeight;
 
             var address = chainId == "AELF"
-                ? _blockChainOptions.TreasuryContractAddress
-                : _blockChainOptions.ContractAddressConsensus;
+                ? _globalOptions.TreasuryContractAddress
+                : _globalOptions.ContractAddressConsensus;
             var transaction =
                 await elfClient.GenerateTransactionAsync(
-                    elfClient.GetAddressFromPrivateKey(BlockChainOptions.PrivateKey),
+                    elfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
                     address,
                     "GetDividends", int64Value);
             var signTransaction =
-                elfClient.SignTransaction(BlockChainOptions.PrivateKey, transaction);
+                elfClient.SignTransaction(GlobalOptions.PrivateKey, transaction);
             var transactionResult = await elfClient.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
                 RawTransaction = signTransaction.ToByteArray().ToHex()
@@ -137,7 +137,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
         }
 
 
-        var elfClient = new AElfClient(_blockChainOptions.ChainNodeHosts[chainId]);
+        var elfClient = new AElfClient(_globalOptions.ChainNodeHosts[chainId]);
         var contractAddress = (await elfClient.GetContractAddressByNameAsync(
             HashHelper.ComputeFrom(contractName))).ToBase58();
 
@@ -149,8 +149,8 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
     public async Task GetKlInePrice(long startTime, long endTime, string symbol, string chainId)
     {
-        var market = new Market(_blockChainOptions.BNBaseUrl, _blockChainOptions.BNApiKey,
-            _blockChainOptions.BNSecretKey);
+        var market = new Market(_globalOptions.BNBaseUrl, _globalOptions.BNApiKey,
+            _globalOptions.BNSecretKey);
 
         var klines = await market.KlineCandlestickData(symbol, Interval.ONE_HOUR, startTime, endTime);
     }
@@ -166,7 +166,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
             return "1";
         }
 
-        var market = new Market(_blockChainOptions.BNBaseUrl);
+        var market = new Market(_globalOptions.BNBaseUrl);
 
 
         try
@@ -184,7 +184,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
             _tokenUsdPriceCache.Set(symbol, price, new DistributedCacheEntryOptions()
             {
                 AbsoluteExpiration =
-                    DateTimeOffset.UtcNow.AddSeconds(_blockChainOptions.TokenUsdPriceExpireDurationSeconds)
+                    DateTimeOffset.UtcNow.AddSeconds(_globalOptions.TokenUsdPriceExpireDurationSeconds)
             });
 
             return price;
@@ -255,18 +255,18 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
             if (TokenSymbolHelper.GetSymbolType(symbol) == SymbolType.Nft)
             {
-                AElfClient elfClient = new AElfClient(_blockChainOptions.ChainNodeHosts["AELF"]);
+                AElfClient elfClient = new AElfClient(_globalOptions.ChainNodeHosts["AELF"]);
                 var tokenInfoInput = new GetTokenInfoInput
                 {
                     Symbol = symbol
                 };
                 var transactionGetToken =
                     await elfClient.GenerateTransactionAsync(
-                        elfClient.GetAddressFromPrivateKey(BlockChainOptions.PrivateKey),
+                        elfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
                         "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
                         "GetTokenInfo",
                         tokenInfoInput);
-                var txWithSignGetToken = elfClient.SignTransaction(BlockChainOptions.PrivateKey, transactionGetToken);
+                var txWithSignGetToken = elfClient.SignTransaction(GlobalOptions.PrivateKey, transactionGetToken);
                 var transactionGetTokenResult = await elfClient.ExecuteTransactionAsync(new ExecuteTransactionDto
                 {
                     RawTransaction = txWithSignGetToken.ToByteArray().ToHex()
@@ -349,7 +349,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
         }
 
 
-        var elfClient = new AElfClient(_blockChainOptions.ChainNodeHosts[chainId]);
+        var elfClient = new AElfClient(_globalOptions.ChainNodeHosts[chainId]);
         var address = (await elfClient.GetContractAddressByNameAsync(
             HashHelper.ComputeFrom("AElf.ContractNames.Token"))).ToBase58();
         var paramGetBalance = new GetTokenInfoInput
@@ -359,11 +359,11 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
 
         var transactionGetToken =
-            await elfClient.GenerateTransactionAsync(elfClient.GetAddressFromPrivateKey(BlockChainOptions.PrivateKey),
+            await elfClient.GenerateTransactionAsync(elfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
                 address,
                 "GetTokenInfo",
                 paramGetBalance);
-        var txWithSignGetToken = elfClient.SignTransaction(BlockChainOptions.PrivateKey, transactionGetToken);
+        var txWithSignGetToken = elfClient.SignTransaction(GlobalOptions.PrivateKey, transactionGetToken);
         var transactionGetTokenResult = await elfClient.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
             RawTransaction = txWithSignGetToken.ToByteArray().ToHex()
@@ -388,7 +388,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
 
         var response =
-            await _httpProvider.InvokeAsync<BlockDetailDto>(_blockChainOptions.ChainNodeHosts[chainId],
+            await _httpProvider.InvokeAsync<BlockDetailDto>(_globalOptions.ChainNodeHosts[chainId],
                 new ApiInfo(HttpMethod.Get, apiPath));
 
 

@@ -21,17 +21,17 @@ public class BlockChainController : AbpController
     private readonly IBlockChainService _blockChainService;
     private readonly IAddressService _addressService;
     private readonly ILogger<BlockChainController> _logger;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly GlobalOptions _globalOptions;
 
     public BlockChainController(IHomePageService homePageService, ILogger<BlockChainController> logger,
-        IOptionsMonitor<BlockChainOptions> blockChainOptions, IAddressService addressService,
+        IOptionsMonitor<GlobalOptions> blockChainOptions, IAddressService addressService,
         IBlockChainService blockChainService)
     {
         _homePageService = homePageService;
         _blockChainService = blockChainService;
         _logger = logger;
         _addressService = addressService;
-        _blockChainOptions = blockChainOptions.CurrentValue;
+        _globalOptions = blockChainOptions.CurrentValue;
     }
 
     [HttpGet]
@@ -64,7 +64,7 @@ public class BlockChainController : AbpController
         LatestTransactionsReq req)
     {
         return await _blockChainService.GetTransactionsAsync(new TransactionsRequestDto()
-            { ChainId = req.ChainId, SkipCount = 0,MaxResultCount = 6});
+            { ChainId = req.ChainId, SkipCount = 0, MaxResultCount = 6 });
     }
 
     [HttpGet]
@@ -97,7 +97,7 @@ public class BlockChainController : AbpController
     [Route("transactionDataChart")]
     public virtual async Task<TransactionPerMinuteResponseDto> GetTransactionPerMinuteAsync(
         GetTransactionPerMinuteRequestDto requestDto) =>
-        await _homePageService.GetTransactionPerMinuteAsync(requestDto);
+        await _homePageService.GetTransactionPerMinuteAsync(requestDto.ChainId);
 
 
     [HttpGet]

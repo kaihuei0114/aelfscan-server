@@ -16,9 +16,12 @@ using AElfScanServer.Dtos;
 using AElfScanServer.Helper;
 using AElfScanServer.TokenDataFunction.Provider;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Newtonsoft.Json;
+using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Field = Google.Protobuf.WellKnownTypes.Field;
 
@@ -36,42 +39,45 @@ public interface IHomePageService
     public Task<HomeOverviewResponseDto> GetBlockchainOverviewAsync(BlockchainOverviewRequestDto req);
 
     public Task<TransactionPerMinuteResponseDto> GetTransactionPerMinuteAsync(
-        GetTransactionPerMinuteRequestDto requestDto);
+        string chainId);
 
     public Task<FilterTypeResponseDto> GetFilterType();
     // public Task<List<GetLogEventListResultDto>> GetLogEventListAsync(GetLogEventListRequestInput input);
 }
 
-public class HomePageService : IHomePageService, ITransientDependency
+public class HomePageService : AbpRedisCache, IHomePageService, ITransientDependency
 {
     private readonly INESTRepository<TransactionIndex, string> _transactionIndexRepository;
     private readonly INESTRepository<BlockExtraIndex, string> _blockExtraIndexRepository;
     private readonly INESTRepository<AddressIndex, string> _addressIndexRepository;
     private readonly INESTRepository<TokenInfoIndex, string> _tokenInfoIndexRepository;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly GlobalOptions _globalOptions;
     private readonly IElasticClient _elasticClient;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
     private readonly HomePageProvider _homePageProvider;
     private readonly BlockChainDataProvider _blockChainProvider;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
+    private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
 
     private readonly ILogger<HomePageService> _logger;
     private const long PullBlockHeightInterval = 100;
     private const string SearchKeyPattern = "[^a-zA-Z0-9-_]";
 
 
-    public HomePageService(INESTRepository<TransactionIndex, string> transactionIndexRepository,
-        ILogger<HomePageService> logger, IOptionsMonitor<BlockChainOptions> blockChainOptions,
+    public HomePageService(IOptions<RedisCacheOptions> optionsAccessor,
+        INESTRepository<TransactionIndex, string> transactionIndexRepository,
+        ILogger<HomePageService> logger, IOptions<GlobalOptions> globalOptions,
         AELFIndexerProvider aelfIndexerProvider, IOptions<ElasticsearchOptions> options,
         INESTRepository<BlockExtraIndex, string> blockExtraIndexRepository,
         INESTRepository<AddressIndex, string> addressIndexRepository,
         INESTRepository<TokenInfoIndex, string> tokenInfoIndexRepository,
         HomePageProvider homePageProvider, ITokenIndexerProvider tokenIndexerProvider,
-        BlockChainDataProvider blockChainProvider)
+        BlockChainDataProvider blockChainProvider, IBlockChainIndexerProvider blockChainIndexerProvider
+    ) : base(optionsAccessor)
     {
         _transactionIndexRepository = transactionIndexRepository;
         _logger = logger;
-        _blockChainOptions = blockChainOptions.CurrentValue;
+        _globalOptions = globalOptions.Value;
         _aelfIndexerProvider = aelfIndexerProvider;
         var uris = options.Value.Url.ConvertAll(x => new Uri(x));
         var connectionPool = new StaticConnectionPool(uris);
@@ -83,28 +89,37 @@ public class HomePageService : IHomePageService, ITransientDependency
         _homePageProvider = homePageProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _blockChainProvider = blockChainProvider;
+        _blockChainIndexerProvider = blockChainIndexerProvider;
     }
 
     public async Task<TransactionPerMinuteResponseDto> GetTransactionPerMinuteAsync(
-        GetTransactionPerMinuteRequestDto requestDto)
+        string chainId)
     {
-        // var transactionPerMinuteResp = new TransactionPerMinuteResponseDto();
-        //
-        // if (!_blockChainOptions.ValidChainIds.Exists(s => s == requestDto.ChainId))
-        // {
-        //     return transactionPerMinuteResp;
-        // }
-        //
-        // transactionPerMinuteResp = await _homePageProvider.GetTransactionPerMinuteAsync(requestDto.ChainId);
-        //
-        // return transactionPerMinuteResp;
-        return null;
+        var transactionPerMinuteResp = new TransactionPerMinuteResponseDto();
+        await ConnectAsync();
+        var key = RedisKeyHelper.TransactionChartData(chainId);
+        
+        var dataValue = RedisDatabase.StringGet(key);
+        
+        var data =
+            JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(dataValue);
+        
+        transactionPerMinuteResp.Owner = data;
+        
+        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionChartData("merge"));
+        var mergeData =
+            JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);
+        
+        transactionPerMinuteResp.All = mergeData;
+
+
+        return transactionPerMinuteResp;
     }
 
     public async Task<HomeOverviewResponseDto> GetBlockchainOverviewAsync(BlockchainOverviewRequestDto req)
     {
         var overviewResp = new HomeOverviewResponseDto();
-        if (!_blockChainOptions.ValidChainIds.Exists(s => s == req.ChainId))
+        if (!_globalOptions.ChainIds.Exists(s => s == req.ChainId))
         {
             return overviewResp;
         }
@@ -113,11 +128,12 @@ public class HomePageService : IHomePageService, ITransientDependency
         {
             var tasks = new List<Task>();
             tasks.Add(_aelfIndexerProvider.GetLatestBlockHeightAsync(req.ChainId).ContinueWith(
-                task =>
-                {
-                    overviewResp.BlockHeight = task.Result;
-                    overviewResp.Transactions = overviewResp.BlockHeight * 2;
-                }));
+                task => { overviewResp.BlockHeight = task.Result; }));
+
+            tasks.Add(_blockChainIndexerProvider.GetTransactionCount(req.ChainId).ContinueWith(task =>
+            {
+                overviewResp.Transactions = task.Result;
+            }));
 
             tasks.Add(_tokenIndexerProvider.GetAccountCountAsync(req.ChainId).ContinueWith(
                 task => { overviewResp.Accounts = task.Result; }));
@@ -155,7 +171,7 @@ public class HomePageService : IHomePageService, ITransientDependency
         requestDto.Keyword = requestDto.Keyword.ToLower();
         try
         {
-            if (!_blockChainOptions.ValidChainIds.Exists(s => s == requestDto.ChainId))
+            if (!_globalOptions.ChainIds.Exists(s => s == requestDto.ChainId))
             {
                 return null;
             }
@@ -388,8 +404,8 @@ public class HomePageService : IHomePageService, ITransientDependency
 
                 if (symbolType == SymbolType.Token)
                 {
-                    searchToken.Image = _blockChainOptions.TokenImageUrls.ContainsKey(tokenInfoIndex.Symbol)
-                        ? _blockChainOptions.TokenImageUrls[tokenInfoIndex.Symbol]
+                    searchToken.Image = _globalOptions.TokenImageUrls.ContainsKey(tokenInfoIndex.Symbol)
+                        ? _globalOptions.TokenImageUrls[tokenInfoIndex.Symbol]
                         : "";
                 }
                 else
@@ -434,7 +450,7 @@ public class HomePageService : IHomePageService, ITransientDependency
         var filterTypeResp = new FilterTypeResponseDto();
 
         filterTypeResp.FilterTypes = new List<FilterTypeDto>();
-        foreach (var keyValuePair in _blockChainOptions.FilterTypes)
+        foreach (var keyValuePair in _globalOptions.FilterTypes)
         {
             var filterTypeDto = new FilterTypeDto();
             filterTypeDto.FilterType = keyValuePair.Value;
@@ -451,8 +467,8 @@ public class HomePageService : IHomePageService, ITransientDependency
     public async Task<BlocksResponseDto> GetLatestBlocksAsync(LatestBlocksRequestDto requestDto)
     {
         var result = new BlocksResponseDto() { };
-        if (!_blockChainOptions.ValidChainIds.Exists(s => s == requestDto.ChainId) || requestDto.MaxResultCount <= 0 ||
-            requestDto.MaxResultCount > _blockChainOptions.MaxResultCount)
+        if (!_globalOptions.ChainIds.Exists(s => s == requestDto.ChainId) || requestDto.MaxResultCount <= 0 ||
+            requestDto.MaxResultCount > _globalOptions.MaxResultCount)
         {
             return result;
         }
@@ -460,7 +476,7 @@ public class HomePageService : IHomePageService, ITransientDependency
 
         try
         {
-            var aElfClient = new AElfClient(_blockChainOptions.ChainNodeHosts[requestDto.ChainId]);
+            var aElfClient = new AElfClient(_globalOptions.ChainNodeHosts[requestDto.ChainId]);
             var blockHeightAsync = await aElfClient.GetBlockHeightAsync();
 
 
@@ -507,11 +523,7 @@ public class HomePageService : IHomePageService, ITransientDependency
     public async Task<LatestTransactionsResponseSto> GetLatestTransactionsAsync(LatestTransactionsReq req)
     {
         var result = new LatestTransactionsResponseSto();
-        // if (!_blockChainOptions.ValidChainIds.Exists(s => s == req.ChainId) || req.MaxResultCount <= 0 ||
-        //     req.MaxResultCount > _blockChainOptions.MaxResultCount)
-        // {
-        //     return result;
-        // }
+       
 
 
         result.Transactions = new List<TransactionResponseDto>();

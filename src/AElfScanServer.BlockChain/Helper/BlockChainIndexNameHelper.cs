@@ -32,6 +32,11 @@ public class BlockChainIndexNameHelper
 
 public class RedisKeyHelper
 {
+    public static string TransactionChartData(string chainId)
+    {
+        return $"explore_{chainId}_transaction_chart";
+    }
+
     public static string TransactionCountKey(string chainId)
     {
         return $"explore_{chainId}_transaction_count";
@@ -101,13 +106,3 @@ public class RedisKeyHelper
         return $"explore_{chainId}_pull_blockHeight";
     }
 }
-
-// public class BlockChainCommonHelper
-// {
-//     public static string GetTxnPerCount(string s)
-//     {
-//         string[] substrings = s.Split('_');
-//         
-//         
-//     }
-// }
