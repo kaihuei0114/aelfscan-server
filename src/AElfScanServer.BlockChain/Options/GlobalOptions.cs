@@ -2,11 +2,11 @@ using System.Collections.Generic;
 
 namespace AElfScanServer.BlockChain.Options;
 
-public class BlockChainOptions
+public class GlobalOptions
 {
     public const string PrivateKey = "09da44778f8db2e602fb484334f37df19e221c84c4582ce5b7770ccfbc3ddbef";
     public int MaxResultCount { get; set; }
-    public List<string> ValidChainIds { get; set; }
+    public List<string> ChainIds { get; set; }
 
     public Dictionary<string, string> TokenImageUrls { get; set; }
     public Dictionary<string, string> ChainNodeHosts { get; set; }
@@ -38,7 +38,6 @@ public class BlockChainOptions
     public int TransactionListMaxCount { get; set; }
 
 
-    //key is contract address, value is method Name
     public Dictionary<string, HashSet<string>> ContractParseLogEvent { get; set; } = new();
 
     public bool ParseLogEvent(string address, string method)
