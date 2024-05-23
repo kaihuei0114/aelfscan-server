@@ -2,11 +2,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.HttpApi.Service;
-using AElfScanServer.BlockChain.Options;
 using AElfScanServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
@@ -20,18 +17,15 @@ public class BlockChainController : AbpController
     private readonly IHomePageService _homePageService;
     private readonly IBlockChainService _blockChainService;
     private readonly IAddressService _addressService;
-    private readonly ILogger<BlockChainController> _logger;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly ISearchService _searchService;
 
-    public BlockChainController(IHomePageService homePageService, ILogger<BlockChainController> logger,
-        IOptionsMonitor<BlockChainOptions> blockChainOptions, IAddressService addressService,
-        IBlockChainService blockChainService)
+    public BlockChainController(IHomePageService homePageService, IAddressService addressService,
+        IBlockChainService blockChainService, ISearchService searchService)
     {
         _homePageService = homePageService;
         _blockChainService = blockChainService;
-        _logger = logger;
         _addressService = addressService;
-        _blockChainOptions = blockChainOptions.CurrentValue;
+        _searchService = searchService;
     }
 
     [HttpGet]
@@ -83,10 +77,10 @@ public class BlockChainController : AbpController
     [Route("filters")]
     public virtual async Task<object> GetFilterTypeAsync() => await _homePageService.GetFilterType();
 
-    [HttpPost]
+    [HttpGet]
     [Route("search")]
     public virtual async Task<object> SearchAsync(SearchRequestDto requestDto) =>
-        await _homePageService.SearchAsync(requestDto);
+        await _searchService.SearchAsync(requestDto);
 
     [HttpPost]
     [Route("blockchainOverview")]

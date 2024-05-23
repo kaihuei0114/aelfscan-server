@@ -24,6 +24,7 @@ using AElfScanServer.TokenDataFunction.Dtos.Input;
 using AElfScanServer.TokenDataFunction.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp.ObjectMapping;
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
@@ -107,7 +108,7 @@ public class AddressAppService : IAddressAppService
         {
             var addressResult = _objectMapper.Map<IndexerTokenHolderInfoDto, GetAddressInfoResultDto>(info);
             addressResult.Percentage = Math.Round((decimal)info.Amount / tokenInfo.Supply * 100,
-                CommonConstant.PercentageValueDecimals);
+                CommonConstant.LargerPercentageValueDecimals);
             addressResult.AddressType = contractInfosDict.TryGetValue(info.Address, out var addressInfo)
                 ? AddressType.ContractAddress
                 : AddressType.EoaAddress;
@@ -126,7 +127,7 @@ public class AddressAppService : IAddressAppService
         var result = new GetAddressDetailResultDto();
         Task<TokenPriceDto> priceDtoTask = null;
         Task<AddressAssetDto> curAddressAssetTask = null;
-        Task<AddressAssetDto> addressAssetTask = null;
+        Task<AddressAssetDto> dailyAddressAssetTask = null;
         Task<List<HolderInfo>> holderInfosTask = null;
         Task<IndexerTokenTransferListDto> tokenTransferListDtoTask = null;
 
@@ -143,37 +144,41 @@ public class AddressAppService : IAddressAppService
         
         priceDtoTask = _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
         curAddressAssetTask = _tokenAssetProvider.GetTokenValuesAsync(input.ChainId, input.Address);
-        addressAssetTask = _addressInfoProvider.GetAddressAssetAsync(AddressAssetType.Daily, input.ChainId, input.Address);
+        dailyAddressAssetTask = _addressInfoProvider.GetAddressAssetAsync(AddressAssetType.Daily, input.ChainId, input.Address);
         var holderInfoTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, CurrencyConstant.ElfCurrency, input.Address);
         holderInfosTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Address, new List<SymbolType> { SymbolType.Token, SymbolType.Nft });
         
         var transferInput = new TokenTransferInput
         {
-            ChainId = input.ChainId
+            ChainId = input.ChainId,
+            Address = input.Address
         };
         transferInput.SetDefaultSort();
         tokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(transferInput);
 
-        await Task.WhenAll(holderInfoTask, priceDtoTask, curAddressAssetTask, addressAssetTask, holderInfosTask, tokenTransferListDtoTask);
+        await Task.WhenAll(holderInfoTask, priceDtoTask, curAddressAssetTask, dailyAddressAssetTask, holderInfosTask, tokenTransferListDtoTask);
 
         var holderInfo = await holderInfoTask;
         var priceDto = await priceDtoTask;
         var curAddressAsset = await curAddressAssetTask;
-        var addressAsset = await addressAssetTask;
+        var dailyAddressAsset = await dailyAddressAssetTask;
         var holderInfos = await holderInfosTask;
         var tokenTransferListDto = await tokenTransferListDtoTask;
+        
+        _logger.LogInformation("GetAddressDetail chainId: {chainId}, dailyAddressAsset: {dailyAddressAsset}",
+            input.ChainId, JsonConvert.SerializeObject(dailyAddressAsset));
         
         result.ElfBalance = holderInfo.Balance;
         result.ElfPriceInUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
         result.ElfBalanceOfUsd = Math.Round(holderInfo.Balance * priceDto.Price, CommonConstant.UsdValueDecimals);
         result.TotalValueOfElf = new decimal(curAddressAsset.GetTotalValueOfElf());
         result.TotalValueOfUsd = Math.Round(result.TotalValueOfElf * priceDto.Price, CommonConstant.UsdValueDecimals);
-        
-        if (addressAsset != null && addressAsset.GetTotalValueOfElf() != 0)
+
+        if (dailyAddressAsset != null && dailyAddressAsset.GetTotalValueOfElf() != 0)
         {
             result.TotalValueOfUsdChangeRate = (decimal)Math.Round(
-                (curAddressAsset.GetTotalValueOfElf() - addressAsset.GetTotalValueOfElf()) /
-                addressAsset.GetTotalValueOfElf() * 100, CommonConstant.PercentageValueDecimals);
+                (curAddressAsset.GetTotalValueOfElf() - dailyAddressAsset.GetTotalValueOfElf()) /
+                dailyAddressAsset.GetTotalValueOfElf() * 100, CommonConstant.PercentageValueDecimals);
         }
         result.TokenHoldings = holderInfos.Count;
         
@@ -313,7 +318,7 @@ public class AddressAppService : IAddressAppService
             await _blockChainProvider.GetTransactionsAsync(input.ChainId, input.Address));
 
     private async Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfosAsync(GetAddressTokenListInput input, List<SymbolType> types = null, 
-        List<string> searchSymbols = null)
+        List<string> searchSymbols = null, bool ignoreSearch = true)
     {
         var tokenHolderInput = _objectMapper.Map<GetAddressTokenListInput, TokenHolderInput>(input);
         tokenHolderInput.SetDefaultSort();
@@ -325,6 +330,11 @@ public class AddressAppService : IAddressAppService
         if (searchSymbols != null)
         {
             tokenHolderInput.SearchSymbols = searchSymbols;
+        }
+
+        if (ignoreSearch)
+        {
+            tokenHolderInput.Search = "";
         }
 
         return await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);

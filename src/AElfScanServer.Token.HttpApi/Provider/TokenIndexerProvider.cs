@@ -325,16 +325,26 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
     {
         var list = new List<TokenTransferInfoDto>();
         var priceDict = new Dictionary<string, TokenPriceDto>();
+        var symbols = indexerTokenTransfer.Select(i => i.Token.Symbol).Distinct().ToList();
         var addressList = indexerTokenTransfer
             .SelectMany(c => new[] { c.From, c.To })
             .Where(value => !string.IsNullOrEmpty(value)).Distinct().ToList();
-        var contractInfoDict = await _contractProvider.GetContractListAsync(chainId, addressList);
+        var contractInfoDictTask = _contractProvider.GetContractListAsync(chainId, addressList);
+        var tokenDictTask = GetTokenDictAsync(chainId, symbols);
+        await Task.WhenAll(contractInfoDictTask, tokenDictTask);
+        var contractInfoDict = await contractInfoDictTask;
+        var tokenDict = await tokenDictTask;
         foreach (var indexerTransferInfoDto in indexerTokenTransfer)
         {
             var tokenTransferDto =
                 _objectMapper.Map<IndexerTransferInfoDto, TokenTransferInfoDto>(indexerTransferInfoDto);
-            tokenTransferDto.Symbol = indexerTransferInfoDto.Token.Symbol;
-            tokenTransferDto.SymbolName = indexerTransferInfoDto.Token.Symbol;
+            if (tokenDict.TryGetValue(indexerTransferInfoDto.Token.Symbol, out var tokenInfo))
+            {
+                tokenTransferDto.Symbol = tokenInfo.Symbol;
+                tokenTransferDto.SymbolName = tokenInfo.TokenName;
+                tokenTransferDto.SymbolImageUrl = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
+                    () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol));
+            }
             tokenTransferDto.TransactionFeeList =
                 await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
             tokenTransferDto.From = BaseConverter.OfCommonAddress(indexerTransferInfoDto.From, contractInfoDict);

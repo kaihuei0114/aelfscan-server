@@ -310,7 +310,7 @@ public class NftService : INftService, ISingletonDependency
 
         return new ListResponseDto<NftItemActivityDto>
         {
-            Total = list.Count,
+            Total = nftActivityInfo.TotalCount,
             List = list
         };
     }

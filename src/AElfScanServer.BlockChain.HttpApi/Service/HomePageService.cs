@@ -384,7 +384,6 @@ public class HomePageService : IHomePageService, ITransientDependency
                 searchToken.Name = tokenInfoIndex.TokenName;
 
                 //todo 
-                searchToken.Price = "";
 
                 if (symbolType == SymbolType.Token)
                 {

@@ -45,4 +45,14 @@ public class BlockChainOptions
     {
         return ContractParseLogEvent.TryGetValue(address, out var methodSet) && methodSet.Contains(method);
     }
+
+    public string GetContractName(string chainId, string address)
+    {
+        if (!ContractNames.TryGetValue(chainId, out var contractNames))
+        {
+            return null;
+        }
+
+        return contractNames.TryGetValue(address, out var name) ? name : null;
+    }
 }
