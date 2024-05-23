@@ -114,6 +114,11 @@ public class ExploreHub : AbpHub
 
     public async Task PushBlockOverViewAsync(string chainId)
     {
+        if (_isPushBlocksRunning)
+        {
+            return;
+        }
+
         lock (_lockBlockOverviewObject)
         {
             if (_isPushBlockOverviewRunning)
@@ -168,6 +173,11 @@ public class ExploreHub : AbpHub
 
     public async Task PushLatestBlocksAsync(string chainId)
     {
+        if (_isPushBlocksRunning)
+        {
+            return;
+        }
+
         lock (_lockBlocksObject)
         {
             if (_isPushBlocksRunning)
@@ -177,7 +187,6 @@ public class ExploreHub : AbpHub
 
             _isPushBlocksRunning = true;
         }
-
 
         while (true)
         {
@@ -222,6 +231,11 @@ public class ExploreHub : AbpHub
 
     public async Task PushTransactionCountPerMinuteAsync(string chainId)
     {
+        if (_isPushTransactionCountPerMinuteRunning)
+        {
+            return;
+        }
+
         lock (_lockTransactionCountPerMinuteObject)
         {
             if (_isPushTransactionCountPerMinuteRunning)
@@ -234,7 +248,7 @@ public class ExploreHub : AbpHub
 
         while (true)
         {
-            Thread.Sleep(1000);
+            Thread.Sleep(60 * 1000);
 
             try
             {
