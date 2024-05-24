@@ -1,11 +1,8 @@
 using AElfScanServer.Address.HttpApi.AppServices;
-using AElfScanServer.Address.HttpApi.Options;
 using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.BlockChain;
+using AElfScanServer.Options;
 using AElfScanServer.Token;
-using AElfScanServer;
-using AElfScanServer.Address.Provider;
-using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Provider;
 using AElfScanServer.TokenDataFunction.Service;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +37,6 @@ public class AElfScanServerAddressHttpApiModule : AbpModule
 
         var configuration = context.Services.GetConfiguration();
         
-        Configure<BlockChainOptions>(configuration.GetSection("BlockChain"));
+        Configure<GlobalOptions>(configuration.GetSection("BlockChain"));
     }
 }

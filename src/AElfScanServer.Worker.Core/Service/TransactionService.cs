@@ -18,6 +18,7 @@ using AElfScanServer.Worker.Core.Provider;
 using Elasticsearch.Net;
 using AElfScanServer.Dtos;
 using AElfScanServer.Helper;
+using AElfScanServer.Options;
 using Google.Protobuf;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;

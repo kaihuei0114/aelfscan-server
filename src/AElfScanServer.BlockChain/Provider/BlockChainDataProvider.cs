@@ -3,39 +3,37 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
-using Volo.Abp.Caching;
 using AElf.Client.MultiToken;
 using AElf.Client.Service;
 using AElf.Indexing.Elasticsearch;
 using AElf.Standards.ACS10;
-using AelfEx;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
-using Elasticsearch.Net;
+using AElfScanServer.Common.Helper;
 using AElfScanServer.Dtos;
 using AElfScanServer.HttpClient;
+using AElfScanServer.Options;
+using Binance.Spot;
+using Binance.Spot.Models;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
-using Volo.Abp.Caching.StackExchangeRedis;
-using Volo.Abp.DependencyInjection;
-using HttpMethod = System.Net.Http.HttpMethod;
-using Binance.Spot;
-using AElfScanServer.Common.Helper;
-using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Volo.Abp.Caching;
+using Volo.Abp.Caching.StackExchangeRedis;
+using Volo.Abp.DependencyInjection;
 using Convert = System.Convert;
-using Interval = Binance.Spot.Models.Interval;
+using TokenInfo = AElf.Contracts.MultiToken.TokenInfo;
 
 namespace AElfScanServer.BlockChain.Provider;
 
@@ -272,7 +270,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
                     RawTransaction = txWithSignGetToken.ToByteArray().ToHex()
                 });
 
-                var token = new AElf.Contracts.MultiToken.TokenInfo();
+                var token = new TokenInfo();
                 token.MergeFrom(ByteArrayHelper.HexStringToByteArray(transactionGetTokenResult));
 
                 if (token.ExternalInfo.Value.TryGetValue("inscription_image", out var inscription_image))
@@ -368,7 +366,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
         {
             RawTransaction = txWithSignGetToken.ToByteArray().ToHex()
         });
-        var tokeninfo = TokenInfo.Parser.ParseFrom(
+        var tokeninfo = AElf.Client.MultiToken.TokenInfo.Parser.ParseFrom(
             ByteArrayHelper.HexStringToByteArray(transactionGetTokenResult));
 
         RedisDatabase.StringSet(RedisKeyHelper.TokenInfoKey(chainId, symbol), tokeninfo.Decimals);

@@ -8,9 +8,14 @@ public static class CommonConstant
     public const int UsdValueDecimals = 2;
     public const int UsdPriceValueDecimals = 8;
     public const int ElfValueDecimals = 8;
+    public const int LargerPercentageValueDecimals = 8;
     public const int PercentageValueDecimals = 4;
     public const string DefaultMarket = "Forest";
     public const int DefaultMaxResultCount = 1000;
+    public const string SearchKeyPattern = "[^a-zA-Z0-9-_.]";
+    
+    public const int KeyWordAddressMinSize = 9;
+    public const int KeyWordContractNameMinSize = 2;
 }
 
 

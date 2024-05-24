@@ -1,19 +1,16 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Address.HttpApi.Dtos;
-using AElfScanServer.Address.HttpApi.Options;
 using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Dtos.Indexer;
+using AElfScanServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
-using ContractDto = AElfScanServer.Address.HttpApi.Dtos.ContractDto;
-using ContractRecordDto = AElfScanServer.Address.HttpApi.Dtos.ContractRecordDto;
 
 namespace AElfScanServer.Address.HttpApi.AppServices;
 
@@ -33,12 +30,12 @@ public class ContractAppService : IContractAppService
     private readonly IBlockChainProvider _blockChainProvider;
     private readonly IIndexerTokenProvider _indexerTokenProvider;
     private readonly IIndexerGenesisProvider _indexerGenesisProvider;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly GlobalOptions _globalOptions;
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IDecompilerProvider decompilerProvider, IBlockChainProvider blockChainProvider,
         IIndexerTokenProvider indexerTokenProvider, IIndexerGenesisProvider indexerGenesisProvider,
-        IOptionsSnapshot<BlockChainOptions> blockChainOptions)
+        IOptionsSnapshot<GlobalOptions> globalOptions)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -46,7 +43,7 @@ public class ContractAppService : IContractAppService
         _blockChainProvider = blockChainProvider;
         _indexerTokenProvider = indexerTokenProvider;
         _indexerGenesisProvider = indexerGenesisProvider;
-        _blockChainOptions = blockChainOptions.Value;
+        _globalOptions = globalOptions.Value;
     }
 
     public async Task<GetContractListResultDto> GetContractListAsync(GetContractContracts input)
@@ -139,7 +136,7 @@ public class ContractAppService : IContractAppService
 
     public async Task<string> GetContractName(string chainId, string address)
     {
-        _blockChainOptions.ContractNames.TryGetValue(chainId, out var contractNames);
+        _globalOptions.ContractNames.TryGetValue(chainId, out var contractNames);
         if (contractNames == null)
         {
             return "";
