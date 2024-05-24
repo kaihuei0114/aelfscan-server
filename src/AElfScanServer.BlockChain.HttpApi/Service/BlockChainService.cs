@@ -27,6 +27,7 @@ using AElf.CSharp.Core.Extension;
 using AElfScanServer.BlockChain.Dtos.Indexer;
 using Castle.Components.DictionaryAdapter.Xml;
 using AElfScanServer.Common.Helper;
+using AElfScanServer.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;

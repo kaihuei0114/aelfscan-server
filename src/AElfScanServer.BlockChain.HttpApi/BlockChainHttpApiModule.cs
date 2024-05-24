@@ -1,6 +1,7 @@
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain.HttpApi.Service;
+using AElfScanServer.Token;
 using AElfScanServer.TokenDataFunction.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -33,6 +34,9 @@ public class BlockChainHttpApiModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<BlockChainHttpApiModule>(); });
         context.Services.AddSingleton<ITokenIndexerProvider, TokenIndexerProvider>();
         context.Services.AddSingleton<IHomePageService, HomePageService>();
+        context.Services.AddSingleton<INftInfoProvider, NftInfoProvider>();
+        context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
+
         context.Services.AddSignalR();
     }
 }

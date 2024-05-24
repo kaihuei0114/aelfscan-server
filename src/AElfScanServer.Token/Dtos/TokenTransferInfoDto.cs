@@ -15,6 +15,8 @@ public class TokenTransferInfoDto
     public string Symbol { get; set; }
 
     public string SymbolName { get; set; }
+    
+    public string SymbolImageUrl { get; set; }
     public CommonAddressDto From { get; set; }
     public CommonAddressDto To { get; set; }
     public decimal Quantity { get; set; }

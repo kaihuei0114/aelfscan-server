@@ -14,6 +14,7 @@ using AElfScanServer.Common;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Dtos;
 using AElfScanServer.Helper;
+using AElfScanServer.Options;
 using AElfScanServer.TokenDataFunction.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -400,7 +401,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
                 searchToken.Name = tokenInfoIndex.TokenName;
 
                 //todo 
-                searchToken.Price = "";
+                searchToken.Price = 0;
 
                 if (symbolType == SymbolType.Token)
                 {

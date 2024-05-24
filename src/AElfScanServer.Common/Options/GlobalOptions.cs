@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace AElfScanServer.BlockChain.Options;
+namespace AElfScanServer.Options;
 
 public class GlobalOptions
 {
@@ -43,5 +45,37 @@ public class GlobalOptions
     public bool ParseLogEvent(string address, string method)
     {
         return ContractParseLogEvent.TryGetValue(address, out var methodSet) && methodSet.Contains(method);
+    }
+
+    public string GetContractName(string chainId, string address)
+    {
+        if (!ContractNames.TryGetValue(chainId, out var contractNames))
+        {
+            return null;
+        }
+
+        return contractNames.TryGetValue(address, out var name) ? name : null;
+    }
+    
+    public Dictionary<string, string> GetContractNameDict(string chainId, string keyword, bool exactMatch = false)
+    {
+        if (!ContractNames.TryGetValue(chainId, out var contractNames))
+        {
+            return new();
+        }
+        var filteredContractNames = contractNames
+            .Where(kv => IsMatch(kv.Value, keyword, exactMatch))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+        return filteredContractNames;
+    }
+    
+    
+    private static bool IsMatch(string value, string keyword, bool exactMatch)
+    {
+        if (exactMatch)
+        {
+            return value == keyword;
+        }
+        return value.Contains(keyword, StringComparison.OrdinalIgnoreCase);
     }
 }

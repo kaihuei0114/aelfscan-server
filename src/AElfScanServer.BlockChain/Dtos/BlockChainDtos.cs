@@ -111,7 +111,7 @@ public class TransactionsResponseDto
 public class SearchRequestDto : IValidatableObject
 {
     public string ChainId { get; set; }
-    public string Keyword { get; set; }
+    [Required] public string Keyword { get; set; }
     public FilterTypes FilterType { get; set; }
     public SearchTypes SearchType { get; set; }
 
@@ -264,19 +264,34 @@ public class NftsTransferredDto
 
 public class SearchResponseDto
 {
-    public List<SearchToken> Tokens { get; set; } = new List<SearchToken>();
-    public List<SearchToken> Nfts { get; set; } = new List<SearchToken>();
-    public List<string> Accounts { get; set; } = new List<string>();
-    public List<SearchContract> Contracts { get; set; } = new List<SearchContract>();
+    public List<SearchToken> Tokens { get; set; } = new();
+    public List<SearchToken> Nfts { get; set; } = new();
+    public List<string> Accounts { get; set; } = new();
+    public List<SearchContract> Contracts { get; set; } = new();
+    public SearchBlock Block { get; set; }
+    public SearchTransaction Transaction { get; set; }
+}
+
+public class SearchBlock
+{
+    public long BlockHeight { get; set; }
+    public string BlockHash { get; set; }
+}
+
+public class SearchTransaction
+{
+    public string TransactionId { get; set; }
+    public long BlockHeight { get; set; }
+    public string BlockHash { get; set; }
 }
 
 public class SearchToken
 {
     public string Image { get; set; }
-
     public string Name { get; set; }
     public string Symbol { get; set; }
-    public string Price { get; set; }
+    public decimal Price { get; set; }
+    public SymbolType Type { get; set; }
 }
 
 public class SearchContract
