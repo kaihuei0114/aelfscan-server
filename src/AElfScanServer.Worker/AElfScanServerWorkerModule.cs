@@ -65,7 +65,7 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public void ConfigureContractNameIndex(IConfiguration configuration)
     {
-        var blockChainOptions = configuration.GetSection("BlockChain").Get<BlockChainOptions>();
+        var blockChainOptions = configuration.GetSection("BlockChain").Get<GlobalOptions>();
         var indexerOptions = configuration.GetSection("AELFIndexer").Get<AELFIndexerOptions>();
         var elasticsearchOptions = configuration.GetSection("Elasticsearch").Get<ElasticsearchOptions>();
         var uris = elasticsearchOptions.Url.ConvertAll(x => new Uri(x));
@@ -164,7 +164,7 @@ public class AElfScanServerWorkerModule : AbpModule
                     .Exists(BlockChainIndexNameHelper.GenerateTransactionIndexName(indexerOptionsChainId))
                     .Exists)
             {
-                var blockChainOptions = configuration.GetSection("BlockChain").Get<BlockChainOptions>();
+                var blockChainOptions = configuration.GetSection("BlockChain").Get<GlobalOptions>();
                 var indexResponse = elasticClient.Indices.Create(
                     BlockChainIndexNameHelper.GenerateTransactionIndexName(indexerOptionsChainId), c => c
                         .Settings(s => s
@@ -195,9 +195,9 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        context.AddBackgroundWorkerAsync<TransactionWorker>();
-        context.AddBackgroundWorkerAsync<TransactionRateWorker>();
-        context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
+        // context.AddBackgroundWorkerAsync<TransactionWorker>();
+        context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
+        // context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
         // context.AddBackgroundWorkerAsync<BlockChainProducerInfoSyncWorker>();
         // context.AddBackgroundWorkerAsync<ContractInfoSyncWorker>();
     }

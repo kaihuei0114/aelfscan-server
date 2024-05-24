@@ -32,7 +32,7 @@ public interface ISearchService
 public class SearchService : ISearchService, ISingletonDependency
 {
     private readonly ILogger<SearchService> _logger;
-    private readonly IOptionsMonitor<BlockChainOptions> _blockChainOptions;
+    private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly INftInfoProvider _nftInfoProvider;
@@ -42,14 +42,14 @@ public class SearchService : ISearchService, ISingletonDependency
     private readonly AELFIndexerProvider _aelfIndexerProvider;
     
     public SearchService(ILogger<SearchService> logger, ITokenIndexerProvider tokenIndexerProvider,
-        IOptionsMonitor<BlockChainOptions> blockChainOptions, INftInfoProvider nftInfoProvider, 
+        IOptionsMonitor<GlobalOptions> globalOptions, INftInfoProvider nftInfoProvider, 
         ITokenPriceService tokenPriceService, ITokenInfoProvider tokenInfoProvider, 
         IContractProvider contractProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, 
         AELFIndexerProvider aelfIndexerProvider)
     {
         _logger = logger;
         _tokenIndexerProvider = tokenIndexerProvider;
-        _blockChainOptions = blockChainOptions;
+        _globalOptions = globalOptions;
         _nftInfoProvider = nftInfoProvider;
         _tokenPriceService = tokenPriceService;
         _tokenInfoProvider = tokenInfoProvider;
@@ -110,7 +110,7 @@ public class SearchService : ISearchService, ISingletonDependency
 
     private bool ValidParam(string chainId, string keyword)
     {
-        return _blockChainOptions.CurrentValue.ValidChainIds.Exists(s => s == chainId)
+        return _globalOptions.CurrentValue.ChainIds.Exists(s => s == chainId)
                && !Regex.IsMatch(keyword, CommonConstant.SearchKeyPattern);
     }
     
@@ -126,7 +126,7 @@ public class SearchService : ISearchService, ISingletonDependency
             }
             else
             {
-                contractNameDict = _blockChainOptions.CurrentValue.GetContractNameDict(request.ChainId, request.Keyword, true);
+                contractNameDict = _globalOptions.CurrentValue.GetContractNameDict(request.ChainId, request.Keyword, true);
             }
         }
         else
@@ -135,7 +135,7 @@ public class SearchService : ISearchService, ISingletonDependency
             {
                 return;
             }
-            contractNameDict = _blockChainOptions.CurrentValue.GetContractNameDict(request.ChainId, request.Keyword);
+            contractNameDict = _globalOptions.CurrentValue.GetContractNameDict(request.ChainId, request.Keyword);
             if (request.Keyword.Length > CommonConstant.KeyWordAddressMinSize)
             {
                 //TODO support FuzzySearch 
@@ -264,7 +264,7 @@ public class SearchService : ISearchService, ISingletonDependency
             return;
         }
         
-        var aElfClient = new AElfClient(_blockChainOptions.CurrentValue.ChainNodeHosts[request.ChainId]);
+        var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[request.ChainId]);
 
         var transactionResult = await aElfClient.GetTransactionResultAsync(request.Keyword);
 
@@ -309,7 +309,7 @@ public class SearchService : ISearchService, ISingletonDependency
             {
                 if (!result.ContainsKey(kvp.Key))
                 {
-                    var name = _blockChainOptions.CurrentValue.GetContractName(chainId, kvp.Key);
+                    var name = _globalOptions.CurrentValue.GetContractName(chainId, kvp.Key);
                     result[kvp.Key] = name;
                 }
             }

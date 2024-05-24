@@ -28,7 +28,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
     private readonly INESTRepository<BlockExtraIndex, string> _blockExtraIndexRepository;
     private readonly INESTRepository<AddressIndex, string> _addressIndexRepository;
     private readonly INESTRepository<TokenInfoIndex, string> _tokenInfoIndexRepository;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly GlobalOptions _globalOptions;
     private readonly IElasticClient _elasticClient;
     private const string TransactionCountRedisKey = "transaction_count";
     private const string AddressCountRedisKey = "address_count";
@@ -38,7 +38,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
     private readonly ILogger<HomePageProvider> _logger;
 
     public HomePageProvider(INESTRepository<TransactionIndex, string> transactionIndexRepository,
-        ILogger<HomePageProvider> logger, IOptionsMonitor<BlockChainOptions> blockChainOptions,
+        ILogger<HomePageProvider> logger, IOptionsMonitor<GlobalOptions> blockChainOptions,
         IOptions<ElasticsearchOptions> options,
         INESTRepository<BlockExtraIndex, string> blockExtraIndexRepository,
         INESTRepository<AddressIndex, string> addressIndexRepository,
@@ -47,7 +47,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
     {
         _transactionIndexRepository = transactionIndexRepository;
         _logger = logger;
-        _blockChainOptions = blockChainOptions.CurrentValue;
+        _globalOptions = blockChainOptions.CurrentValue;
         var uris = options.Value.Url.ConvertAll(x => new Uri(x));
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
@@ -70,19 +70,19 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
             }
 
 
-            var aElfClient = new AElfClient(_blockChainOptions.ChainNodeHosts[chainId]);
+            var aElfClient = new AElfClient(_globalOptions.ChainNodeHosts[chainId]);
 
             var address = (await aElfClient.GetContractAddressByNameAsync(
                 HashHelper.ComputeFrom("AElf.ContractNames.Consensus"))).ToBase58();
 
             var transactionGetCurrentTermMiningReward =
                 await aElfClient.GenerateTransactionAsync(
-                    aElfClient.GetAddressFromPrivateKey(BlockChainOptions.PrivateKey),
+                    aElfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
                     address,
                     "GetCurrentTermMiningReward", new Empty());
 
             var signTransaction =
-                aElfClient.SignTransaction(BlockChainOptions.PrivateKey, transactionGetCurrentTermMiningReward);
+                aElfClient.SignTransaction(GlobalOptions.PrivateKey, transactionGetCurrentTermMiningReward);
             var transactionResult = await aElfClient.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
                 RawTransaction = signTransaction.ToByteArray().ToHex()
@@ -96,13 +96,13 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
 
             var transactionGetUndistributedDividends =
                 await aElfClient.GenerateTransactionAsync(
-                    aElfClient.GetAddressFromPrivateKey(BlockChainOptions.PrivateKey),
+                    aElfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
                     address,
                     "GetUndistributedDividends", new Empty());
 
 
             signTransaction =
-                aElfClient.SignTransaction(BlockChainOptions.PrivateKey, transactionGetUndistributedDividends);
+                aElfClient.SignTransaction(GlobalOptions.PrivateKey, transactionGetUndistributedDividends);
             transactionResult = await aElfClient.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
                 RawTransaction = signTransaction.ToByteArray().ToHex()
@@ -114,7 +114,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
             }
 
             RedisDatabase.StringSet(RedisKeyHelper.RewardKey(chainId), amount,
-                TimeSpan.FromSeconds(_blockChainOptions.RewardCacheExpiration));
+                TimeSpan.FromSeconds(_globalOptions.RewardCacheExpiration));
             return amount;
         }
         catch (Exception e)
@@ -323,10 +323,10 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
                 return Convert.ToInt64(redisValue);
             }
 
-            var aElfClient = new AElfClient(_blockChainOptions.ChainNodeHosts[chainId]);
+            var aElfClient = new AElfClient(_globalOptions.ChainNodeHosts[chainId]);
             var blockHeight = await aElfClient.GetBlockHeightAsync();
             RedisDatabase.StringSet(BlockHeightRedisKey, blockHeight,
-                TimeSpan.FromSeconds(_blockChainOptions.BlockHeightCacheExpiration));
+                TimeSpan.FromSeconds(_globalOptions.BlockHeightCacheExpiration));
             return blockHeight;
         }
         catch (Exception e)
@@ -398,7 +398,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
             }
 
             RedisDatabase.StringSet(AddressCountRedisKey, countAsync.Count,
-                TimeSpan.FromSeconds(_blockChainOptions.AddressCountCacheExpiration));
+                TimeSpan.FromSeconds(_globalOptions.AddressCountCacheExpiration));
 
             return countAsync.Count;
         }

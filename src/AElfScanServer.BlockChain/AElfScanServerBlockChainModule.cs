@@ -2,8 +2,10 @@ using AElf.EntityMapping.Elasticsearch;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
 using AElfScanServer.Options;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
 
 namespace AElfScanServer.BlockChain;
@@ -11,7 +13,8 @@ namespace AElfScanServer.BlockChain;
 [DependsOn(
     typeof(AbpAutoMapperModule),
     typeof(AElfEntityMappingElasticsearchModule),
-    typeof(AElfScanCommonModule)
+    typeof(AElfScanCommonModule),
+    typeof(AbpCachingStackExchangeRedisModule)
 )]
 public class AElfScanServerBlockChainModule : AbpModule
 {
@@ -23,7 +26,8 @@ public class AElfScanServerBlockChainModule : AbpModule
 
 
         Configure<AELFIndexerOptions>(configuration.GetSection("AELFIndexer"));
-        Configure<BlockChainOptions>(configuration.GetSection("BlockChain"));
+        var globalOptions = configuration.GetSection("BlockChain").Get<GlobalOptions>();
+        Configure<GlobalOptions>(configuration.GetSection("BlockChain"));
         Configure<ElasticsearchOptions>(configuration.GetSection("Elasticsearch"));
 
 

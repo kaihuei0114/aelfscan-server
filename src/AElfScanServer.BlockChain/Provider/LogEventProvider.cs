@@ -19,20 +19,20 @@ namespace AElfScanServer.BlockChain.Provider;
 public class LogEventProvider : AbpRedisCache, ISingletonDependency
 {
     private readonly INESTRepository<LogEventIndex, string> _logEventIndexRepository;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly GlobalOptions _globalOptions;
     private readonly IElasticClient _elasticClient;
 
 
     private readonly ILogger<HomePageProvider> _logger;
 
     public LogEventProvider(
-        ILogger<HomePageProvider> logger, IOptionsMonitor<BlockChainOptions> blockChainOptions,
+        ILogger<HomePageProvider> logger, IOptionsMonitor<GlobalOptions> blockChainOptions,
         IOptions<ElasticsearchOptions> options,
         INESTRepository<LogEventIndex, string> logEventIndexRepository,
         IOptions<RedisCacheOptions> optionsAccessor) : base(optionsAccessor)
     {
         _logger = logger;
-        _blockChainOptions = blockChainOptions.CurrentValue;
+        _globalOptions = blockChainOptions.CurrentValue;
         var uris = options.Value.Url.ConvertAll(x => new Uri(x));
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);

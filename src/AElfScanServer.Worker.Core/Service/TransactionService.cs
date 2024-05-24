@@ -9,6 +9,7 @@ using AElf.CSharp.Core.Extension;
 using AElf.EntityMapping.Repositories;
 using AElf.Types;
 using AElfScanServer.BlockChain.Dtos;
+using AElfScanServer.BlockChain.Dtos.Indexer;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
@@ -16,6 +17,7 @@ using AElfScanServer.Worker.Core.Dtos;
 using AElfScanServer.Worker.Core.Provider;
 using Elasticsearch.Net;
 using AElfScanServer.Dtos;
+using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using Google.Protobuf;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -26,6 +28,7 @@ using Newtonsoft.Json;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
+using IndexerTransactionDto = AElfScanServer.BlockChain.Dtos.IndexerTransactionDto;
 using TransactionFeeCharged = AElf.Contracts.MultiToken.TransactionFeeCharged;
 
 namespace AElfScanServer.Worker.Core.Service;
@@ -35,16 +38,17 @@ public interface ITransactionService
     public Task PullTokenData();
     public Task HandlerTransactionAsync(string chainId, long startBlockHeight, long endBlockHeight);
 
-
+    public Task UpdateTransactionRatePerMinuteAsync();
     public Task<long> GetLastBlockHeight(string chainId);
 }
 
 public class TransactionService : AbpRedisCache, ITransactionService, ITransientDependency
 {
     private readonly AELFIndexerProvider _aelfIndexerProvider;
+    private readonly BlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly HomePageProvider _homePageProvider;
     private readonly AELFIndexerOptions _aelfIndexerOptions;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly GlobalOptions _globalOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly IStorageProvider _storageProvider;
     private readonly IElasticClient _elasticClient;
@@ -66,11 +70,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         ILogger<TransactionService> logger, IObjectMapper objectMapper,
         IEntityMappingRepository<AddressIndex, string> addressIndexRepository,
         IEntityMappingRepository<TokenInfoIndex, string> tokenInfoIndexRepository,
-        IOptions<BlockChainOptions> blockChainOptions,
+        IOptions<GlobalOptions> blockChainOptions,
         IEntityMappingRepository<BlockExtraIndex, string> blockExtraIndexRepository,
         HomePageProvider homePageProvider,
         IEntityMappingRepository<LogEventIndex, string> logEventIndexRepository, IStorageProvider storageProvider,
-        IOptions<ElasticsearchOptions> options) :
+        IOptions<ElasticsearchOptions> options, BlockChainIndexerProvider blockChainIndexerProvider) :
         base(optionsAccessor)
     {
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -82,14 +86,134 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
         _tokenInfoIndexRepository = tokenInfoIndexRepository;
         _blockExtraIndexRepository = blockExtraIndexRepository;
-        _blockChainOptions = blockChainOptions.Value;
+        _globalOptions = blockChainOptions.Value;
         _homePageProvider = homePageProvider;
+        _blockChainIndexerProvider = blockChainIndexerProvider;
         _logEventIndexRepository = logEventIndexRepository;
         _storageProvider = storageProvider;
         var uris = options.Value.Url.ConvertAll(x => new Uri(x));
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         _elasticClient = new ElasticClient(settings);
+    }
+
+
+    public async Task UpdateTransactionRatePerMinuteAsync()
+    {
+        await ConnectAsync();
+
+        var mergeList = new List<List<TransactionCountPerMinuteDto>>();
+        try
+        {
+            foreach (var chainId in _globalOptions.ChainIds)
+            {
+                var chartDataKey = RedisKeyHelper.TransactionChartData(chainId);
+
+
+                var nowMilliSeconds = DateTimeHelper.GetNowMilliSeconds();
+                var beforeHoursMilliSeconds = DateTimeHelper.GetBeforeHoursMilliSeconds(3);
+
+                var transactionsAsync =
+                    await _blockChainIndexerProvider.GetTransactionsAsync(chainId, 0, 1000, beforeHoursMilliSeconds,
+                        nowMilliSeconds);
+                if (transactionsAsync == null || transactionsAsync.Items.Count <= 0)
+                {
+                    transactionsAsync =
+                        await _blockChainIndexerProvider.GetTransactionsAsync(chainId, 0, 1000, 0,
+                            0);
+                }
+
+                if (transactionsAsync == null)
+                {
+                    continue;
+                }
+
+
+                var transactionChartData =
+                    await ParseToTransactionChartDataAsync(chartDataKey, transactionsAsync.Items);
+
+                if (transactionChartData.Count > 180)
+                {
+                    transactionChartData = transactionChartData.Skip(transactionChartData.Count - 180).ToList();
+                }
+
+
+                mergeList.Add(transactionChartData);
+                var serializeObject = JsonConvert.SerializeObject(transactionChartData);
+
+
+                await RedisDatabase.StringSetAsync(chartDataKey, serializeObject);
+            }
+
+
+            var merge = mergeList.SelectMany(c => c).GroupBy(c => c.Start).Select(c =>
+                new TransactionCountPerMinuteDto()
+                {
+                    Start = c.Key,
+                    End = c.Key + 60000,
+                    Count = c.Sum(d => d.Count)
+                }).ToList();
+
+            if (merge.Count > 180)
+            {
+                merge = merge.Skip(merge.Count - 180).ToList();
+            }
+
+            _logger.LogError("merge count {c}", merge.Count);
+
+            var mergeSerializeObject = JsonConvert.SerializeObject(merge);
+            await RedisDatabase.StringSetAsync(RedisKeyHelper.TransactionChartData("merge"), mergeSerializeObject);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("UpdateTransactionRatePerMinuteAsync error:{e}", e.Message);
+            throw e;
+        }
+    }
+
+
+    public async Task<List<TransactionCountPerMinuteDto>> ParseToTransactionChartDataAsync(
+        string key, List<IndexerTransactionInfoDto> list)
+    {
+        var dictionary = new Dictionary<long, TransactionCountPerMinuteDto>();
+
+        foreach (var indexerTransactionDto in list)
+        {
+            var t = indexerTransactionDto.Metadata.Block.BlockTime;
+            var timestamp =
+                DateTimeHelper.GetTotalMilliseconds(new DateTime(t.Year, t.Month, t.Day, t.Hour, t.Minute, 0, 0));
+
+
+            if (dictionary.ContainsKey(timestamp))
+            {
+                dictionary[timestamp].Count++;
+            }
+            else
+            {
+                dictionary.Add(timestamp,
+                    new TransactionCountPerMinuteDto() { Start = timestamp, End = timestamp + 60000, Count = 1 });
+            }
+        }
+
+        var newList = dictionary.Values.OrderBy(c => c.Start).ToList();
+
+
+        var redisValue = RedisDatabase.StringGet(key);
+        if (redisValue.IsNullOrEmpty)
+        {
+            return newList;
+        }
+
+        var oldList = JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);
+
+        var last = oldList.Last();
+        var subOldList = oldList.GetRange(0, oldList.Count - 1);
+
+        var subNewList = newList.Where(c => c.Start >= last.Start).ToList();
+
+        subOldList.AddRange(subNewList);
+
+        return subOldList;
     }
 
 
@@ -135,7 +259,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             var indexResponse = _elasticClient.Indices.Create(
                 BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId), c => c
                     .Settings(s => s
-                        .Setting("max_result_window", _blockChainOptions.TransactionListMaxCount)
+                        .Setting("max_result_window", _globalOptions.TransactionListMaxCount)
                     )
                     .Map<TransactionIndex>(m => m.AutoMap()));
             if (!indexResponse.IsValid)
@@ -219,7 +343,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 LowerAddress = address.ToLower(),
                 Id = address
             };
-            if (_blockChainOptions.ContractNames.TryGetValue(chainId, out var contractNames))
+            if (_globalOptions.ContractNames.TryGetValue(chainId, out var contractNames))
             {
                 if (contractNames.TryGetValue(address, out var contractName))
                 {

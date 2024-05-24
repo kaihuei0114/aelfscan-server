@@ -37,6 +37,6 @@ public class AElfScanServerAddressHttpApiModule : AbpModule
 
         var configuration = context.Services.GetConfiguration();
         
-        Configure<BlockChainOptions>(configuration.GetSection("BlockChain"));
+        Configure<GlobalOptions>(configuration.GetSection("BlockChain"));
     }
 }

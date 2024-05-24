@@ -48,7 +48,7 @@ public class AddressAppService : IAddressAppService
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly GlobalOptions _globalOptions;
     private readonly ITokenAssetProvider _tokenAssetProvider;
     private readonly IAddressInfoProvider _addressInfoProvider;
     private readonly IContractProvider _contractProvider;
@@ -58,7 +58,7 @@ public class AddressAppService : IAddressAppService
         BlockChainProvider blockChainProvider, IIndexerGenesisProvider indexerGenesisProvider,
         ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService,
         ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
-        IOptionsSnapshot<BlockChainOptions> blockChainOptions, ITokenAssetProvider tokenAssetProvider, 
+        IOptionsSnapshot<GlobalOptions> globalOptions, ITokenAssetProvider tokenAssetProvider, 
         IAddressInfoProvider addressInfoProvider, IContractProvider contractProvider)
     {
         _logger = logger;
@@ -72,7 +72,7 @@ public class AddressAppService : IAddressAppService
         _tokenAssetProvider = tokenAssetProvider;
         _addressInfoProvider = addressInfoProvider;
         _contractProvider = contractProvider;
-        _blockChainOptions = blockChainOptions.Value;
+        _globalOptions = globalOptions.Value;
     }
 
     public async Task<GetAddressListResultDto> GetAddressListAsync(GetListInputInput input)
@@ -149,7 +149,7 @@ public class AddressAppService : IAddressAppService
         if (contractInfo != null)
         {
             result = _objectMapper.Map<ContractInfoDto, GetAddressDetailResultDto>(contractInfo);
-            result.ContractName = _blockChainOptions.GetContractName(input.ChainId, input.Address);
+            result.ContractName = _globalOptions.GetContractName(input.ChainId, input.Address);
         }
         result.ElfBalance = holderInfo.Balance;
         result.ElfPriceInUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);

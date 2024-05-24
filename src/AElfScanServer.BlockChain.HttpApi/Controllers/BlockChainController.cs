@@ -2,8 +2,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.HttpApi.Service;
+using AElfScanServer.BlockChain.Options;
 using AElfScanServer.Dtos;
+using AElfScanServer.Options;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
@@ -19,13 +23,15 @@ public class BlockChainController : AbpController
     private readonly IAddressService _addressService;
     private readonly ISearchService _searchService;
 
-    public BlockChainController(IHomePageService homePageService, IAddressService addressService,
+
+    public BlockChainController(IHomePageService homePageService,
+        IAddressService addressService,
         IBlockChainService blockChainService, ISearchService searchService)
     {
         _homePageService = homePageService;
         _blockChainService = blockChainService;
-        _addressService = addressService;
         _searchService = searchService;
+        _addressService = addressService;
     }
 
     [HttpGet]
@@ -58,7 +64,7 @@ public class BlockChainController : AbpController
         LatestTransactionsReq req)
     {
         return await _blockChainService.GetTransactionsAsync(new TransactionsRequestDto()
-            { ChainId = req.ChainId, SkipCount = 0,MaxResultCount = 6});
+            { ChainId = req.ChainId, SkipCount = 0, MaxResultCount = 6 });
     }
 
     [HttpGet]
@@ -91,7 +97,7 @@ public class BlockChainController : AbpController
     [Route("transactionDataChart")]
     public virtual async Task<TransactionPerMinuteResponseDto> GetTransactionPerMinuteAsync(
         GetTransactionPerMinuteRequestDto requestDto) =>
-        await _homePageService.GetTransactionPerMinuteAsync(requestDto);
+        await _homePageService.GetTransactionPerMinuteAsync(requestDto.ChainId);
 
 
     [HttpGet]

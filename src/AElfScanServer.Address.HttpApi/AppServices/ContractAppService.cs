@@ -30,12 +30,12 @@ public class ContractAppService : IContractAppService
     private readonly IBlockChainProvider _blockChainProvider;
     private readonly IIndexerTokenProvider _indexerTokenProvider;
     private readonly IIndexerGenesisProvider _indexerGenesisProvider;
-    private readonly BlockChainOptions _blockChainOptions;
+    private readonly GlobalOptions _globalOptions;
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IDecompilerProvider decompilerProvider, IBlockChainProvider blockChainProvider,
         IIndexerTokenProvider indexerTokenProvider, IIndexerGenesisProvider indexerGenesisProvider,
-        IOptionsSnapshot<BlockChainOptions> blockChainOptions)
+        IOptionsSnapshot<GlobalOptions> globalOptions)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -43,7 +43,7 @@ public class ContractAppService : IContractAppService
         _blockChainProvider = blockChainProvider;
         _indexerTokenProvider = indexerTokenProvider;
         _indexerGenesisProvider = indexerGenesisProvider;
-        _blockChainOptions = blockChainOptions.Value;
+        _globalOptions = globalOptions.Value;
     }
 
     public async Task<GetContractListResultDto> GetContractListAsync(GetContractContracts input)
@@ -136,7 +136,7 @@ public class ContractAppService : IContractAppService
 
     public async Task<string> GetContractName(string chainId, string address)
     {
-        _blockChainOptions.ContractNames.TryGetValue(chainId, out var contractNames);
+        _globalOptions.ContractNames.TryGetValue(chainId, out var contractNames);
         if (contractNames == null)
         {
             return "";
