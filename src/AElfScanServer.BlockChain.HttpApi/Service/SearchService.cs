@@ -86,10 +86,10 @@ public class SearchService : ISearchService, ISingletonDependency
                     await AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Token });
                     break;
                 case FilterTypes.Nfts:
-                    await AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Nft });
+                    await AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Nft, SymbolType.Nft_Collection });
                     break;
                 case FilterTypes.AllFilter:
-                    var types = new List<SymbolType> { SymbolType.Token, SymbolType.Nft };
+                    var types = new List<SymbolType> { SymbolType.Token, SymbolType.Nft, SymbolType.Nft_Collection};
                     var tokenTask = AssemblySearchTokenAsync(searchResp, request, types);
                     var addressTask = AssemblySearchAddressAsync(searchResp, request);
                     var contractAddressTask = AssemblySearchContractAddressAsync(searchResp, request);
@@ -202,7 +202,7 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             var searchToken = new SearchToken
             {
-                Name = tokenInfo.TokenName, Symbol = tokenInfo.Symbol,
+                Name = tokenInfo.TokenName, Symbol = tokenInfo.Symbol, Type = tokenInfo.Type,
                 Image = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
                     () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol))
             };
@@ -225,6 +225,11 @@ public class SearchService : ISearchService, ISingletonDependency
                     var elfPrice = lastSaleInfoDict.TryGetValue(tokenInfo.Symbol, out var priceDto)
                         ? priceDto.Price : 0;
                     searchToken.Price = Math.Round(elfPrice * elfOfUsdPrice, CommonConstant.UsdPriceValueDecimals);
+                    searchResponseDto.Nfts.Add(searchToken);
+                    break;
+                }
+                case SymbolType.Nft_Collection:
+                { 
                     searchResponseDto.Nfts.Add(searchToken);
                     break;
                 }

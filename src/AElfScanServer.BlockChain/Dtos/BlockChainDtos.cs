@@ -288,10 +288,10 @@ public class SearchTransaction
 public class SearchToken
 {
     public string Image { get; set; }
-
     public string Name { get; set; }
     public string Symbol { get; set; }
     public decimal Price { get; set; }
+    public SymbolType Type { get; set; }
 }
 
 public class SearchContract
