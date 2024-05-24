@@ -1,8 +1,6 @@
 using AElf.EntityMapping.Elasticsearch;
-using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
-using AElfScanServer;
 using AElfScanServer.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;

@@ -10,6 +10,7 @@ using AElfScanServer.BlockChain.Provider;
 using AElfScanServer.Constant;
 using AElfScanServer.Contract.Provider;
 using AElfScanServer.Dtos;
+using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using AElfScanServer.Token;
@@ -115,21 +116,56 @@ public class SearchService : ISearchService, ISingletonDependency
     
     private async Task AssemblySearchContractAddressAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
-        var contractInfoDict = await _contractProvider.GetContractListAsync(request.ChainId, new List<string> { request.Keyword });
-        searchResponseDto.Contracts = contractInfoDict.Values.Select(i => new SearchContract
+        Dictionary<string, ContractInfoDto>? contractInfoDict = null;
+        Dictionary<string, string>? contractNameDict = null;
+        if (request.SearchType == SearchTypes.ExactSearch)
         {
-            Name = _blockChainOptions.CurrentValue.GetContractName(request.ChainId, i.Address),
-            Address = i.Address
+            if (BlockHelper.IsAddress(request.Keyword))
+            {
+                contractInfoDict = await _contractProvider.GetContractListAsync(request.ChainId, new List<string> { request.Keyword });
+            }
+            else
+            {
+                contractNameDict = _blockChainOptions.CurrentValue.GetContractNameDict(request.ChainId, request.Keyword, true);
+            }
+        }
+        else
+        {
+            if (request.Keyword.Length <= CommonConstant.KeyWordContractNameMinSize)
+            {
+                return;
+            }
+            contractNameDict = _blockChainOptions.CurrentValue.GetContractNameDict(request.ChainId, request.Keyword);
+            if (request.Keyword.Length > CommonConstant.KeyWordAddressMinSize)
+            {
+                //TODO support FuzzySearch 
+                contractInfoDict = await _contractProvider.GetContractListAsync(request.ChainId, new List<string> { request.Keyword });
+            }
+        }
+        var mergeDict = MergeDict(request.ChainId, contractNameDict, contractInfoDict);
+        searchResponseDto.Contracts = mergeDict.Select(pair => new SearchContract
+        {
+            Address = pair.Key,
+            Name = pair.Value
         }).ToList();
     }
-    
+
     private async Task AssemblySearchAddressAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
-        var holderInput = new TokenHolderInput
+        TokenHolderInput holderInput;
+        if (request.SearchType == SearchTypes.ExactSearch)
         {
-            ChainId = request.ChainId, 
-            Search = request.Keyword
-        };
+            holderInput = new TokenHolderInput { ChainId = request.ChainId, Address = request.Keyword };
+        }
+        else
+        {
+            if (request.Keyword.Length <= CommonConstant.KeyWordAddressMinSize)
+            {
+                return;
+            }
+            //TODO
+            holderInput = new TokenHolderInput { ChainId = request.ChainId, Search = request.Keyword };
+        }
         holderInput.SetDefaultSort();
         var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
         searchResponseDto.Accounts = tokenHolderInfos.Items.Select(i => i.Address).ToList();
@@ -138,19 +174,21 @@ public class SearchService : ISearchService, ISingletonDependency
     private async Task AssemblySearchTokenAsync(SearchResponseDto searchResponseDto, SearchRequestDto request,
         List<SymbolType> types)
     {
-        var input = new TokenListInput()
+        var input = new TokenListInput { ChainId = request.ChainId, Types = types };
+        if (request.SearchType == SearchTypes.ExactSearch)
         {
-            ChainId = request.ChainId,
-            Types = types,
             //TODO
-            Search = request.Keyword
-        };
+            input.Search = request.Keyword;
+        }
+        else
+        {
+            input.Search = request.Keyword;
+        }
         var indexerTokenInfoList = await _tokenIndexerProvider.GetTokenListAsync(input);
         if (indexerTokenInfoList.Items.IsNullOrEmpty())
         {
             return;
         }
-
         var priceDict = new Dictionary<string, TokenPriceDto>();
         var symbols = indexerTokenInfoList.Items.Select(i => i.Symbol).Distinct().ToList();
         //batch query nft price
@@ -159,13 +197,12 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             lastSaleInfoDict = await _nftInfoProvider.GetLatestPriceAsync(request.ChainId, symbols);
         }
-
+        var elfOfUsdPriceTask = GetTokenOfUsdPriceAsync(priceDict, CurrencyConstant.ElfCurrency);
         foreach (var tokenInfo in indexerTokenInfoList.Items)
         {
             var searchToken = new SearchToken
             {
-                Name = tokenInfo.TokenName,
-                Symbol = tokenInfo.Symbol,
+                Name = tokenInfo.TokenName, Symbol = tokenInfo.Symbol,
                 Image = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
                     () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol))
             };
@@ -184,7 +221,7 @@ public class SearchService : ISearchService, ISingletonDependency
                 }
                 case SymbolType.Nft:
                 {
-                    var elfOfUsdPrice = await GetTokenOfUsdPriceAsync(priceDict, CurrencyConstant.ElfCurrency);
+                    var elfOfUsdPrice = await elfOfUsdPriceTask;
                     var elfPrice = lastSaleInfoDict.TryGetValue(tokenInfo.Symbol, out var priceDto)
                         ? priceDto.Price : 0;
                     searchToken.Price = Math.Round(elfPrice * elfOfUsdPrice, CommonConstant.UsdPriceValueDecimals);
@@ -249,5 +286,29 @@ public class SearchService : ISearchService, ISingletonDependency
         priceDict[symbol] = priceDto;
 
         return priceDto.Price;
+    }
+
+    private Dictionary<string, string> MergeDict(string chainId, Dictionary<string, string>? contractNameDict, Dictionary<string, ContractInfoDto>? contractInfoDict)
+    {
+        var result = new Dictionary<string, string>();
+        if (contractNameDict != null)
+        {
+            foreach (var kvp in contractNameDict)
+            {
+                result[kvp.Key] = kvp.Value;
+            }
+        }
+        if (contractInfoDict != null)
+        {
+            foreach (var kvp in contractInfoDict)
+            {
+                if (!result.ContainsKey(kvp.Key))
+                {
+                    var name = _blockChainOptions.CurrentValue.GetContractName(chainId, kvp.Key);
+                    result[kvp.Key] = name;
+                }
+            }
+        }
+        return result;
     }
 }

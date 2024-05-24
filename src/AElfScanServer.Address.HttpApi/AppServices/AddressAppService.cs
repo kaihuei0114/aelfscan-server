@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Address.HttpApi.Dtos;
-using AElfScanServer.Address.HttpApi.Options;
 using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.Address.Provider;
 using AElfScanServer.BlockChain;
@@ -18,7 +17,6 @@ using AElfScanServer.Options;
 using AElfScanServer.Token;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Provider;
-using AElfScanServer.TokenDataFunction.Dtos;
 using AElfScanServer.TokenDataFunction.Dtos.Indexer;
 using AElfScanServer.TokenDataFunction.Dtos.Input;
 using AElfScanServer.TokenDataFunction.Provider;
@@ -124,39 +122,17 @@ public class AddressAppService : IAddressAppService
 
     public async Task<GetAddressDetailResultDto> GetAddressDetailAsync(GetAddressDetailInput input)
     {
-        var result = new GetAddressDetailResultDto();
-        Task<TokenPriceDto> priceDtoTask = null;
-        Task<AddressAssetDto> curAddressAssetTask = null;
-        Task<AddressAssetDto> dailyAddressAssetTask = null;
-        Task<List<HolderInfo>> holderInfosTask = null;
-        Task<IndexerTokenTransferListDto> tokenTransferListDtoTask = null;
-
-        if (_blockChainOptions.ContractNames.TryGetValue(input.ChainId, out var contractNames))
-        {
-            if (contractNames.TryGetValue(input.Address, out var name))
-            {
-                var contractInfo = await _indexerGenesisProvider.GetContractAsync(input.ChainId, input.Address);
-                result = _objectMapper.Map<ContractInfoDto, GetAddressDetailResultDto>(contractInfo);
-                result.Author = contractInfo.Author;
-                result.ContractName = name;
-            }
-        }
-        
-        priceDtoTask = _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
-        curAddressAssetTask = _tokenAssetProvider.GetTokenValuesAsync(input.ChainId, input.Address);
-        dailyAddressAssetTask = _addressInfoProvider.GetAddressAssetAsync(AddressAssetType.Daily, input.ChainId, input.Address);
+        var priceDtoTask = _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
+        var curAddressAssetTask = _tokenAssetProvider.GetTokenValuesAsync(input.ChainId, input.Address);
+        var dailyAddressAssetTask = _addressInfoProvider.GetAddressAssetAsync(AddressAssetType.Daily, input.ChainId, input.Address);
         var holderInfoTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, CurrencyConstant.ElfCurrency, input.Address);
-        holderInfosTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Address, new List<SymbolType> { SymbolType.Token, SymbolType.Nft });
-        
-        var transferInput = new TokenTransferInput
-        {
-            ChainId = input.ChainId,
-            Address = input.Address
-        };
+        var holderInfosTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Address, new List<SymbolType> { SymbolType.Token, SymbolType.Nft });
+        var contractInfoTask = _indexerGenesisProvider.GetContractAsync(input.ChainId, input.Address);
+        var transferInput = new TokenTransferInput { ChainId = input.ChainId, Address = input.Address };
         transferInput.SetDefaultSort();
-        tokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(transferInput);
+        var tokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(transferInput);
 
-        await Task.WhenAll(holderInfoTask, priceDtoTask, curAddressAssetTask, dailyAddressAssetTask, holderInfosTask, tokenTransferListDtoTask);
+        await Task.WhenAll(holderInfoTask, priceDtoTask, curAddressAssetTask, dailyAddressAssetTask, holderInfosTask, tokenTransferListDtoTask, contractInfoTask);
 
         var holderInfo = await holderInfoTask;
         var priceDto = await priceDtoTask;
@@ -164,10 +140,17 @@ public class AddressAppService : IAddressAppService
         var dailyAddressAsset = await dailyAddressAssetTask;
         var holderInfos = await holderInfosTask;
         var tokenTransferListDto = await tokenTransferListDtoTask;
+        var contractInfo = await contractInfoTask;
         
         _logger.LogInformation("GetAddressDetail chainId: {chainId}, dailyAddressAsset: {dailyAddressAsset}",
             input.ChainId, JsonConvert.SerializeObject(dailyAddressAsset));
-        
+        //of result info
+        var result = new GetAddressDetailResultDto();
+        if (contractInfo != null)
+        {
+            result = _objectMapper.Map<ContractInfoDto, GetAddressDetailResultDto>(contractInfo);
+            result.ContractName = _blockChainOptions.GetContractName(input.ChainId, input.Address);
+        }
         result.ElfBalance = holderInfo.Balance;
         result.ElfPriceInUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
         result.ElfBalanceOfUsd = Math.Round(holderInfo.Balance * priceDto.Price, CommonConstant.UsdValueDecimals);

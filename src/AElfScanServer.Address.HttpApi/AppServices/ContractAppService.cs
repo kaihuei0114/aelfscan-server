@@ -1,19 +1,16 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Address.HttpApi.Dtos;
-using AElfScanServer.Address.HttpApi.Options;
 using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Dtos.Indexer;
+using AElfScanServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
-using ContractDto = AElfScanServer.Address.HttpApi.Dtos.ContractDto;
-using ContractRecordDto = AElfScanServer.Address.HttpApi.Dtos.ContractRecordDto;
 
 namespace AElfScanServer.Address.HttpApi.AppServices;
 

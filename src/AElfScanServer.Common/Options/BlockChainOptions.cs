@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace AElfScanServer.BlockChain.Options;
+namespace AElfScanServer.Options;
 
 public class BlockChainOptions
 {
@@ -54,5 +56,27 @@ public class BlockChainOptions
         }
 
         return contractNames.TryGetValue(address, out var name) ? name : null;
+    }
+    
+    public Dictionary<string, string> GetContractNameDict(string chainId, string keyword, bool exactMatch = false)
+    {
+        if (!ContractNames.TryGetValue(chainId, out var contractNames))
+        {
+            return new();
+        }
+        var filteredContractNames = contractNames
+            .Where(kv => IsMatch(kv.Value, keyword, exactMatch))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+        return filteredContractNames;
+    }
+    
+    
+    private static bool IsMatch(string value, string keyword, bool exactMatch)
+    {
+        if (exactMatch)
+        {
+            return value == keyword;
+        }
+        return value.Contains(keyword, StringComparison.OrdinalIgnoreCase);
     }
 }

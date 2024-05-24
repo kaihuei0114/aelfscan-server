@@ -17,7 +17,21 @@ public class BlockHelper
 
         return true;
     }
-    
+
+
+    public static bool IsAddress(string address)
+    {
+        try
+        {
+            AElf.Types.Address.FromBase58(address);
+        }
+        catch
+        {
+            return false;
+        }
+        return true;
+    }
+
     public static bool IsBlockHeight(string input)
     {
         if (int.TryParse(input, out int height) && height >= 0)

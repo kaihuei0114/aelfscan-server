@@ -1,32 +1,24 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
-using AElf.Client.MultiToken;
-using AElf.Client.Treasury;
-using AElf.Client.Consensus;
-using AElf.Client.Consensus.AEDPoS;
 using AElf.Client.Service;
 using AElf.Indexing.Elasticsearch;
 using AElf.Standards.ACS10;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
+using AElfScanServer.Options;
 using Elasticsearch.Net;
-using AElfScanServer.Common;
-using AElfScanServer.Helper;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
-using Volo.Abp.DependencyInjection;
 using Volo.Abp.Caching.StackExchangeRedis;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
-using Nito.Collections;
-using StackExchange.Redis;
+using Volo.Abp.DependencyInjection;
 
 namespace AElfScanServer.BlockChain.Provider;
 

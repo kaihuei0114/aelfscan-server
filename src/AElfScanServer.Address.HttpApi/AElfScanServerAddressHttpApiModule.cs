@@ -1,11 +1,8 @@
 using AElfScanServer.Address.HttpApi.AppServices;
-using AElfScanServer.Address.HttpApi.Options;
 using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.BlockChain;
+using AElfScanServer.Options;
 using AElfScanServer.Token;
-using AElfScanServer;
-using AElfScanServer.Address.Provider;
-using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Provider;
 using AElfScanServer.TokenDataFunction.Service;
 using Microsoft.Extensions.DependencyInjection;

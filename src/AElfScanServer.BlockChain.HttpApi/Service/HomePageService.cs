@@ -5,22 +5,19 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf.Client.Service;
 using AElf.Indexing.Elasticsearch;
-using Elasticsearch.Net;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
-using AElfScanServer.Common;
-using AElfScanServer.Common.Helper;
 using AElfScanServer.Dtos;
 using AElfScanServer.Helper;
+using AElfScanServer.Options;
 using AElfScanServer.TokenDataFunction.Provider;
-using Google.Protobuf.WellKnownTypes;
+using Elasticsearch.Net;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using Volo.Abp.DependencyInjection;
-using Field = Google.Protobuf.WellKnownTypes.Field;
 
 namespace AElfScanServer.BlockChain.HttpApi.Service;
 
