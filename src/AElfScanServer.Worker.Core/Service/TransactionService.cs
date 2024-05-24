@@ -118,8 +118,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 if (transactionsAsync == null || transactionsAsync.Items.Count <= 0)
                 {
                     transactionsAsync =
-                        await _blockChainIndexerProvider.GetTransactionsAsync(chainId, 0, 1000, 0,
-                            0);
+                        await _blockChainIndexerProvider.GetTransactionsAsync(chainId, 0, 1000);
                 }
 
                 if (transactionsAsync == null)
