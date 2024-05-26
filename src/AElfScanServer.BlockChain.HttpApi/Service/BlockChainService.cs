@@ -602,7 +602,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             var startBlockHeight = endBlockHeight - requestDto.MaxResultCount;
 
             _logger.LogInformation($"time get blockheight:{stopwatch1.Elapsed.TotalSeconds}");
-   
+
             List<Task> getBlockRawDataTasks = new List<Task>();
             List<IndexerBlockDto> blockList = new List<IndexerBlockDto>();
             Dictionary<string, long> blockBurntFee = new Dictionary<string, long>();
@@ -660,7 +660,6 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
                 result.Blocks.Add(latestBlockDto);
                 latestBlockDto.Reward = "12500000";
-              
             }
 
 
@@ -756,7 +755,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         try
         {
             var indexerTransactionList = await _blockChainIndexerProvider.GetTransactionsAsync(requestDto.ChainId,
-                requestDto.SkipCount, requestDto.MaxResultCount, 0, 0);
+                requestDto.SkipCount, requestDto.MaxResultCount, 0, 0, requestDto.Address);
 
 
             foreach (var transactionIndex in indexerTransactionList.Items)
@@ -790,7 +789,6 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         return result;
     }
 
-    
 
     public async Task<TransactionsResponseDto> ParseIndexerTransactionListAsync(List<IndexerTransactionDto> list)
     {

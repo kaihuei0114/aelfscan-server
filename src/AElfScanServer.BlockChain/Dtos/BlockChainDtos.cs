@@ -60,8 +60,7 @@ public class TransactionsRequestDto : PagedResultRequestDto
     public string ChainId { get; set; }
     public string TransactionId { get; set; } = "";
     public int BlockHeight { get; set; }
-
-
+    
     public string Address { get; set; } = "";
 }
 
