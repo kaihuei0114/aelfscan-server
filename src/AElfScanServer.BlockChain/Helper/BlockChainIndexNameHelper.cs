@@ -36,17 +36,7 @@ public class RedisKeyHelper
     {
         return $"explore_{chainId}_transaction_chart";
     }
-
-    public static string TransactionCountKey(string chainId)
-    {
-        return $"explore_{chainId}_transaction_count";
-    }
-
-    public static string AddressCountKey(string chainId)
-    {
-        return $"explore_{chainId}_address_count";
-    }
-
+    
     public static string RewardKey(string chainId)
     {
         return $"explore_{chainId}_rewardKey";

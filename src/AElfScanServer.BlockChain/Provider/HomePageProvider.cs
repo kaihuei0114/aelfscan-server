@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Newtonsoft.Json;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 
@@ -166,8 +168,6 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
         return transactionCountPerMinuteList;
     }
 
-  
-
 
     // public async Task UpdateTransactionRateAsync()
     // {
@@ -271,7 +271,6 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
 
     public async Task<long> GetTransactionPerSecondAsync(string chainId)
     {
-
         try
         {
             DateTime currentTime = DateTime.Now;
@@ -340,71 +339,22 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
     {
         try
         {
-            // await ConnectAsync();
-            // var redisValue = RedisDatabase.StringGet(TransactionCountRedisKey);
-            // if (!redisValue.IsNullOrEmpty)
-            // {
-            //     return Convert.ToInt64(redisValue);
-            // }
-            
-            DateTime currentTime = DateTime.Now;
-            DateTime previousMinute = currentTime.AddMinutes(-1);
-            long timestamp = (long)(previousMinute - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
-            
-            var mustQuery = new List<Func<QueryContainerDescriptor<TransactionIndex>, QueryContainer>>();
-            mustQuery.Add(q => q.DateRange(r => r.Field(f => f.BlockTime).GreaterThan(previousMinute)));
-            // mustQuery.Add(q => q.(s => s.Field(f => f.Timestamp, SortOrder.Descending));
-            
-            QueryContainer Filter(QueryContainerDescriptor<TransactionIndex> f) => f.Bool(b => b.Must(mustQuery));
-            var countAsync = await _transactionIndexRepository.CountAsync(Filter,
-                indexPrefix: BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId));
-
-
-            if (!countAsync.IsValid)
-            {
-                _logger.LogError("count transaction err:{m},chainId:{c}", countAsync.DebugInformation, chainId);
-                return 0;
-            }
-            //
-            // RedisDatabase.StringSet(TransactionCountRedisKey, countAsync.Count,
-            //     TimeSpan.FromSeconds(_blockChainOptions.TransactionCountCacheExpiration));
-            return countAsync.Count;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "count transaction err,chainId:{c}", chainId);
-            return 0;
-        }
-    }
-
-    public async Task<long> GetAddressCount(string chainId)
-    {
-        try
-        {
             await ConnectAsync();
-            var redisValue = RedisDatabase.StringGet(AddressCountRedisKey);
-            if (!redisValue.IsNullOrEmpty)
-            {
-                return Convert.ToInt64(redisValue);
-            }
+            var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionChartData(chainId));
 
-            var countAsync = await _addressIndexRepository.CountAsync(null,
-                indexPrefix: BlockChainIndexNameHelper.GenerateAddressIndexName(chainId));
-
-            if (!countAsync.IsValid)
+            var transactionCountPerMinuteDtos =
+                JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);
+            if (transactionCountPerMinuteDtos.IsNullOrEmpty())
             {
-                _logger.LogError("count address err:{m},chainId:{c}", countAsync.DebugInformation, chainId);
+                _logger.LogWarning("Transaction count per minute redis cache is null chainId:{c}", chainId);
                 return 0;
             }
 
-            RedisDatabase.StringSet(AddressCountRedisKey, countAsync.Count,
-                TimeSpan.FromSeconds(_globalOptions.AddressCountCacheExpiration));
-
-            return countAsync.Count;
+            return transactionCountPerMinuteDtos.Last().Count;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "count address err,chainId:{c}", chainId);
+            _logger.LogError(e, "Get  transaction count per minute err,chainId:{c}", chainId);
             return 0;
         }
     }
