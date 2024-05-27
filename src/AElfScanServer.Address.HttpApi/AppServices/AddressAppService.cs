@@ -123,6 +123,8 @@ public class AddressAppService : IAddressAppService
     public async Task<GetAddressDetailResultDto> GetAddressDetailAsync(GetAddressDetailInput input)
     {
         var priceDtoTask = _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
+        var timestamp = TimeHelper.GetTimeStampFromDateTime(DateTime.Today);
+        var priceHisDtoTask = _tokenPriceService.GetTokenHistoryPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency, timestamp);
         var curAddressAssetTask = _tokenAssetProvider.GetTokenValuesAsync(input.ChainId, input.Address);
         var dailyAddressAssetTask = _addressInfoProvider.GetAddressAssetAsync(AddressAssetType.Daily, input.ChainId, input.Address);
         var holderInfoTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, CurrencyConstant.ElfCurrency, input.Address);
@@ -132,10 +134,12 @@ public class AddressAppService : IAddressAppService
         transferInput.SetDefaultSort();
         var tokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(transferInput);
 
-        await Task.WhenAll(holderInfoTask, priceDtoTask, curAddressAssetTask, dailyAddressAssetTask, holderInfosTask, tokenTransferListDtoTask, contractInfoTask);
+        await Task.WhenAll(priceDtoTask, priceHisDtoTask, holderInfoTask, curAddressAssetTask, dailyAddressAssetTask, 
+            holderInfosTask, tokenTransferListDtoTask, contractInfoTask);
 
         var holderInfo = await holderInfoTask;
-        var priceDto = await priceDtoTask;
+        var priceDto = await priceHisDtoTask;
+        var priceHisDto = await priceHisDtoTask;
         var curAddressAsset = await curAddressAssetTask;
         var dailyAddressAsset = await dailyAddressAssetTask;
         var holderInfos = await holderInfosTask;
@@ -157,11 +161,13 @@ public class AddressAppService : IAddressAppService
         result.TotalValueOfElf = new decimal(curAddressAsset.GetTotalValueOfElf());
         result.TotalValueOfUsd = Math.Round(result.TotalValueOfElf * priceDto.Price, CommonConstant.UsdValueDecimals);
 
-        if (dailyAddressAsset != null && dailyAddressAsset.GetTotalValueOfElf() != 0)
+        if (dailyAddressAsset != null && dailyAddressAsset.GetTotalValueOfElf() != 0 && priceHisDto.Price > 0)
         {
-            result.TotalValueOfUsdChangeRate = (decimal)Math.Round(
-                (curAddressAsset.GetTotalValueOfElf() - dailyAddressAsset.GetTotalValueOfElf()) /
-                dailyAddressAsset.GetTotalValueOfElf() * 100, CommonConstant.PercentageValueDecimals);
+            var dailyTotalValueOfUsd = (decimal)dailyAddressAsset.GetTotalValueOfElf() * priceHisDto.Price;
+            var curTotalValueOfUsd = (decimal)curAddressAsset.GetTotalValueOfElf() * priceDto.Price;
+            result.TotalValueOfUsdChangeRate =
+                Math.Round((curTotalValueOfUsd - dailyTotalValueOfUsd) / dailyTotalValueOfUsd * 100,
+                    CommonConstant.PercentageValueDecimals);
         }
         result.TokenHoldings = holderInfos.Count;
         
