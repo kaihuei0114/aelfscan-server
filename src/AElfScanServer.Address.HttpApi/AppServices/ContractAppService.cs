@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -5,6 +6,8 @@ using AElfScanServer.Address.HttpApi.Dtos;
 using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
+using AElfScanServer.BlockChain.Dtos.Indexer;
+using AElfScanServer.BlockChain.Provider;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Options;
 using Microsoft.Extensions.Logging;
@@ -30,12 +33,13 @@ public class ContractAppService : IContractAppService
     private readonly IBlockChainProvider _blockChainProvider;
     private readonly IIndexerTokenProvider _indexerTokenProvider;
     private readonly IIndexerGenesisProvider _indexerGenesisProvider;
-    private readonly GlobalOptions _globalOptions;
+    private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
+    private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IDecompilerProvider decompilerProvider, IBlockChainProvider blockChainProvider,
         IIndexerTokenProvider indexerTokenProvider, IIndexerGenesisProvider indexerGenesisProvider,
-        IOptionsSnapshot<GlobalOptions> globalOptions)
+        IOptionsMonitor<GlobalOptions> globalOptions, IBlockChainIndexerProvider blockChainIndexerProvider)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -43,38 +47,38 @@ public class ContractAppService : IContractAppService
         _blockChainProvider = blockChainProvider;
         _indexerTokenProvider = indexerTokenProvider;
         _indexerGenesisProvider = indexerGenesisProvider;
-        _globalOptions = globalOptions.Value;
+        _globalOptions = globalOptions;
+        _blockChainIndexerProvider = blockChainIndexerProvider;
     }
 
     public async Task<GetContractListResultDto> GetContractListAsync(GetContractContracts input)
     {
         _logger.LogInformation("GetContractListAsync");
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
-        
+
         // todo sort by update time
         var getContractListResult =
             await _indexerGenesisProvider.GetContractListAsync(input.ChainId, input.SkipCount, input.MaxResultCount);
         result.Total = getContractListResult.Count;
-        // var getContractListResult= await MockData();
 
-        // getContractListResult.Add(new ContractInfoDto()
-        // {
-        //     Address = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
-        //     ContractVersion = "1.0",
-        //     Metadata = new MetadataDto()
-        //     {
-        //         Block = new BlockMetadataDto()
-        //         {
-        //             BlockTime = DateTime.Now
-        //         }
-        //     },
-        //     ContractType = "User"
-        // });
+
+        var list = getContractListResult.Select(s => s.Address).ToList();
+
+        var addressTransactionCountList = new List<IndexerAddressTransactionCountDto>();
+
+        try
+        {
+            addressTransactionCountList =
+                await _blockChainIndexerProvider.GetAddressTransactionCount(input.ChainId, list);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Query address transaction count err:{e}", e);
+        }
+
 
         foreach (var info in getContractListResult)
         {
-            // var transactions = await _blockChainProvider.GetTransactionsAsync(info.ChainId, info.Address);
-
             var contractInfo = new ContractDto
             {
                 Address = info.Address, // contractInfo
@@ -84,6 +88,14 @@ public class ContractAppService : IContractAppService
                 Txns = 0,
                 ContractName = GetContractName(input.ChainId, info.Address).Result
             };
+
+            if (!addressTransactionCountList.IsNullOrEmpty() && addressTransactionCountList.Count > 0)
+            {
+                var countInfo =
+                    addressTransactionCountList.Where(w => w.Address == info.Address).FirstOrDefault();
+
+                contractInfo.Txns = countInfo == null ? 0 : countInfo.Count;
+            }
 
             // todo: support batch search by address list.
             var addressTokenList = await _indexerTokenProvider.GetAddressTokenListAsync(input.ChainId, info.Address,
@@ -100,43 +112,9 @@ public class ContractAppService : IContractAppService
     }
 
 
-    // public async Task<List<ContractInfoDto>> MockData()
-    // {
-    //     var contractDtos = new List<ContractInfoDto>();
-    //
-    //
-    //     contractDtos.Add(new ContractInfoDto()
-    //     {
-    //         Address = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
-    //         ContractType = "User",
-    //         ContractVersion = "1.4.0.0",
-    //         BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
-    //     });
-    //
-    //     contractDtos.Add(new ContractInfoDto()
-    //     {
-    //         Address = "ZYNkxNAzswRC8UeHc6bYMdRmbmLqYDPqZv7sE5d9WuJ5rRQEi",
-    //         ContractType = "User",
-    //         ContractVersion = "1.2.1.0",
-    //         BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
-    //     });
-    //
-    //
-    //     contractDtos.Add(new ContractInfoDto()
-    //     {
-    //         Address = "Qx3QMZPstem3UHU6qjc1PsufaJoJcKj2kC2sCEnzsqCjAJ3At",
-    //         ContractType = "User",
-    //         ContractVersion = "1.0.0.0",
-    //         BlockTime = new DateTime(2024, 5, 10, 17, 37, 44),
-    //     });
-    //
-    //
-    //     return contractDtos;
-    // }
-
     public async Task<string> GetContractName(string chainId, string address)
     {
-        _globalOptions.ContractNames.TryGetValue(chainId, out var contractNames);
+        _globalOptions.CurrentValue.ContractNames.TryGetValue(chainId, out var contractNames);
         if (contractNames == null)
         {
             return "";
@@ -184,7 +162,7 @@ public class ContractAppService : IContractAppService
             var tempContractRecord = _objectMapper.Map<ContractInfoDto, ContractRecordDto>(t.ContractInfo);
             tempContractRecord.BlockTime = t.Metadata.Block.BlockTime;
             tempContractRecord.TransactionId = t.TransactionId;
-            tempContractRecord.BlockHeight= t.Metadata.Block.BlockHeight;
+            tempContractRecord.BlockHeight = t.Metadata.Block.BlockHeight;
             tempContractRecord.ContractOperationType = t.OperationType;
             return tempContractRecord;
         }).OrderByDescending(t => t.Version).ToList();

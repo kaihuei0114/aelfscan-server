@@ -1,13 +1,11 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Dtos.Indexer;
 using AElfScanServer.Constant;
 using AElfScanServer.GraphQL;
 using GraphQL;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
-using IndexerTransactionCountDto = AElfScanServer.BlockChain.Dtos.Indexer.IndexerTransactionCountDto;
-using IndexerTransactionDto = AElfScanServer.BlockChain.Dtos.IndexerTransactionDto;
 
 namespace AElfScanServer.BlockChain.Provider;
 
@@ -15,9 +13,13 @@ public interface IBlockChainIndexerProvider
 {
     public Task<IndexerTransactionListResultDto>
         GetTransactionsAsync(string chainId, int skipCount,
-            int maxResultCount, long startTime, long endTime);
+            int maxResultCount, long startTime = 0, long endTime = 0, string address = "");
 
     public Task<long> GetTransactionCount(string chainId);
+    
+    public Task<List<IndexerAddressTransactionCountDto>> GetAddressTransactionCount(string chainId,List<string> addressList);
+
+    
 }
 
 public class BlockChainIndexerProvider : IBlockChainIndexerProvider, ISingletonDependency
@@ -30,18 +32,45 @@ public class BlockChainIndexerProvider : IBlockChainIndexerProvider, ISingletonD
         _graphQlFactory = graphQlFactory;
         _objectMapper = objectMapper;
     }
+    
 
+    public async Task<List<IndexerAddressTransactionCountDto>> GetAddressTransactionCount(string chainId, List<string> addressList)
+    {
+        var graphQlHelper = _graphQlFactory.GetGraphQlHelper(AElfIndexerConstant.BlockChainIndexer);
+
+        var indexerResult = await graphQlHelper.QueryAsync<IndexerAddressTransactionCountResultDto>(new GraphQLRequest
+        {
+            Query =
+                @"query($chainId:String!,$addressList:[String!]){
+                    addressTransactionCount(input: {chainId:$chainId,addressList:$addressList})
+                {
+         
+                    items {
+                          count
+                          chainId
+                          address
+                         
+                    }
+                }
+            }",
+            Variables = new
+            {
+                chainId = chainId,addressList = addressList
+            }
+        });
+        return indexerResult.AddressTransactionCount.Items;
+    }
 
     public async Task<IndexerTransactionListResultDto> GetTransactionsAsync(string chainId, int skipCount,
-        int maxResultCount, long startTime, long endTime)
+        int maxResultCount, long startTime = 0, long endTime = 0, string address = "")
     {
         var graphQlHelper = _graphQlFactory.GetGraphQlHelper(AElfIndexerConstant.BlockChainIndexer);
 
         var indexerResult = await graphQlHelper.QueryAsync<IndexerTransactionResultDto>(new GraphQLRequest
         {
             Query =
-                @"query($chainId:String!,$skipCount:Int!,$maxResultCount:Int!,$startTime:Long!,$endTime:Long!){
-                    transactionInfos(input: {chainId:$chainId,skipCount:$skipCount,maxResultCount:$maxResultCount,startTime:$startTime,endTime:$endTime})
+                @"query($chainId:String!,$skipCount:Int!,$maxResultCount:Int!,$startTime:Long!,$endTime:Long!,$address:String!){
+                    transactionInfos(input: {chainId:$chainId,skipCount:$skipCount,maxResultCount:$maxResultCount,startTime:$startTime,endTime:$endTime,address:$address})
                 {
                   totalCount
                     items {
@@ -67,7 +96,7 @@ public class BlockChainIndexerProvider : IBlockChainIndexerProvider, ISingletonD
             Variables = new
             {
                 chainId = chainId, skipCount = skipCount, maxResultCount = maxResultCount, startTime = startTime,
-                endTime = endTime
+                endTime = endTime, address = address
             }
         });
         return indexerResult?.TransactionInfos;

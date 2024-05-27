@@ -10,3 +10,4 @@ public class GraphQLDto
     public long BlockHeight { get; set; }
     public DateTime BlockTime { get; set; }
 }
+

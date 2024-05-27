@@ -30,6 +30,7 @@ public class DecompilerProvider : IDecompilerProvider, ISingletonDependency
 
     public async Task<GetContractFilesResponseDto> GetFilesAsync(string base64String)
     {
+        _logger.LogInformation("DecompilerOptions url :{u}", _decompilerOptions.Url);
         return await _httpProvider.PostAsync<GetContractFilesResponseDto>(_decompilerOptions.Url,
             RequestMediaType.Json, new Dictionary<string, string> { { "Base64String", base64String } },
             new Dictionary<string, string>());
