@@ -26,7 +26,7 @@ public class GlobalOptions
     public string BNSecretKey { get; set; }
     public string BNBaseUrl { get; set; }
 
-    public long RewardCacheExpiration { get; set; }
+    public long RewardCacheExpiration { get; set; } = 10;
     public long TransactionPerMinuteCount { get; set; }
 
     public string ConsensusContractAddress { get; set; }
@@ -56,26 +56,28 @@ public class GlobalOptions
 
         return contractNames.TryGetValue(address, out var name) ? name : null;
     }
-    
+
     public Dictionary<string, string> GetContractNameDict(string chainId, string keyword, bool exactMatch = false)
     {
         if (!ContractNames.TryGetValue(chainId, out var contractNames))
         {
             return new();
         }
+
         var filteredContractNames = contractNames
             .Where(kv => IsMatch(kv.Value, keyword, exactMatch))
             .ToDictionary(kv => kv.Key, kv => kv.Value);
         return filteredContractNames;
     }
-    
-    
+
+
     private static bool IsMatch(string value, string keyword, bool exactMatch)
     {
         if (exactMatch)
         {
             return value == keyword;
         }
+
         return value.Contains(keyword, StringComparison.OrdinalIgnoreCase);
     }
 }

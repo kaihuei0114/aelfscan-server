@@ -197,7 +197,7 @@ public class AElfScanServerWorkerModule : AbpModule
     {
         // context.AddBackgroundWorkerAsync<TransactionWorker>();
         context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
-        // context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
+        context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
         // context.AddBackgroundWorkerAsync<BlockChainProducerInfoSyncWorker>();
         // context.AddBackgroundWorkerAsync<ContractInfoSyncWorker>();
     }

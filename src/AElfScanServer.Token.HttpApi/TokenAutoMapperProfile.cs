@@ -44,11 +44,15 @@ public class TokenAutoMapperProfile : Profile
             .ReverseMap()
             ;
         CreateMap<IndexerTransferInfoDto, NftTransferInfoDto>()
+            .ForPath(t => t.BlockTime, m => m.MapFrom(u => BaseConverter.OfBlockTime(u.Metadata)))
+            .ForPath(t => t.BlockHeight, m => m.MapFrom(u => BaseConverter.OfBlockHeight(u.Metadata)))
             .ForPath(t => t.Item.Name, m => m.MapFrom(u => u.Token.CollectionSymbol))
             .ForPath(t => t.Item.Symbol, m => m.MapFrom(u => u.Token.Symbol))
             .ForMember(t => t.TransactionId, m => m.MapFrom(u => u.TransactionId))
             .ForMember(t => t.Value, m => m.MapFrom(u => u.FormatAmount))
             .ForMember(t => t.Status, m => m.MapFrom(u => TokenInfoHelper.OfTransactionStatus(u.Status)))
+            .ForMember(t => t.From, m => m.Ignore())
+            .ForMember(t => t.To, m => m.Ignore())
             .ReverseMap()
             ;
         CreateMap<IndexerTokenInfoDto, NftInventoryDto>()

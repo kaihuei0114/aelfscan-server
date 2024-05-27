@@ -11,8 +11,7 @@ public class IndexerTransferInfoDto
     public string From { get; set; } = "";
     public string To { get; set; } = "";
     public string Method { get; set; }
-    public long BlockHeight { get; set; }
-    public DateTime BlockTime { get; set; }
+    
     public long Amount { get; set; } 
     public decimal FormatAmount { get; set; }
     public IndexerTokenBaseDto Token { get; set; }

@@ -34,6 +34,8 @@ public interface ITokenIndexerProvider
     Task<HolderInfo> GetHolderInfoAsync(string chainId, string symbol, string address);
     Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictAsync(string chainId, List<string> symbols);
     Task<TokenTransferInfosDto> GetTokenTransfersAsync(TokenTransferInput input);
+
+    Task<List<BlockBurnFeeDto>> GetBlockBurntFeeListAsync(string chainId, long startBlockHeight, long endBlockHeight);
 }
 
 public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
@@ -52,6 +54,43 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         _contractProvider = contractProvider;
     }
 
+    public async Task<List<BlockBurnFeeDto>> GetBlockBurntFeeListAsync(string chainId, long startBlockHeight,
+        long endBlockHeight)
+    {
+        var list = new List<BlockBurnFeeDto>();
+
+        var graphQlHelper = GetGraphQlHelper();
+
+        var result = await graphQlHelper.QueryAsync<BlockBurnFeeResultDto>(
+            new GraphQLRequest
+            {
+                Query =
+                    @"query($chainId:String!,$beginBlockHeight:Long!,$endBlockHeight:Long!){
+                        blockBurnFeeInfo(input: {chainId:$chainId,beginBlockHeight:$beginBlockHeight,endBlockHeight:$endBlockHeight}){
+                          items {
+                              address
+                              token {
+                                symbol
+                                amount
+                                blockHeight
+                                
+                              }
+                           }
+                        }
+                    }",
+                Variables = new
+                {
+                    chainId = chainId, beginBlockHeight = startBlockHeight, endBlockHeight = endBlockHeight
+                }
+            });
+
+        if (result == null || result.BlockBurnFeeInfo == null)
+        {
+            return list;
+        }
+
+        return result.BlockBurnFeeInfo.Items;
+    }
 
     public async Task<int> GetAccountCountAsync(string chainId)
     {
@@ -221,7 +260,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             {
                 chainId = input.ChainId, symbol = input.Symbol, collectionSymbol = input.CollectionSymbol,
                 skipCount = input.SkipCount, maxResultCount = input.MaxResultCount, address = input.Address,
-                types = input.Types, symbols = input.Symbols, searchSymbols = input.SearchSymbols, 
+                types = input.Types, symbols = input.Symbols, searchSymbols = input.SearchSymbols,
                 search = input.Search, sort = input.Sort, orderBy = input.OrderBy
             }
         });
@@ -232,12 +271,12 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
     {
         return _graphQlFactory.GetGraphQlHelper(AElfIndexerConstant.TokenIndexer);
     }
-    
+
     public async Task<List<HolderInfo>> GetHolderInfoAsync(string chainId, string address, List<SymbolType> types)
     {
         return await GetHolderInfosAsync(chainId, address, types);
     }
-    
+
     public async Task<HolderInfo> GetHolderInfoAsync(string chainId, string symbol, string address)
     {
         var tokenHolderInput = new TokenHolderInput
@@ -254,7 +293,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         }).ToList();
         return list.IsNullOrEmpty() ? new HolderInfo() : list[0];
     }
-    
+
     private async Task<List<HolderInfo>> GetHolderInfosAsync(string chainId, string address, List<SymbolType> types)
     {
         var tokenHolderInput = new TokenHolderInput
@@ -291,14 +330,14 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
 
         return allHolderInfos;
     }
-    
+
     public async Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictAsync(string chainId, List<string> symbols)
     {
         var input = new TokenListInput
         {
             ChainId = chainId,
             Symbols = symbols,
-            Types =  EnumConverter.GetEnumValuesList<SymbolType>(),
+            Types = EnumConverter.GetEnumValuesList<SymbolType>(),
             MaxResultCount = symbols.Count
         };
         var indexerTokenListDto = await GetTokenListAsync(input);
@@ -312,6 +351,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         {
             return new TokenTransferInfosDto();
         }
+
         var list = await ConvertIndexerTokenTransferDtoAsync(indexerTokenTransfer.Items, input.ChainId);
         var result = new TokenTransferInfosDto
         {
@@ -320,8 +360,9 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         };
         return result;
     }
-    
-    private async Task<List<TokenTransferInfoDto>> ConvertIndexerTokenTransferDtoAsync(List<IndexerTransferInfoDto> indexerTokenTransfer, string chainId)
+
+    private async Task<List<TokenTransferInfoDto>> ConvertIndexerTokenTransferDtoAsync(
+        List<IndexerTransferInfoDto> indexerTokenTransfer, string chainId)
     {
         var list = new List<TokenTransferInfoDto>();
         var priceDict = new Dictionary<string, TokenPriceDto>();
@@ -345,15 +386,17 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                 tokenTransferDto.SymbolImageUrl = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
                     () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol));
             }
+
             tokenTransferDto.TransactionFeeList =
                 await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
             tokenTransferDto.From = BaseConverter.OfCommonAddress(indexerTransferInfoDto.From, contractInfoDict);
             tokenTransferDto.To = BaseConverter.OfCommonAddress(indexerTransferInfoDto.To, contractInfoDict);
             list.Add(tokenTransferDto);
         }
+
         return list;
     }
-    
+
     public async Task<List<IndexerTokenInfoDto>> GetAllTokenInfosAsync(TokenListInput input)
     {
         var allTokenInfos = new List<IndexerTokenInfoDto>();
@@ -369,13 +412,16 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             {
                 break;
             }
+
             allTokenInfos.AddRange(tokenInfos.Items);
             if (tokenInfos.Items.Count < maxResultCount)
             {
                 break;
             }
+
             skipCount += maxResultCount;
         }
+
         return allTokenInfos;
     }
 }

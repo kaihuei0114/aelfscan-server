@@ -20,7 +20,7 @@ public class TransactionRatePerMinuteWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<TransactionWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 1000;
+        timer.Period = 1000 * 30;
         _logger = logger;
         _transactionService = transactionService;
     }

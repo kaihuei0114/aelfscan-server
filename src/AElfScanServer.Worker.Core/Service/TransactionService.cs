@@ -47,8 +47,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly AELFIndexerProvider _aelfIndexerProvider;
     private readonly BlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly HomePageProvider _homePageProvider;
-    private readonly AELFIndexerOptions _aelfIndexerOptions;
-    private readonly GlobalOptions _globalOptions;
+    private readonly IOptionsMonitor<AELFIndexerOptions> _aelfIndexerOptions;
+    private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly IStorageProvider _storageProvider;
     private readonly IElasticClient _elasticClient;
@@ -65,20 +65,20 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private static Timer timer;
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
-        IOptions<AELFIndexerOptions> aelfIndexerOptions,
+        IOptionsMonitor<AELFIndexerOptions> aelfIndexerOptions,
         IEntityMappingRepository<TransactionIndex, string> transactionIndexRepository,
         ILogger<TransactionService> logger, IObjectMapper objectMapper,
         IEntityMappingRepository<AddressIndex, string> addressIndexRepository,
         IEntityMappingRepository<TokenInfoIndex, string> tokenInfoIndexRepository,
-        IOptions<GlobalOptions> blockChainOptions,
+        IOptionsMonitor<GlobalOptions> blockChainOptions,
         IEntityMappingRepository<BlockExtraIndex, string> blockExtraIndexRepository,
         HomePageProvider homePageProvider,
         IEntityMappingRepository<LogEventIndex, string> logEventIndexRepository, IStorageProvider storageProvider,
-        IOptions<ElasticsearchOptions> options, BlockChainIndexerProvider blockChainIndexerProvider) :
+        IOptionsMonitor<ElasticsearchOptions> options, BlockChainIndexerProvider blockChainIndexerProvider) :
         base(optionsAccessor)
     {
         _aelfIndexerProvider = aelfIndexerProvider;
-        _aelfIndexerOptions = aelfIndexerOptions.Value;
+        _aelfIndexerOptions = aelfIndexerOptions;
         _transactionIndexRepository = transactionIndexRepository;
         _logger = logger;
         _objectMapper = objectMapper;
@@ -86,12 +86,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
         _tokenInfoIndexRepository = tokenInfoIndexRepository;
         _blockExtraIndexRepository = blockExtraIndexRepository;
-        _globalOptions = blockChainOptions.Value;
+        _globalOptions = blockChainOptions;
         _homePageProvider = homePageProvider;
         _blockChainIndexerProvider = blockChainIndexerProvider;
         _logEventIndexRepository = logEventIndexRepository;
         _storageProvider = storageProvider;
-        var uris = options.Value.Url.ConvertAll(x => new Uri(x));
+        var uris = options.CurrentValue.Url.ConvertAll(x => new Uri(x));
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         _elasticClient = new ElasticClient(settings);
@@ -105,10 +105,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var mergeList = new List<List<TransactionCountPerMinuteDto>>();
         try
         {
-            foreach (var chainId in _globalOptions.ChainIds)
+            foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
             {
                 var chartDataKey = RedisKeyHelper.TransactionChartData(chainId);
-
 
                 var nowMilliSeconds = DateTimeHelper.GetNowMilliSeconds();
                 var beforeHoursMilliSeconds = DateTimeHelper.GetBeforeHoursMilliSeconds(3);
@@ -119,12 +118,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 if (transactionsAsync == null || transactionsAsync.Items.Count <= 0)
                 {
                     transactionsAsync =
-                        await _blockChainIndexerProvider.GetTransactionsAsync(chainId, 0, 1000, 0,
-                            0);
+                        await _blockChainIndexerProvider.GetTransactionsAsync(chainId, 0, 1000);
                 }
 
                 if (transactionsAsync == null)
                 {
+                    _logger.LogError("Not query transaction list from blockchain app plugin,chainId:{e}", chainId);
                     continue;
                 }
 
@@ -212,6 +211,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var subNewList = newList.Where(c => c.Start >= last.Start).ToList();
 
         subOldList.AddRange(subNewList);
+        _logger.LogInformation("Merge transaction per minute data chainId:{0},oldList:{1},newList:{2}", key,
+            oldList.Count, newList.Count);
 
         return subOldList;
     }
@@ -259,7 +260,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             var indexResponse = _elasticClient.Indices.Create(
                 BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId), c => c
                     .Settings(s => s
-                        .Setting("max_result_window", _globalOptions.TransactionListMaxCount)
+                        .Setting("max_result_window", _globalOptions.CurrentValue.TransactionListMaxCount)
                     )
                     .Map<TransactionIndex>(m => m.AutoMap()));
             if (!indexResponse.IsValid)
@@ -322,66 +323,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
     }
 
-
-    public void SetContractAddressIndex(string address, string chainId, List<AddressIndex> addressIndices)
-    {
-        try
-        {
-            var addressIndex =
-                _addressIndexRepository.GetAsync(address, BlockChainIndexNameHelper.GenerateAddressIndexName(chainId))
-                    .Result;
-
-            if (addressIndex != null && addressIndex.AddressType == AddressType.ContractAddress)
-            {
-                return;
-            }
-
-            addressIndex = new AddressIndex()
-            {
-                Address = address, IsManager = false,
-                AddressType = AddressType.ContractAddress,
-                LowerAddress = address.ToLower(),
-                Id = address
-            };
-            if (_globalOptions.ContractNames.TryGetValue(chainId, out var contractNames))
-            {
-                if (contractNames.TryGetValue(address, out var contractName))
-                {
-                    addressIndex.Name = contractName;
-                    addressIndex.LowerName = contractName.ToLower();
-                }
-            }
-
-            addressIndices.Add(addressIndex);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "set contract address index error:{e}.address:{address},chainId:{chainId}", e.Message,
-                address, chainId);
-        }
-    }
-
-
-    public void SetManagerAddressIndex(string address, string chainId, List<AddressIndex> addressIndices)
-    {
-        var addressIndex =
-            _addressIndexRepository.GetAsync(address, BlockChainIndexNameHelper.GenerateAddressIndexName(chainId))
-                .Result;
-
-        if (addressIndex != null && addressIndex.IsManager)
-        {
-            return;
-        }
-
-        addressIndices.Add(new AddressIndex()
-        {
-            Address = address, IsManager = true,
-            AddressType = AddressType.EoaAddress,
-            LowerAddress = address.ToLower(),
-            Id = address
-        });
-    }
-
+    
+    
     public void AnalysisTransactionLogEvent(string chainId, IndexerTransactionDto txn,
         TransactionIndex transactionIndex, List<AddressIndex> addressIndices, List<TokenInfoIndex> tokenIndices,
         List<LogEventIndex> logEventIndices,

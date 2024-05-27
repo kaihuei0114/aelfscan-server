@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Newtonsoft.Json;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 
@@ -28,7 +30,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
     private readonly INESTRepository<BlockExtraIndex, string> _blockExtraIndexRepository;
     private readonly INESTRepository<AddressIndex, string> _addressIndexRepository;
     private readonly INESTRepository<TokenInfoIndex, string> _tokenInfoIndexRepository;
-    private readonly GlobalOptions _globalOptions;
+    private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IElasticClient _elasticClient;
     private const string TransactionCountRedisKey = "transaction_count";
     private const string AddressCountRedisKey = "address_count";
@@ -47,7 +49,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
     {
         _transactionIndexRepository = transactionIndexRepository;
         _logger = logger;
-        _globalOptions = blockChainOptions.CurrentValue;
+        _globalOptions = blockChainOptions;
         var uris = options.Value.Url.ConvertAll(x => new Uri(x));
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
@@ -66,11 +68,13 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
             var redisValue = RedisDatabase.StringGet(RedisKeyHelper.RewardKey(chainId));
             if (!redisValue.IsNullOrEmpty)
             {
+                _logger.LogInformation("Get reward from cache,chainId:{c},cache value:{s}", chainId, redisValue);
                 return Convert.ToInt64(redisValue);
             }
 
-
-            var aElfClient = new AElfClient(_globalOptions.ChainNodeHosts[chainId]);
+            var nodeHost = _globalOptions.CurrentValue.ChainNodeHosts[chainId];
+            _logger.LogInformation("Get chainId node host,chainId:{c},nodeHost:{n}", chainId, nodeHost);
+            var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
 
             var address = (await aElfClient.GetContractAddressByNameAsync(
                 HashHelper.ComputeFrom("AElf.ContractNames.Consensus"))).ToBase58();
@@ -114,12 +118,13 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
             }
 
             RedisDatabase.StringSet(RedisKeyHelper.RewardKey(chainId), amount,
-                TimeSpan.FromSeconds(_globalOptions.RewardCacheExpiration));
+                TimeSpan.FromSeconds(_globalOptions.CurrentValue.RewardCacheExpiration));
+            _logger.LogInformation("Set cache when Get reward from chain,chainId:{c},amount:{a}", chainId, amount);
             return amount;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "get reward err,chainId:{c}", chainId);
+            _logger.LogError(e, "Get reward err,chainId:{c}", chainId);
         }
 
         return 0;
@@ -166,245 +171,27 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
         return transactionCountPerMinuteList;
     }
 
-  
-
-
-    // public async Task UpdateTransactionRateAsync()
-    // {
-    //     foreach (var validChainId in _blockChainOptions.ValidChainIds)
-    //     {
-    //         try
-    //         {
-    //             await ConnectAsync();
-    //             var listGetByIndex =
-    //                 RedisDatabase.ListRightPop(RedisKeyHelper.TransactionTPS(validChainId));
-    //             if (listGetByIndex.IsNullOrEmpty)
-    //             {
-    //                 _logger.LogWarning("deque is empty,chainId:{c}", validChainId);
-    //                 // InitDeque();
-    //                 continue;
-    //             }
-    //
-    //             var strings = listGetByIndex.ToString().Split("_");
-    //             if (strings.Length != 2)
-    //             {
-    //                 _logger.LogWarning("deque is empty,chainId:{c},value:{v}", validChainId, strings);
-    //                 // InitDeque();
-    //                 continue;
-    //             }
-    //
-    //             var dateTime = CommomHelper.ConvertStringToDate(strings[0]);
-    //             var count = Convert.ToInt64(strings[1]);
-    //             var transactionCountPerMinuteList =
-    //                 await GetTransactionRateAsync(validChainId, dateTime, dateTime.AddDays(1));
-    //
-    //             var txCountPerMinutes = new List<string>();
-    //
-    //             foreach (var txCountPerMinute in transactionCountPerMinuteList)
-    //             {
-    //                 if (txCountPerMinute.Start == Convert.ToInt64(strings[0]))
-    //                 {
-    //                     count += txCountPerMinute.Count;
-    //                     txCountPerMinutes.Add($"{strings[0]}_{count}");
-    //                 }
-    //                 else
-    //                 {
-    //                     txCountPerMinutes.Add(
-    //                         $"{txCountPerMinute.Start}_{txCountPerMinute.Count}");
-    //                 }
-    //             }
-    //
-    //             RedisValue[] redisValues =
-    //                 Array.ConvertAll<string, RedisValue>(txCountPerMinutes.ToArray(), x => (RedisValue)x);
-    //             await RedisDatabase.ListRightPushAsync(RedisKeyHelper.TransactionTPS(validChainId), redisValues);
-    //             _logger.LogInformation("update deque success,chainId:{c},len:{q}", validChainId,
-    //                 redisValues.Length);
-    //
-    //             Task.Run(async () =>
-    //             {
-    //                 var listLength = RedisDatabase.ListLength(RedisKeyHelper.TransactionTPS(validChainId));
-    //                 if (listLength > _blockChainOptions.TransactionPerMinuteCount)
-    //                 {
-    //                     await RedisDatabase.ListTrimAsync(RedisKeyHelper.TransactionTPS(validChainId), 0,
-    //                         listLength - _blockChainOptions.TransactionPerMinuteCount - 1);
-    //                     _logger.LogInformation("trim deque success,chainId:{c},len:{q}", validChainId,
-    //                         listLength - _blockChainOptions.TransactionPerMinuteCount - 1);
-    //                 }
-    //             });
-    //         }
-    //         catch (Exception e)
-    //         {
-    //             _logger.LogError(e, "update deque err,chainId:{c}", validChainId);
-    //         }
-    //     }
-    // }
-
-
-    // public async Task SetTransactionPerMinuteAsync(string chainId, HomeOverviewResponseDto responseDto)
-    // {
-    //     try
-    //     {
-    //         await ConnectAsync();
-    //         var redisValue = RedisDatabase.ListGetByIndex(RedisKeyHelper.TransactionTPS(chainId), -1);
-    //         if (redisValue.IsNullOrEmpty)
-    //         {
-    //             _logger.LogError("tx rate date from redis is empty,chainId:{c}", chainId);
-    //             return;
-    //         }
-    //
-    //         var strings = redisValue.ToString().Split("_");
-    //         if (strings.Length != 2)
-    //         {
-    //             _logger.LogError("tx rate date from redis err,chainId:{c},value:{v}", chainId, strings);
-    //             return;
-    //         }
-    //
-    //         responseDto.Tps = Convert.ToString(strings[1]);
-    //
-    //         responseDto.TpsTime = (DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(strings[0]))).DateTime;
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         _logger.LogError(e, "set transaction per minute err,chainId:{c}", chainId);
-    //     }
-    // }
-
-    public async Task<long> GetTransactionPerSecondAsync(string chainId)
-    {
-
-        try
-        {
-            DateTime currentTime = DateTime.Now;
-            DateTime previousMinute = currentTime.AddMinutes(-200);
-            // long timestamp = (long)(previousMinute - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
-
-            var searchRequest =
-                new SearchRequest(BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId))
-                {
-                    Query = new DateRangeQuery()
-                    {
-                        Field = "timestamp",
-                        GreaterThanOrEqualTo = previousMinute,
-                    },
-                    Sort = new List<ISort>
-                    {
-                        new FieldSort() { Field = "timestamp", Order = SortOrder.Descending },
-                    },
-                };
-
-
-            var searchResponse = _elasticClient.Search<TransactionIndex>(searchRequest);
-            if (!searchResponse.IsValid)
-            {
-                _logger.LogError("find transaction rate searchResponse is invalid err:{m},chainId:{c}",
-                    searchResponse.DebugInformation, chainId);
-                return 0;
-            }
-
-            return searchResponse.Total;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "get transaction rate from es err,chainId:{c}", chainId);
-        }
-
-        return 0;
-    }
-
-
-    public async Task<long> GetBlockHeightCount(string chainId)
-    {
-        try
-        {
-            await ConnectAsync();
-            var redisValue = RedisDatabase.StringGet(BlockHeightRedisKey);
-            if (!redisValue.IsNullOrEmpty)
-            {
-                return Convert.ToInt64(redisValue);
-            }
-
-            var aElfClient = new AElfClient(_globalOptions.ChainNodeHosts[chainId]);
-            var blockHeight = await aElfClient.GetBlockHeightAsync();
-            RedisDatabase.StringSet(BlockHeightRedisKey, blockHeight,
-                TimeSpan.FromSeconds(_globalOptions.BlockHeightCacheExpiration));
-            return blockHeight;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "get blockHeight err,chainId:{c}", chainId);
-            return 0;
-        }
-    }
 
     public async Task<long> GetTransactionCount(string chainId)
     {
         try
         {
-            // await ConnectAsync();
-            // var redisValue = RedisDatabase.StringGet(TransactionCountRedisKey);
-            // if (!redisValue.IsNullOrEmpty)
-            // {
-            //     return Convert.ToInt64(redisValue);
-            // }
-            
-            DateTime currentTime = DateTime.Now;
-            DateTime previousMinute = currentTime.AddMinutes(-1);
-            long timestamp = (long)(previousMinute - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
-            
-            var mustQuery = new List<Func<QueryContainerDescriptor<TransactionIndex>, QueryContainer>>();
-            mustQuery.Add(q => q.DateRange(r => r.Field(f => f.BlockTime).GreaterThan(previousMinute)));
-            // mustQuery.Add(q => q.(s => s.Field(f => f.Timestamp, SortOrder.Descending));
-            
-            QueryContainer Filter(QueryContainerDescriptor<TransactionIndex> f) => f.Bool(b => b.Must(mustQuery));
-            var countAsync = await _transactionIndexRepository.CountAsync(Filter,
-                indexPrefix: BlockChainIndexNameHelper.GenerateTransactionIndexName(chainId));
-
-
-            if (!countAsync.IsValid)
-            {
-                _logger.LogError("count transaction err:{m},chainId:{c}", countAsync.DebugInformation, chainId);
-                return 0;
-            }
-            //
-            // RedisDatabase.StringSet(TransactionCountRedisKey, countAsync.Count,
-            //     TimeSpan.FromSeconds(_blockChainOptions.TransactionCountCacheExpiration));
-            return countAsync.Count;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "count transaction err,chainId:{c}", chainId);
-            return 0;
-        }
-    }
-
-    public async Task<long> GetAddressCount(string chainId)
-    {
-        try
-        {
             await ConnectAsync();
-            var redisValue = RedisDatabase.StringGet(AddressCountRedisKey);
-            if (!redisValue.IsNullOrEmpty)
-            {
-                return Convert.ToInt64(redisValue);
-            }
+            var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionChartData(chainId));
 
-            var countAsync = await _addressIndexRepository.CountAsync(null,
-                indexPrefix: BlockChainIndexNameHelper.GenerateAddressIndexName(chainId));
-
-            if (!countAsync.IsValid)
+            var transactionCountPerMinuteDtos =
+                JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);
+            if (transactionCountPerMinuteDtos.IsNullOrEmpty())
             {
-                _logger.LogError("count address err:{m},chainId:{c}", countAsync.DebugInformation, chainId);
+                _logger.LogWarning("Transaction count per minute redis cache is null chainId:{c}", chainId);
                 return 0;
             }
 
-            RedisDatabase.StringSet(AddressCountRedisKey, countAsync.Count,
-                TimeSpan.FromSeconds(_globalOptions.AddressCountCacheExpiration));
-
-            return countAsync.Count;
+            return transactionCountPerMinuteDtos.Last().Count;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "count address err,chainId:{c}", chainId);
+            _logger.LogError(e, "Get  transaction count per minute err,chainId:{c}", chainId);
             return 0;
         }
     }
