@@ -28,6 +28,7 @@ using AElfScanServer.BlockChain.Dtos.Indexer;
 using Castle.Components.DictionaryAdapter.Xml;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Options;
+using AElfScanServer.TokenDataFunction.Provider;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -58,56 +59,40 @@ public interface IBlockChainService
 
 public class BlockChainService : IBlockChainService, ITransientDependency
 {
-    private readonly INESTRepository<TransactionIndex, string> _transactionIndexRepository;
     private readonly INESTRepository<BlockExtraIndex, string> _blockExtraIndexRepository;
-    private readonly INESTRepository<AddressIndex, string> _addressIndexRepository;
-    private readonly INESTRepository<TokenInfoIndex, string> _tokenInfoIndexRepository;
-    private readonly GlobalOptions _globalOptions;
-    private readonly IElasticClient _elasticClient;
+    private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly BlockChainDataProvider _blockChainProvider;
     private readonly LogEventProvider _logEventProvider;
-    private readonly IObjectMapper _objectMapper;
-    private readonly IAddressService _addressService;
+    private readonly ITokenIndexerProvider _tokenIndexerProvider;
 
     private readonly ILogger<HomePageService> _logger;
-    private const long PullBlockHeightInterval = 100;
 
 
-    public BlockChainService(INESTRepository<TransactionIndex, string> transactionIndexRepository,
+    public BlockChainService(
         ILogger<HomePageService> logger, IOptionsMonitor<GlobalOptions> blockChainOptions,
-        AELFIndexerProvider aelfIndexerProvider, IOptions<ElasticsearchOptions> options,
+        AELFIndexerProvider aelfIndexerProvider,
         INESTRepository<BlockExtraIndex, string> blockExtraIndexRepository,
-        INESTRepository<AddressIndex, string> addressIndexRepository,
-        INESTRepository<TokenInfoIndex, string> tokenInfoIndexRepository,
         LogEventProvider logEventProvider, IObjectMapper objectMapper,
-        IAddressService addressService,
-        BlockChainDataProvider blockChainProvider, IBlockChainIndexerProvider blockChainIndexerProvider)
+        BlockChainDataProvider blockChainProvider, IBlockChainIndexerProvider blockChainIndexerProvider,
+        ITokenIndexerProvider tokenIndexerProvider)
     {
-        _transactionIndexRepository = transactionIndexRepository;
         _logger = logger;
-        _globalOptions = blockChainOptions.CurrentValue;
+        _globalOptions = blockChainOptions;
         _aelfIndexerProvider = aelfIndexerProvider;
-        var uris = options.Value.Url.ConvertAll(x => new Uri(x));
-        var connectionPool = new StaticConnectionPool(uris);
-        var settings = new ConnectionSettings(connectionPool);
-        _elasticClient = new ElasticClient(settings);
         _blockExtraIndexRepository = blockExtraIndexRepository;
-        _addressIndexRepository = addressIndexRepository;
-        _tokenInfoIndexRepository = tokenInfoIndexRepository;
         _logEventProvider = logEventProvider;
-        _objectMapper = objectMapper;
-        _addressService = addressService;
         _blockChainProvider = blockChainProvider;
         _blockChainIndexerProvider = blockChainIndexerProvider;
+        _tokenIndexerProvider = tokenIndexerProvider;
     }
 
 
     public async Task<TransactionDetailResponseDto> GetTransactionDetailAsync(TransactionDetailRequestDto request)
     {
         var transactionDetailResponseDto = new TransactionDetailResponseDto();
-        if (!_globalOptions.ChainIds.Exists(s => s == request.ChainId))
+        if (!_globalOptions.CurrentValue.ChainIds.Exists(s => s == request.ChainId))
         {
             return transactionDetailResponseDto;
         }
@@ -120,7 +105,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                     request.BlockHeight == 0 ? 0 : request.BlockHeight,
                     request.BlockHeight);
 
-            var aElfClient = new AElfClient(_globalOptions.ChainNodeHosts[request.ChainId]);
+            var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[request.ChainId]);
 
             var blockHeightAsync = await aElfClient.GetBlockHeightAsync();
             for (var i = 0; i < transactionsAsync.Count; i++)
@@ -251,6 +236,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         var blockListTask = _aelfIndexerProvider.GetLatestBlocksAsync(requestDto.ChainId, requestDto.BlockHeight - 1,
             requestDto.BlockHeight + 1).ContinueWith(task => { blockList = task.Result; });
 
+
         blockDetailsTasks.Add(blockDtoTask);
         blockDetailsTasks.Add(transactionListTask);
         blockDetailsTasks.Add(blockListTask);
@@ -378,8 +364,8 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             detailDto.LogEvents.Add(logEventInfoDto);
             //add parse log event logic
             if (!indexed.IsNullOrEmpty() &&
-                (_globalOptions.ParseLogEvent(detailDto.From.Address, detailDto.Method)
-                 || _globalOptions.ParseLogEvent(detailDto.To.Address, detailDto.Method)))
+                (_globalOptions.CurrentValue.ParseLogEvent(detailDto.From.Address, detailDto.Method)
+                 || _globalOptions.CurrentValue.ParseLogEvent(detailDto.To.Address, detailDto.Method)))
             {
                 var message = ParseMessage(transactionDtoLogEvent.EventName, ByteString.FromBase64(indexed));
                 detailDto.AddParseLogEvents(message);
@@ -493,7 +479,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
                     if (TokenSymbolHelper.GetSymbolType(transferred.Symbol) == SymbolType.Token)
                     {
-                        _globalOptions.TokenImageUrls.TryGetValue(transferred.Symbol, out var imageUrl);
+                        _globalOptions.CurrentValue.TokenImageUrls.TryGetValue(transferred.Symbol, out var imageUrl);
                         var token = new TokenTransferredDto()
                         {
                             Symbol = transferred.Symbol,
@@ -601,11 +587,11 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             var endBlockHeight = blockHeightAsync - requestDto.SkipCount;
             var startBlockHeight = endBlockHeight - requestDto.MaxResultCount;
 
-            _logger.LogInformation($"time get blockheight:{stopwatch1.Elapsed.TotalSeconds}");
+            _logger.LogInformation($"Cost time by get last blockHeight:{stopwatch1.Elapsed.TotalSeconds}");
 
             List<Task> getBlockRawDataTasks = new List<Task>();
             List<IndexerBlockDto> blockList = new List<IndexerBlockDto>();
-            Dictionary<string, long> blockBurntFee = new Dictionary<string, long>();
+            Dictionary<long, long> blockBurntFee = new Dictionary<long, long>();
 
             Stopwatch stopwatch2 = new Stopwatch();
             stopwatch2.Start();
@@ -620,18 +606,17 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                 startBlockHeight,
                 endBlockHeight).ContinueWith(task => { blockBurntFee = task.Result; });
 
+
             getBlockRawDataTasks.Add(blockBurntFeeTask);
 
             await Task.WhenAll(getBlockRawDataTasks);
 
             stopwatch2.Stop();
-            _logger.LogInformation($"time get raw data:{stopwatch2.Elapsed.TotalSeconds}");
+            _logger.LogInformation($"Cost time by get block raw data :{stopwatch2.Elapsed.TotalSeconds}");
 
             result.Blocks = new List<BlockResponseDto>();
             result.Total = blockHeightAsync;
 
-
-            // List<Task> tasks = new List<Task>();
 
             Stopwatch stopwatch3 = new Stopwatch();
             stopwatch3.Start();
@@ -649,7 +634,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                 latestBlockDto.ProducerName = await GetBpNameAsync(indexerBlockDto.ChainId, indexerBlockDto.Miner);
 
 
-                latestBlockDto.BurntFees = blockBurntFee.TryGetValue(indexerBlockDto.BlockHash, out var value)
+                latestBlockDto.BurntFees = blockBurntFee.TryGetValue(indexerBlockDto.BlockHeight, out var value)
                     ? value.ToString()
                     : "0";
 
@@ -664,7 +649,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
 
             stopwatch3.Stop();
-            _logger.LogInformation($"time parse data:{stopwatch3.Elapsed.TotalSeconds}");
+            _logger.LogInformation($"Cost time by parse block raw data:{stopwatch3.Elapsed.TotalSeconds}");
             return result;
         }
         catch (Exception e)
@@ -678,7 +663,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
     public async Task<string> GetBpNameAsync(string chainId, string address)
     {
-        if (_globalOptions.BPNames.TryGetValue(chainId, out var bpNames))
+        if (_globalOptions.CurrentValue.BPNames.TryGetValue(chainId, out var bpNames))
         {
             if (bpNames.TryGetValue(address, out var name))
             {
@@ -689,53 +674,19 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         return address;
     }
 
-    public async Task<Dictionary<string, long>> ParseBlockBurntAsync(string chainId, long startBlockHeight,
+    public async Task<Dictionary<long, long>> ParseBlockBurntAsync(string chainId, long startBlockHeight,
         long endBlockHeight)
     {
-        var result = new Dictionary<string, long>();
+        var result = new Dictionary<long, long>();
         try
         {
-            var logList = await _aelfIndexerProvider.GetLogEventAsync(chainId,
-                startBlockHeight,
-                endBlockHeight);
+            var blockBurntFeeListAsync =
+                await _tokenIndexerProvider.GetBlockBurntFeeListAsync(chainId, startBlockHeight, endBlockHeight);
 
-            foreach (var indexerLogEventDto in logList)
+
+            foreach (var blockBurnFeeDto in blockBurntFeeListAsync)
             {
-                if (indexerLogEventDto.EventName != nameof(Burned))
-                {
-                    continue;
-                }
-
-                indexerLogEventDto.ExtraProperties.TryGetValue("Indexed", out var indexed);
-                indexerLogEventDto.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
-                var indexedList = indexed != null
-                    ? JsonConvert.DeserializeObject<List<string>>(indexed)
-                    : new List<string>();
-                var logEvent = new LogEvent
-                {
-                    Indexed = { indexedList?.Select(ByteString.FromBase64) },
-                };
-
-                if (nonIndexed != null)
-                {
-                    logEvent.NonIndexed = ByteString.FromBase64(nonIndexed);
-                }
-
-                var burned = new Burned();
-                burned.MergeFrom(logEvent);
-                if (burned.Symbol != "ELF" && burned.Symbol != "")
-                {
-                    continue;
-                }
-
-                if (result.ContainsKey(indexerLogEventDto.BlockHash))
-                {
-                    result[indexerLogEventDto.BlockHash] += burned.Amount;
-                }
-                else
-                {
-                    result[indexerLogEventDto.BlockHash] = burned.Amount;
-                }
+                result.Add(blockBurnFeeDto.BlockHeight, blockBurnFeeDto.Amount);
             }
         }
         catch (Exception e)
@@ -947,7 +898,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             AddressType = AddressType.EoaAddress,
             Address = address
         };
-        if (_globalOptions.ContractNames.TryGetValue(chainId, out var contractNames))
+        if (_globalOptions.CurrentValue.ContractNames.TryGetValue(chainId, out var contractNames))
         {
             if (contractNames.TryGetValue(address, out var contractName))
             {

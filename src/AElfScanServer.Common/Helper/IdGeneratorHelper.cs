@@ -44,20 +44,17 @@ public static class DateTimeHelper
 
     public static long GetBeforeHoursMilliSeconds(int hours)
     {
-        DateTime now = DateTime.Now;
         return GetTotalMilliseconds(DateTime.Now.AddHours(-hours));
     }
 
     public static long GetBeforeMinutesMilliSeconds(int minutes)
     {
-        DateTime now = DateTime.Now;
         return GetTotalMilliseconds(DateTime.Now.AddMinutes(-minutes));
     }
 
 
     public static long GetBeforeDayMilliSeconds(int day)
     {
-        DateTime now = DateTime.Now;
         return GetTotalMilliseconds(DateTime.Now.AddDays(-day));
     }
 }

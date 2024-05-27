@@ -22,6 +22,8 @@ public interface IIndexerTokenProvider
 
     Task<long> GetAddressElfBalanceAsync(string chainId, string address);
 
+
+
     Task<List<TransferInfoDto>> GetTransferInfoListAsync(string chainId, string address, int skipCount = 0,
         int maxResultCount = 10);
 }

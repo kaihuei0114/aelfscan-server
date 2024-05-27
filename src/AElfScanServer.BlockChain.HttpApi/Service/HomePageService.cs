@@ -99,18 +99,18 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
         var transactionPerMinuteResp = new TransactionPerMinuteResponseDto();
         await ConnectAsync();
         var key = RedisKeyHelper.TransactionChartData(chainId);
-        
+
         var dataValue = RedisDatabase.StringGet(key);
-        
+
         var data =
             JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(dataValue);
-        
+
         transactionPerMinuteResp.Owner = data;
-        
+
         var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionChartData("merge"));
         var mergeData =
             JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);
-        
+
         transactionPerMinuteResp.All = mergeData;
 
 
@@ -122,6 +122,8 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
         var overviewResp = new HomeOverviewResponseDto();
         if (!_globalOptions.ChainIds.Exists(s => s == req.ChainId))
         {
+            _logger.LogWarning("Get blockchain overview chainId not exist:{c},chainIds:{l}", req.ChainId,
+                _globalOptions.ChainIds);
             return overviewResp;
         }
 
@@ -138,6 +140,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
 
             tasks.Add(_tokenIndexerProvider.GetAccountCountAsync(req.ChainId).ContinueWith(
                 task => { overviewResp.Accounts = task.Result; }));
+
 
             tasks.Add(_homePageProvider.GetRewardAsync(req.ChainId).ContinueWith(
                 task =>
@@ -524,7 +527,6 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
     public async Task<LatestTransactionsResponseSto> GetLatestTransactionsAsync(LatestTransactionsReq req)
     {
         var result = new LatestTransactionsResponseSto();
-       
 
 
         result.Transactions = new List<TransactionResponseDto>();
