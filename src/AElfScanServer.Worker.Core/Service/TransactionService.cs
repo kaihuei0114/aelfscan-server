@@ -105,6 +105,14 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var mergeList = new List<List<TransactionCountPerMinuteDto>>();
         try
         {
+            
+            
+            if (_globalOptions.CurrentValue.ChainIds.IsNullOrEmpty())
+            {
+                _logger.LogError("ChainIds is empty");
+                return;
+            }
+            
             foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
             {
                 var chartDataKey = RedisKeyHelper.TransactionChartData(chainId);

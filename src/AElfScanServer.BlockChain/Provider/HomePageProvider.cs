@@ -57,13 +57,18 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
         _blockExtraIndexRepository = blockExtraIndexRepository;
         _addressIndexRepository = addressIndexRepository;
         _tokenInfoIndexRepository = tokenInfoIndexRepository;
-        // InitDeque();
     }
 
     public async Task<long> GetRewardAsync(string chainId)
     {
         try
         {
+            if (chainId != "AELF")
+            {
+                return 0;
+            }
+
+            _logger.LogInformation("Get reward,chainId:{c}", chainId);
             await ConnectAsync();
             var redisValue = RedisDatabase.StringGet(RedisKeyHelper.RewardKey(chainId));
             if (!redisValue.IsNullOrEmpty)
@@ -74,15 +79,19 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
 
             var nodeHost = _globalOptions.CurrentValue.ChainNodeHosts[chainId];
             _logger.LogInformation("Get chainId node host,chainId:{c},nodeHost:{n}", chainId, nodeHost);
-            var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
+            var aElfClient = new AElfClient(nodeHost);
 
-            var address = (await aElfClient.GetContractAddressByNameAsync(
-                HashHelper.ComputeFrom("AElf.ContractNames.Consensus"))).ToBase58();
+            if (_globalOptions.CurrentValue.ConsensusContractAddress.IsNullOrEmpty())
+            {
+                _logger.LogWarning("ConsensusContractAddress is null");
+                return 0;
+            }
+
 
             var transactionGetCurrentTermMiningReward =
                 await aElfClient.GenerateTransactionAsync(
                     aElfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
-                    address,
+                    _globalOptions.CurrentValue.ConsensusContractAddress,
                     "GetCurrentTermMiningReward", new Empty());
 
             var signTransaction =
@@ -94,14 +103,17 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
 
             var amount = Int64Value.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transactionResult)).Value;
 
+            if (_globalOptions.CurrentValue.TreasuryContractAddress.IsNullOrEmpty())
+            {
+                _logger.LogWarning("TreasuryContractAddress is null");
+                return 0;
+            }
 
-            address = (await aElfClient.GetContractAddressByNameAsync(
-                HashHelper.ComputeFrom("AElf.ContractNames.Treasury"))).ToBase58();
 
             var transactionGetUndistributedDividends =
                 await aElfClient.GenerateTransactionAsync(
                     aElfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
-                    address,
+                    _globalOptions.CurrentValue.TreasuryContractAddress,
                     "GetUndistributedDividends", new Empty());
 
 
@@ -129,48 +141,6 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
 
         return 0;
     }
-
-    public async Task<List<TransactionCountPerMinuteDto>> FindTransactionRateList(string chainId)
-    {
-        var transactionCountPerMinuteList = new List<TransactionCountPerMinuteDto>();
-        try
-        {
-            await ConnectAsync();
-            var redisValues = RedisDatabase.ListRange(RedisKeyHelper.TransactionTPS(chainId), -180, -1);
-            if (redisValues.IsNullOrEmpty())
-            {
-                redisValues = RedisDatabase.ListRange(RedisKeyHelper.TransactionTPS(chainId), -1);
-                if (redisValues.IsNullOrEmpty())
-                {
-                    _logger.LogWarning("double not find tx rate date from redis err,chainId:{c}", chainId);
-                    return transactionCountPerMinuteList;
-                }
-            }
-
-            foreach (var redisValue in redisValues)
-            {
-                var strings = redisValue.ToString().Split("_");
-                if (strings.Length != 2)
-                {
-                    _logger.LogWarning("tx rate list len is not 2 from redis,chainId:{c},value:{v}", chainId, strings);
-                    continue;
-                }
-
-                transactionCountPerMinuteList.Add(new TransactionCountPerMinuteDto()
-                {
-                    Start = Convert.ToInt64(strings[0]),
-                    Count = Convert.ToInt32(strings[1])
-                });
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "get tx rate date from redis err,chainId:{c}", chainId);
-        }
-
-        return transactionCountPerMinuteList;
-    }
-
 
     public async Task<long> GetTransactionCount(string chainId)
     {
