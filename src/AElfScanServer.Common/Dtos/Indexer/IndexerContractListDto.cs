@@ -2,9 +2,15 @@ using System.Collections.Generic;
 
 namespace AElfScanServer.Dtos.Indexer;
 
+public class IndexerContractListResultDto
+{
+    public IndexerContractListDto ContractList { get; set; }
+}
+
 public class IndexerContractListDto
 {
-    public List<ContractInfoDto> ContractInfo { get; set; } = new();
+    public long TotalCount { get; set; }
+    public List<ContractInfoDto> Items { get; set; } = new();
 }
 
 public class ContractInfoDto

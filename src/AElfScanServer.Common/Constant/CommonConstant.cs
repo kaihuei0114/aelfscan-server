@@ -1,3 +1,5 @@
+using System;
+
 namespace AElfScanServer.Constant;
 
 public static class CommonConstant
@@ -13,11 +15,14 @@ public static class CommonConstant
     public const string DefaultMarket = "Forest";
     public const int DefaultMaxResultCount = 1000;
     public const string SearchKeyPattern = "[^a-zA-Z0-9-_.]";
-    
+
     public const int KeyWordAddressMinSize = 9;
     public const int KeyWordContractNameMinSize = 2;
-}
 
+
+    public static DateTime AELFOneBlockTime = new DateTime(2020, 12, 15, 21, 04, 20);
+    public static DateTime TDVVOneBlockTime = new DateTime(2020, 12, 10, 15, 23, 24);
+}
 
 public class CurrencyConstant
 {
