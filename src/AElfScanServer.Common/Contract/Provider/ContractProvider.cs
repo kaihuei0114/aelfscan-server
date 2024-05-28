@@ -57,7 +57,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
                         skipCount = 0, maxResultCount = addressList.Count
                     }
                 });
-            return result.ContractInfo.ToDictionary(s => s.Address, s => s);
+            return result.Items.ToDictionary(s => s.Address, s => s);
         }
         catch (Exception e)
         {
