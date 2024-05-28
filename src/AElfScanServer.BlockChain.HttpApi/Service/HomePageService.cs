@@ -52,7 +52,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
     private readonly INESTRepository<BlockExtraIndex, string> _blockExtraIndexRepository;
     private readonly INESTRepository<AddressIndex, string> _addressIndexRepository;
     private readonly INESTRepository<TokenInfoIndex, string> _tokenInfoIndexRepository;
-    private readonly GlobalOptions _globalOptions;
+    private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IElasticClient _elasticClient;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
     private readonly HomePageProvider _homePageProvider;
@@ -67,7 +67,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
 
     public HomePageService(IOptions<RedisCacheOptions> optionsAccessor,
         INESTRepository<TransactionIndex, string> transactionIndexRepository,
-        ILogger<HomePageService> logger, IOptions<GlobalOptions> globalOptions,
+        ILogger<HomePageService> logger, IOptionsMonitor<GlobalOptions> globalOptions,
         AELFIndexerProvider aelfIndexerProvider, IOptions<ElasticsearchOptions> options,
         INESTRepository<BlockExtraIndex, string> blockExtraIndexRepository,
         INESTRepository<AddressIndex, string> addressIndexRepository,
@@ -78,7 +78,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
     {
         _transactionIndexRepository = transactionIndexRepository;
         _logger = logger;
-        _globalOptions = globalOptions.Value;
+        _globalOptions = globalOptions;
         _aelfIndexerProvider = aelfIndexerProvider;
         var uris = options.Value.Url.ConvertAll(x => new Uri(x));
         var connectionPool = new StaticConnectionPool(uris);
@@ -119,11 +119,12 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
 
     public async Task<HomeOverviewResponseDto> GetBlockchainOverviewAsync(BlockchainOverviewRequestDto req)
     {
+        _logger.LogInformation("GetBlockchainOverviewAsync:{c}", req.ChainId);
         var overviewResp = new HomeOverviewResponseDto();
-        if (!_globalOptions.ChainIds.Exists(s => s == req.ChainId))
+        if (!_globalOptions.CurrentValue.ChainIds.Exists(s => s == req.ChainId))
         {
             _logger.LogWarning("Get blockchain overview chainId not exist:{c},chainIds:{l}", req.ChainId,
-                _globalOptions.ChainIds);
+                _globalOptions.CurrentValue.ChainIds);
             return overviewResp;
         }
 
@@ -175,7 +176,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
         requestDto.Keyword = requestDto.Keyword.ToLower();
         try
         {
-            if (!_globalOptions.ChainIds.Exists(s => s == requestDto.ChainId))
+            if (!_globalOptions.CurrentValue.ChainIds.Exists(s => s == requestDto.ChainId))
             {
                 return null;
             }
@@ -408,8 +409,8 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
 
                 if (symbolType == SymbolType.Token)
                 {
-                    searchToken.Image = _globalOptions.TokenImageUrls.ContainsKey(tokenInfoIndex.Symbol)
-                        ? _globalOptions.TokenImageUrls[tokenInfoIndex.Symbol]
+                    searchToken.Image = _globalOptions.CurrentValue.TokenImageUrls.ContainsKey(tokenInfoIndex.Symbol)
+                        ? _globalOptions.CurrentValue.TokenImageUrls[tokenInfoIndex.Symbol]
                         : "";
                 }
                 else
@@ -454,7 +455,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
         var filterTypeResp = new FilterTypeResponseDto();
 
         filterTypeResp.FilterTypes = new List<FilterTypeDto>();
-        foreach (var keyValuePair in _globalOptions.FilterTypes)
+        foreach (var keyValuePair in _globalOptions.CurrentValue.FilterTypes)
         {
             var filterTypeDto = new FilterTypeDto();
             filterTypeDto.FilterType = keyValuePair.Value;
@@ -471,8 +472,9 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
     public async Task<BlocksResponseDto> GetLatestBlocksAsync(LatestBlocksRequestDto requestDto)
     {
         var result = new BlocksResponseDto() { };
-        if (!_globalOptions.ChainIds.Exists(s => s == requestDto.ChainId) || requestDto.MaxResultCount <= 0 ||
-            requestDto.MaxResultCount > _globalOptions.MaxResultCount)
+        if (!_globalOptions.CurrentValue.ChainIds.Exists(s => s == requestDto.ChainId) ||
+            requestDto.MaxResultCount <= 0 ||
+            requestDto.MaxResultCount > _globalOptions.CurrentValue.MaxResultCount)
         {
             return result;
         }
@@ -480,7 +482,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
 
         try
         {
-            var aElfClient = new AElfClient(_globalOptions.ChainNodeHosts[requestDto.ChainId]);
+            var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[requestDto.ChainId]);
             var blockHeightAsync = await aElfClient.GetBlockHeightAsync();
 
 

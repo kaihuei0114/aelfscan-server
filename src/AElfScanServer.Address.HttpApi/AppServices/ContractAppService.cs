@@ -35,6 +35,8 @@ public class ContractAppService : IContractAppService
     private readonly IIndexerGenesisProvider _indexerGenesisProvider;
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
+    private readonly DateTime AELFOneBlockTime = new DateTime(2020, 12, 15, 21, 04, 20);
+    private readonly DateTime TDVVOneBlockTime = new DateTime(2020, 12, 10, 15, 23, 24);
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IDecompilerProvider decompilerProvider, IBlockChainProvider blockChainProvider,
@@ -56,13 +58,14 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("GetContractListAsync");
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
 
-        // todo sort by update time
         var getContractListResult =
-            await _indexerGenesisProvider.GetContractListAsync(input.ChainId, input.SkipCount, input.MaxResultCount);
-        result.Total = getContractListResult.Count;
+            await _indexerGenesisProvider.GetContractListAsync(input.ChainId,
+                input.SkipCount,
+                input.MaxResultCount, input.OrderBy, input.Sort);
+        result.Total = getContractListResult.ContractList.TotalCount;
 
 
-        var list = getContractListResult.Select(s => s.Address).ToList();
+        var list = getContractListResult.ContractList.Items.Select(s => s.Address).ToList();
 
         var addressTransactionCountList = new List<IndexerAddressTransactionCountDto>();
 
@@ -77,17 +80,24 @@ public class ContractAppService : IContractAppService
         }
 
 
-        foreach (var info in getContractListResult)
+        foreach (var info in getContractListResult.ContractList.Items)
         {
+            var blockBlockTime = info.Metadata.Block.BlockTime;
+            if (info.Metadata.Block.BlockHeight == 1)
+            {
+                blockBlockTime = input.ChainId == "AELF" ? AELFOneBlockTime : TDVVOneBlockTime;
+            }
+
+
             var contractInfo = new ContractDto
             {
-                Address = info.Address, // contractInfo
+                Address = info.Address,
                 ContractVersion = info.ContractVersion == "" ? info.Version.ToString() : info.ContractVersion,
-                LastUpdateTime = info.Metadata.Block.BlockTime,
+                LastUpdateTime = blockBlockTime,
                 Type = info.ContractType,
-                Txns = 0,
                 ContractName = GetContractName(input.ChainId, info.Address).Result
             };
+
 
             if (!addressTransactionCountList.IsNullOrEmpty() && addressTransactionCountList.Count > 0)
             {
