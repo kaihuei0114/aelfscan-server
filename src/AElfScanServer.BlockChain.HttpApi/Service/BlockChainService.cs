@@ -461,6 +461,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                     var transferred = new Transferred();
                     transferred.MergeFrom(logEvent);
 
+
                     await SetValueInfoAsync(transactionValues, transferred.Symbol, transferred.Amount);
                     if (transactionValues.TryGetValue(transferred.Symbol, out var value))
                     {
@@ -484,6 +485,8 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                             Symbol = transferred.Symbol,
                             Name = transferred.Symbol,
                             Amount = transferred.Amount,
+                            AmountString =
+                                await _blockChainProvider.GetDecimalAmountAsync(transferred.Symbol, transferred.Amount),
                             From = ConvertAddress(transferred.From.ToBase58(), indexerTransactionDto.ChainId),
                             To = ConvertAddress(transferred.To.ToBase58(), indexerTransactionDto.ChainId),
                             ImageBase64 = await _blockChainProvider.GetTokenImageBase64Async(transferred.Symbol),
@@ -538,24 +541,33 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         foreach (var valueInfoDto in transactionValues)
         {
+            var valueSymbol = valueInfoDto.Value.Symbol;
+            var valueAmount = valueInfoDto.Value.Amount;
             valueInfoDto.Value.NowPrice =
-                await _blockChainProvider.TransformTokenToUsdValueAsync(valueInfoDto.Value.Symbol,
-                    valueInfoDto.Value.Amount);
+                await _blockChainProvider.TransformTokenToUsdValueAsync(valueSymbol,
+                    valueAmount);
+            valueInfoDto.Value.AmountString = await _blockChainProvider.GetDecimalAmountAsync(valueSymbol, valueAmount);
         }
 
         foreach (var valueInfoDto in transactionFees)
         {
+            var valueSymbol = valueInfoDto.Value.Symbol;
+            var valueAmount = valueInfoDto.Value.Amount;
             valueInfoDto.Value.NowPrice =
-                await _blockChainProvider.TransformTokenToUsdValueAsync(valueInfoDto.Value.Symbol,
-                    valueInfoDto.Value.Amount);
+                await _blockChainProvider.TransformTokenToUsdValueAsync(valueSymbol,
+                    valueAmount);
+            valueInfoDto.Value.AmountString = await _blockChainProvider.GetDecimalAmountAsync(valueSymbol, valueAmount);
         }
 
 
         foreach (var valueInfoDto in burntFees)
         {
+            var valueSymbol = valueInfoDto.Value.Symbol;
+            var valueAmount = valueInfoDto.Value.Amount;
             valueInfoDto.Value.NowPrice =
-                await _blockChainProvider.TransformTokenToUsdValueAsync(valueInfoDto.Value.Symbol,
-                    valueInfoDto.Value.Amount);
+                await _blockChainProvider.TransformTokenToUsdValueAsync(valueSymbol,
+                    valueAmount);
+            valueInfoDto.Value.AmountString = await _blockChainProvider.GetDecimalAmountAsync(valueSymbol, valueAmount);
         }
 
 
@@ -563,6 +575,8 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         detailDto.TransactionValues = transactionValues.Values.OrderByDescending(x => x.Amount).ToList();
         detailDto.BurntFees = burntFees.Values.OrderByDescending(x => x.Amount).ToList();
+
+        
     }
 
 

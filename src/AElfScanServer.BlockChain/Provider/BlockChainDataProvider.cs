@@ -165,6 +165,15 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
         return (price * amount / Math.Pow(10, tokenDecimals)).ToString();
     }
 
+
+    public async Task<string> GetDecimalAmountAsync(string symbol, long amount)
+    {
+        var tokenDecimals = await GetTokenDecimals(symbol, "AELF");
+
+        return amount.ToDecimalsString(tokenDecimals);
+    }
+
+
     public async Task<string> GetTokenUsdPriceAsync(string symbol)
     {
         if (symbol == "USDT")
@@ -383,12 +392,6 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
     public async Task<BlockDetailDto> GetBlockDetailAsync(string chainId, long blockHeight)
     {
-        // _httpService.GetResponseAsync<BlockDto>(this.GetRequestUrl(this._baseUrl, string.Format("api/blockChain/blockByHeight?blockHeight={0}&includeTransactions={1}", (object) blockHeight, (object) includeTransactions)));
-
-        // var elfClient = new AElfClient(_blockChainOptions.ChainNodeHosts[chainId]);
-
-        // var blockDto = await elfClient.GetBlockByHeightAsync(blockHeight, true);
-
         var apiPath = string.Format("/api/blockChain/blockByHeight?blockHeight={0}&includeTransactions=true",
             blockHeight);
 
@@ -400,29 +403,4 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
         return response;
     }
-
-
-    // public async Task<CommonAddressDto> GetCommonAddressAsync(string address, string chainId)
-    // {
-    //     try
-    //     {
-    //         var mustQuery = new List<Func<QueryContainerDescriptor<AddressIndex>, QueryContainer>>();
-    //         mustQuery.Add(q => q.Bool(b =>
-    //             b.Must(mu => mu.Term(t => t.Field(f => f.Address).Value(address)))
-    //         ));
-    //
-    //
-    //         QueryContainer Filter(QueryContainerDescriptor<AddressIndex> f) => f.Bool(b => b.Must(mustQuery));
-    //
-    //
-    //         var resp = await _addressIndexRepository.GetAsync(Filter,
-    //             index: BlockChainIndexNameHelper.GenerateLogEventIndexName(chainId));
-    //     }
-    //
-    //     catch (Exception e)
-    //     {
-    //         _logger.LogError(e, "GetLogEventList error,request:{@request}", request);
-    //     }
-    //     
-    // }
 }

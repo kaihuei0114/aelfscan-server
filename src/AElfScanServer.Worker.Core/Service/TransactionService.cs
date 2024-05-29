@@ -102,18 +102,27 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     {
         await ConnectAsync();
 
+        var chainIds = new List<string>();
         var mergeList = new List<List<TransactionCountPerMinuteDto>>();
         try
         {
-            
-            
+            if (_globalOptions.CurrentValue == null)
+            {
+                _logger.LogError("globalOptions.CurrentValue is null");
+                chainIds = new List<string>() { "AELF", "tDVV" };
+            }
+
+
             if (_globalOptions.CurrentValue.ChainIds.IsNullOrEmpty())
             {
                 _logger.LogError("ChainIds is empty");
-                return;
+                chainIds = new List<string>() { "AELF", "tDVV" };
             }
-            
-            foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+
+            chainIds = _globalOptions.CurrentValue.ChainIds;
+
+
+            foreach (var chainId in chainIds)
             {
                 var chartDataKey = RedisKeyHelper.TransactionChartData(chainId);
 
@@ -331,8 +340,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
     }
 
-    
-    
+
     public void AnalysisTransactionLogEvent(string chainId, IndexerTransactionDto txn,
         TransactionIndex transactionIndex, List<AddressIndex> addressIndices, List<TokenInfoIndex> tokenIndices,
         List<LogEventIndex> logEventIndices,
