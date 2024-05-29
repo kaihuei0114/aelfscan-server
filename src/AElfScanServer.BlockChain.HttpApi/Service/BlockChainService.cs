@@ -518,7 +518,19 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                 case nameof(Burned):
                     var burned = new Burned();
                     burned.MergeFrom(logEvent);
-                    await SetValueInfoAsync(burntFees, burned.Symbol, burned.Amount);
+                    if (TokenSymbolHelper.GetSymbolType(burned.Symbol) == SymbolType.Nft &&
+                        "SEED-0".Equals(TokenSymbolHelper.GetCollectionSymbol(burned.Symbol)))
+                    {
+                        break;
+                    }
+
+                    if (_globalOptions.CurrentValue.BurntFeeContractAddresses.TryGetValue(indexerTransactionDto.ChainId,
+                            out var addressList)
+                        && addressList.Contains(burned.Burner.ToBase58()))
+                    {
+                        await SetValueInfoAsync(burntFees, burned.Symbol, burned.Amount);
+                    }
+
                     break;
             }
         }
