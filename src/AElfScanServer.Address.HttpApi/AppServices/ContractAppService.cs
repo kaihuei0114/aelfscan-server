@@ -113,12 +113,10 @@ public class ContractAppService : IContractAppService
                 "ELF", input.SkipCount, input.MaxResultCount);
             contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].FormatAmount : 0;
 
-            contractInfo.Txns = addressTokenList.Count > 0 ? addressTokenList[0].TransferCount : 0;
 
             result.List.Add(contractInfo);
         }
-
-
+        
         return result;
     }
 
