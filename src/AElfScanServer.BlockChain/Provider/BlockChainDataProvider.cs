@@ -17,6 +17,7 @@ using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Dtos;
+using AElfScanServer.Helper;
 using AElfScanServer.HttpClient;
 using AElfScanServer.Options;
 using Binance.Spot;
@@ -75,7 +76,6 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
     public async Task<string> GetBlockRewardAsync(long blockHeight, string chainId)
     {
-        // return "12500000";
         try
         {
             await ConnectAsync();
@@ -154,11 +154,19 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     }
 
 
+    public async Task<string> TransformTokenToUsdValueAsync(string symbol, long amount)
+    {
+        var tokenUsdPriceAsync = await GetTokenUsdPriceAsync(symbol);
+
+
+        var tokenDecimals = await GetTokenDecimals(symbol, "AELF");
+        var price = double.Parse(tokenUsdPriceAsync);
+
+        return (price * amount / Math.Pow(10, tokenDecimals)).ToString();
+    }
+
     public async Task<string> GetTokenUsdPriceAsync(string symbol)
     {
-        // var market = new Market(_blockChainOptions.BNBaseUrl, _blockChainOptions.BNApiKey,
-        //     _blockChainOptions.BNSecretKey);
-
         if (symbol == "USDT")
         {
             return "1";
@@ -212,7 +220,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
             //     return _serializer.Deserialize<BinancePriceDto>(redisValue);
             // }
 
-            var symbolPriceTicker = await market.TwentyFourHrTickerPriceChangeStatistics(symbol+"USDT");
+            var symbolPriceTicker = await market.TwentyFourHrTickerPriceChangeStatistics(symbol + "USDT");
             var binancePriceDto = JsonConvert.DeserializeObject<BinancePriceDto>(symbolPriceTicker);
             // await RedisDatabase.StringSetAsync(symbol, _serializer.Serialize(binancePriceDto), TimeSpan.FromHours(2));
             return binancePriceDto;
@@ -223,7 +231,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
             return new BinancePriceDto();
         }
     }
-    
+
 
     public async Task<string> GetTokenImageBase64Async(string symbol)
     {

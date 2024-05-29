@@ -99,7 +99,6 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         try
         {
-            // GetTokenImage();
             var transactionsAsync =
                 await _aelfIndexerProvider.GetTransactionsAsync(request.ChainId,
                     request.BlockHeight == 0 ? 0 : request.BlockHeight,
@@ -488,7 +487,8 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                             From = ConvertAddress(transferred.From.ToBase58(), indexerTransactionDto.ChainId),
                             To = ConvertAddress(transferred.To.ToBase58(), indexerTransactionDto.ChainId),
                             ImageBase64 = await _blockChainProvider.GetTokenImageBase64Async(transferred.Symbol),
-                            NowPrice = await _blockChainProvider.GetTokenUsdPriceAsync(transferred.Symbol)
+                            NowPrice = await _blockChainProvider.TransformTokenToUsdValueAsync(transferred.Symbol,
+                                transferred.Amount)
                         };
                         detailDto.TokenTransferreds.Add(token);
                     }
@@ -526,18 +526,24 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         foreach (var valueInfoDto in transactionValues)
         {
-            valueInfoDto.Value.NowPrice = await _blockChainProvider.GetTokenUsdPriceAsync(valueInfoDto.Value.Symbol);
+            valueInfoDto.Value.NowPrice =
+                await _blockChainProvider.TransformTokenToUsdValueAsync(valueInfoDto.Value.Symbol,
+                    valueInfoDto.Value.Amount);
         }
 
         foreach (var valueInfoDto in transactionFees)
         {
-            valueInfoDto.Value.NowPrice = await _blockChainProvider.GetTokenUsdPriceAsync(valueInfoDto.Value.Symbol);
+            valueInfoDto.Value.NowPrice =
+                await _blockChainProvider.TransformTokenToUsdValueAsync(valueInfoDto.Value.Symbol,
+                    valueInfoDto.Value.Amount);
         }
 
 
         foreach (var valueInfoDto in burntFees)
         {
-            valueInfoDto.Value.NowPrice = await _blockChainProvider.GetTokenUsdPriceAsync(valueInfoDto.Value.Symbol);
+            valueInfoDto.Value.NowPrice =
+                await _blockChainProvider.TransformTokenToUsdValueAsync(valueInfoDto.Value.Symbol,
+                    valueInfoDto.Value.Amount);
         }
 
 
