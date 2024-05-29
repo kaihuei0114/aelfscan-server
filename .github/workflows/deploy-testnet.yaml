@@ -68,7 +68,7 @@ jobs:
         with:
           images: ${{ secrets.REPOSITORY_REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPOSITORY }}/${{ matrix.servicename }}
           tags: |
-            type=ref,event=tag
+            type=sha
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build and push
