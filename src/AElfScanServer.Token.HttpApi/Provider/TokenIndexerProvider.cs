@@ -121,9 +121,10 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             Query =
                 @"query($chainId:String!,$skipCount:Int!,$maxResultCount:Int!,$search:String,
                         $types:[SymbolType!],$symbols:[String!],$collectionSymbols:[String!],
-                        $sort:String,$orderBy:String){
+                        $sort:String,$orderBy:String,$exactSearch:String,$fuzzySearch:String){
                     tokenInfo(input: {chainId:$chainId,skipCount:$skipCount,maxResultCount:$maxResultCount,search:$search,types:$types,
-                        symbols:$symbols,collectionSymbols:$collectionSymbols,sort:$sort,orderBy:$orderBy})
+                        symbols:$symbols,collectionSymbols:$collectionSymbols,sort:$sort,orderBy:$orderBy,
+                        exactSearch:$exactSearch,fuzzySearch:$fuzzySearch})
                 {
                    totalCount,
                    items{
@@ -150,7 +151,8 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             {
                 chainId = input.ChainId, types = input.Types, symbols = input.Symbols, skipCount = input.SkipCount,
                 maxResultCount = input.MaxResultCount, collectionSymbols = input.CollectionSymbols,
-                search = input.Search, sort = input.Sort, orderBy = input.OrderBy
+                search = input.Search, sort = input.Sort, orderBy = input.OrderBy,
+                exactSearch = input.ExactSearch, fuzzySearch = input.FuzzySearch
             }
         });
         return indexerResult?.TokenInfo ?? new IndexerTokenInfoListDto();
@@ -200,11 +202,13 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         {
             Query =
                 @"query($chainId:String!,$symbol:String!,$address:String,$collectionSymbol:String,
-                    $search:String,$skipCount:Int!,$maxResultCount:Int!,$types:[SymbolType!],$sort:String,$orderBy:String){
+                    $search:String,$skipCount:Int!,$maxResultCount:Int!,$types:[SymbolType!],
+                    $fuzzySearch:String,$sort:String,$orderBy:String,$searchAfter:[String],$orderInfos:[OrderInfo]){
                     transferInfo(input: {chainId:$chainId,symbol:$symbol,collectionSymbol:$collectionSymbol,address:$address,types:$types,search:$search,
-                    skipCount:$skipCount,maxResultCount:$maxResultCount,sort:$sort,orderBy:$orderBy}){     
+                    skipCount:$skipCount,maxResultCount:$maxResultCount,fuzzySearch:$fuzzySearch,sort:$sort,orderBy:$orderBy,searchAfter:$searchAfter,orderInfos:$orderInfos}){     
                     totalCount,
                     items{
+                        id,
                         metadata{chainId,block{blockHash,blockTime,blockHeight}},
                         transactionId,
                         from,
@@ -223,7 +227,8 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                 chainId = input.ChainId, symbol = input.Symbol, address = input.Address, search = input.Search,
                 skipCount = input.SkipCount, maxResultCount = input.MaxResultCount,
                 collectionSymbol = input.CollectionSymbol, types = input.Types,
-                sort = input.Sort, orderBy = input.OrderBy
+                sort = input.Sort, orderBy = input.OrderBy, fuzzySearch = input.FuzzySearch,
+                orderInfos = input.OrderInfos, searchAfter = input.SearchAfter
             }
         });
         return indexerResult == null ? new IndexerTokenTransferListDto() : indexerResult.TransferInfo;
@@ -236,11 +241,14 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         {
             Query =
                 @"query($chainId:String!,$symbol:String!,$collectionSymbol:String,$skipCount:Int!,$maxResultCount:Int!,$address:String,
-                    $search:String,$types:[SymbolType!],$symbols:[String],$searchSymbols:[String],$sort:String,$orderBy:String){
+                    $search:String,$types:[SymbolType!],$symbols:[String],$searchSymbols:[String],
+                    $fuzzySearch:String,$sort:String,$orderBy:String,$searchAfter:[String],$orderInfos:[OrderInfo]){
                     accountToken(input: {chainId:$chainId,symbol:$symbol,collectionSymbol:$collectionSymbol,skipCount:$skipCount,types:$types,
-                    search:$search,symbols:$symbols,searchSymbols:$searchSymbols,maxResultCount:$maxResultCount,address:$address,sort:$sort,orderBy:$orderBy}){
+                    search:$search,symbols:$symbols,searchSymbols:$searchSymbols,maxResultCount:$maxResultCount,address:$address,
+                    fuzzySearch:$fuzzySearch,sort:$sort,orderBy:$orderBy,searchAfter:$searchAfter,orderInfos:$orderInfos}){
                     totalCount,
                     items{
+                        id,
                         address,
                         token {
                             symbol,
@@ -261,7 +269,8 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                 chainId = input.ChainId, symbol = input.Symbol, collectionSymbol = input.CollectionSymbol,
                 skipCount = input.SkipCount, maxResultCount = input.MaxResultCount, address = input.Address,
                 types = input.Types, symbols = input.Symbols, searchSymbols = input.SearchSymbols,
-                search = input.Search, sort = input.Sort, orderBy = input.OrderBy
+                search = input.Search, sort = input.Sort, orderBy = input.OrderBy, fuzzySearch = input.FuzzySearch,
+                orderInfos = input.OrderInfos, searchAfter = input.SearchAfter
             }
         });
         return indexerResult == null ? new IndexerTokenHolderInfoListDto() : indexerResult.AccountToken;

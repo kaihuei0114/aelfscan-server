@@ -68,11 +68,8 @@ public class SearchService : ISearchService, ISingletonDependency
             {
                 return searchResp;
             }
-
             //Step 2: convert 
-            //TODO
-            //request.Keyword = request.Keyword.ToLower();
-
+           
             //Step 3: execute query
             switch (request.FilterType)
             {
@@ -163,8 +160,7 @@ public class SearchService : ISearchService, ISingletonDependency
             {
                 return;
             }
-            //TODO
-            holderInput = new TokenHolderInput { ChainId = request.ChainId, Search = request.Keyword };
+            holderInput = new TokenHolderInput { ChainId = request.ChainId, FuzzySearch = request.Keyword.ToLower() };
         }
         holderInput.SetDefaultSort();
         var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
@@ -177,12 +173,11 @@ public class SearchService : ISearchService, ISingletonDependency
         var input = new TokenListInput { ChainId = request.ChainId, Types = types };
         if (request.SearchType == SearchTypes.ExactSearch)
         {
-            //TODO
-            input.Search = request.Keyword;
+            input.ExactSearch = request.Keyword;
         }
         else
         {
-            input.Search = request.Keyword;
+            input.FuzzySearch = request.Keyword.ToLower();
         }
         var indexerTokenInfoList = await _tokenIndexerProvider.GetTokenListAsync(input);
         if (indexerTokenInfoList.Items.IsNullOrEmpty())

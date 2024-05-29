@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Address.Provider;
@@ -57,25 +58,34 @@ public class TokenAssetProvider : RedisCacheExtension, ITokenAssetProvider, ISin
 
     public async Task HandleDailyTokenValuesAsync(string chainId)
     {
-        await using var handle = await _distributedLock.TryAcquireAsync(LockKey);
-        
-        var bizDate =  DateTime.Now.ToString("yyyyMMdd");
-;
-        var key = GetRedisKey(chainId, bizDate);
-        
-        await ConnectAsync();
-
-        var isExist = await RedisDatabase.KeyExistsAsync(key);
-
-        if (isExist)
+        _logger.LogInformation("Handle daily token values chainId: {chainId}", chainId);
+        try
         {
-            _logger.LogWarning("Repeated execute HandleDailyTokenValues");
-            return;
-        }
-
-        await HandleTokenValuesAsync(AddressAssetType.Daily, chainId);
+            await using var handle = await _distributedLock.TryAcquireAsync(LockKey);
         
-        await RedisDatabase.StringSetAsync(key, 1);
+            var bizDate =  DateTime.Now.ToString("yyyyMMdd");
+            
+            var key = GetRedisKey(chainId, bizDate);
+        
+            await ConnectAsync();
+
+            var isExist = await RedisDatabase.KeyExistsAsync(key);
+
+            if (isExist)
+            {
+                _logger.LogWarning("Repeated execute HandleDailyTokenValues");
+                return;
+            }
+
+            await HandleTokenValuesAsync(AddressAssetType.Daily, chainId);
+        
+            await RedisDatabase.StringSetAsync(key, 1);
+        }
+        catch (Exception e)
+        {
+            _logger.LogInformation(e, "Handle daily token values error.");
+        }
+        _logger.LogInformation("Handle daily token values chainId: {chainId} end.", chainId);
     }
     
     
@@ -107,30 +117,38 @@ public class TokenAssetProvider : RedisCacheExtension, ITokenAssetProvider, ISin
      */
     private async Task<AddressAssetDto> HandleTokenValuesAsync(AddressAssetType type, string chainId, string address = null)
     {
-        var skipCount = 0;
+        var stopwatch = Stopwatch.StartNew();
         const int maxResultCount = CommonConstant.DefaultMaxResultCount;
         var lastAddressProcessed = new AddressAssetDto();
-        //The price symbol is ELF 
+        //The price unit of symbol is ELF
         var symbolPriceDict = new Dictionary<string, decimal>();
+        string searchAfterId = null;
         while (true)
         {
             //The address must be used for sorting. When the last address is the last one, submit it.
+            //Address holder's Id = chainId + address + symbol, so we can sort by 'Id'
             var input = new TokenHolderInput
             {
                 ChainId = chainId,
-                SkipCount = skipCount,
                 Address = address,
                 MaxResultCount = maxResultCount,
                 Types = new List<SymbolType> { SymbolType.Token, SymbolType.Nft }, 
-                OrderBy = "Address",
-                Sort = "Desc",
             };
+            input.OfOrderInfos((SortField.Id, SortDirection.Desc));
+            if (!searchAfterId.IsNullOrEmpty())
+            {
+                input.SearchAfter = new List<string>{ searchAfterId };
+            }
             var indexerTokenHolderInfo = await _tokenIndexerProvider.GetTokenHolderInfoAsync(input);
-
+            _logger.LogInformation(
+                "GetTokenHolderInfoAsync for chainId: {chainId} input:{input} totalCount:{totalCount}, count: {count}", chainId,
+                JsonConvert.SerializeObject(input), indexerTokenHolderInfo.TotalCount, indexerTokenHolderInfo.Items.Count);
             if (indexerTokenHolderInfo.Items.Count == 0)
             {
                 break;
             }
+            searchAfterId = indexerTokenHolderInfo.Items.Last().Id;
+
             //address is null, need to update redis, for daily calc total value
             var valuesDict = await CalculateTokenValuesAsync(chainId, indexerTokenHolderInfo.Items, symbolPriceDict);
             
@@ -155,19 +173,13 @@ public class TokenAssetProvider : RedisCacheExtension, ITokenAssetProvider, ISin
                 }
                 
             }
-            skipCount += maxResultCount;
         }
         //the end to submit lastAddressProcessed
         await _addressInfoProvider.CreateAddressAssetAsync(type, chainId, lastAddressProcessed);
-
-        if(address.IsNullOrEmpty())
-        {
-            return null;
-        }
-
         _logger.LogInformation(
-            "LastAddressProcessed addressAssetDto: {totalNftValueOfElf}", JsonConvert.SerializeObject(lastAddressProcessed));
-        return lastAddressProcessed;
+            "LastAddressProcessed chainId:{chainId} addressAssetDto: {totalNftValueOfElf}", chainId, JsonConvert.SerializeObject(lastAddressProcessed));
+        _logger.LogInformation("It took {Elapsed} ms to execute handle token values for chainId: {chainId}", stopwatch.ElapsedMilliseconds, chainId);
+        return address.IsNullOrEmpty() ? null : lastAddressProcessed;
     }
 
     /**
@@ -218,7 +230,7 @@ public class TokenAssetProvider : RedisCacheExtension, ITokenAssetProvider, ISin
             }
 
             var addressAsset = new AddressAssetDto(userGroup.Key, totalTokenValueOfElf, totalNftValueOfElf);
-            _logger.LogInformation("CalculateTokenValues addressAsset:{addressAsset} ", JsonConvert.SerializeObject(addressAsset));
+            _logger.LogInformation("CalculateTokenValues chainId:{chainId} addressAsset:{addressAsset} ", chainId, JsonConvert.SerializeObject(addressAsset));
             result[userGroup.Key] = addressAsset;
         }
 

@@ -131,19 +131,23 @@ public class AddressAppService : IAddressAppService
         var holderInfosTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Address, new List<SymbolType> { SymbolType.Token, SymbolType.Nft });
         var contractInfoTask = _indexerGenesisProvider.GetContractAsync(input.ChainId, input.Address);
         var transferInput = new TokenTransferInput { ChainId = input.ChainId, Address = input.Address };
-        transferInput.SetDefaultSort();
+        transferInput.OfOrderInfos((SortField.BlockHeight, SortDirection.Desc));
         var tokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(transferInput);
+        var firstTransferInput = new TokenTransferInput { ChainId = input.ChainId, Address = input.Address };
+        firstTransferInput.OfOrderInfos((SortField.BlockHeight, SortDirection.Asc));
+        var firstTokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(firstTransferInput);
 
         await Task.WhenAll(priceDtoTask, priceHisDtoTask, holderInfoTask, curAddressAssetTask, dailyAddressAssetTask, 
-            holderInfosTask, tokenTransferListDtoTask, contractInfoTask);
+            holderInfosTask, tokenTransferListDtoTask, firstTokenTransferListDtoTask, contractInfoTask);
 
         var holderInfo = await holderInfoTask;
-        var priceDto = await priceHisDtoTask;
+        var priceDto = await priceDtoTask;
         var priceHisDto = await priceHisDtoTask;
         var curAddressAsset = await curAddressAssetTask;
         var dailyAddressAsset = await dailyAddressAssetTask;
         var holderInfos = await holderInfosTask;
         var tokenTransferListDto = await tokenTransferListDtoTask;
+        var firstTokenTransferListDto = await firstTokenTransferListDtoTask;
         var contractInfo = await contractInfoTask;
         
         _logger.LogInformation("GetAddressDetail chainId: {chainId}, dailyAddressAsset: {dailyAddressAsset}",
@@ -173,20 +177,12 @@ public class AddressAppService : IAddressAppService
         
         if (!tokenTransferListDto.Items.IsNullOrEmpty())
         {
-            var transferInfoDto = tokenTransferListDto.Items[0];
-            result.LastTransactionSend = new TransactionInfoDto
-            {
-                TransactionId = transferInfoDto.TransactionId,
-                BlockHeight = transferInfoDto.Metadata.Block.BlockHeight,
-                BlockTime = transferInfoDto.Metadata.Block.BlockTime
-            };
-            //TODO
-            result.FirstTransactionSend = new TransactionInfoDto
-            {
-                TransactionId = transferInfoDto.TransactionId,
-                BlockHeight = transferInfoDto.Metadata.Block.BlockHeight,
-                BlockTime = transferInfoDto.Metadata.Block.BlockTime
-            };
+            result.LastTransactionSend = OfTransactionInfo(tokenTransferListDto.Items[0]);
+        }
+        
+        if (!firstTokenTransferListDto.Items.IsNullOrEmpty())
+        {
+            result.FirstTransactionSend = OfTransactionInfo(firstTokenTransferListDto.Items[0]);
         }
 
         return result;
@@ -294,6 +290,7 @@ public class AddressAppService : IAddressAppService
     {
         var tokenTransferInput = _objectMapper.Map<GetTransferListInput, TokenTransferInput>(input);
         tokenTransferInput.Types = new List<SymbolType> { input.TokenType };
+        tokenTransferInput.SetDefaultSort();
         var tokenTransferInfos = await _tokenIndexerProvider.GetTokenTransfersAsync(tokenTransferInput);
         return new GetTransferListResultDto
         {
@@ -399,5 +396,20 @@ public class AddressAppService : IAddressAppService
         });
 
         return (await Task.WhenAll(tasks)).ToList();
+    }
+    
+    private static TransactionInfoDto OfTransactionInfo(IndexerTransferInfoDto transferInfoDto)
+    {
+        if (transferInfoDto == null)
+        {
+            return null;
+        }
+
+        return new TransactionInfoDto
+        {
+            TransactionId = transferInfoDto.TransactionId,
+            BlockHeight = transferInfoDto.Metadata.Block.BlockHeight,
+            BlockTime = transferInfoDto.Metadata.Block.BlockTime
+        };
     }
 }
