@@ -34,7 +34,7 @@ public interface ITokenService
 }
 
 [Ump]
-public class TokenService : ITokenService, ITransientDependency
+public class TokenService : ITokenService, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
     private readonly IBlockChainProvider _blockChainProvider;

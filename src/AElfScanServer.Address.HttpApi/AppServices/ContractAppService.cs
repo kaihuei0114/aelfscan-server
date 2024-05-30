@@ -8,6 +8,7 @@ using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Dtos.Indexer;
 using AElfScanServer.BlockChain.Provider;
+using AElfScanServer.Core;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Options;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,7 @@ public interface IContractAppService
     Task<GetContractEventListResultDto> GetContractEventsAsync(GetContractEventContractsInput input);
 }
 
+[Ump]
 public class ContractAppService : IContractAppService
 {
     private readonly IObjectMapper _objectMapper;
