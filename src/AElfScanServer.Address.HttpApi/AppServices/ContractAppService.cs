@@ -31,21 +31,19 @@ public class ContractAppService : IContractAppService
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractAppService> _logger;
     private readonly IDecompilerProvider _decompilerProvider;
-    private readonly IBlockChainProvider _blockChainProvider;
     private readonly IIndexerTokenProvider _indexerTokenProvider;
     private readonly IIndexerGenesisProvider _indexerGenesisProvider;
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
-        IDecompilerProvider decompilerProvider, IBlockChainProvider blockChainProvider,
+        IDecompilerProvider decompilerProvider,
         IIndexerTokenProvider indexerTokenProvider, IIndexerGenesisProvider indexerGenesisProvider,
         IOptionsMonitor<GlobalOptions> globalOptions, IBlockChainIndexerProvider blockChainIndexerProvider)
     {
         _objectMapper = objectMapper;
         _logger = logger;
         _decompilerProvider = decompilerProvider;
-        _blockChainProvider = blockChainProvider;
         _indexerTokenProvider = indexerTokenProvider;
         _indexerGenesisProvider = indexerGenesisProvider;
         _globalOptions = globalOptions;
@@ -115,7 +113,7 @@ public class ContractAppService : IContractAppService
 
             result.List.Add(contractInfo);
         }
-        
+
         return result;
     }
 
@@ -179,7 +177,7 @@ public class ContractAppService : IContractAppService
     }
 
     public async Task<GetContractEventListResultDto> GetContractEventsAsync(GetContractEventContractsInput input)
-        => _objectMapper.Map<LogEventResponseDto, GetContractEventListResultDto>(
-            await _blockChainProvider.GetLogEventListAsync(input.ChainId, input.Address, input.SkipCount,
-                input.MaxResultCount));
+    {
+        return null;
+    }
 }
