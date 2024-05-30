@@ -22,7 +22,6 @@ public class AElfScanServerBlockChainModule : AbpModule
     {
         var configuration = context.Services.GetConfiguration();
         Configure<BlockChainOption>(context.Services.GetConfiguration().GetSection("BlockChainServer"));
-        context.Services.AddSingleton<IBlockChainProvider, BlockChainProvider>();
 
 
         Configure<AELFIndexerOptions>(configuration.GetSection("AELFIndexer"));
@@ -32,7 +31,6 @@ public class AElfScanServerBlockChainModule : AbpModule
 
 
         context.Services.AddSingleton<AELFIndexerProvider, AELFIndexerProvider>();
-        context.Services.AddSingleton<BlockChainProvider, BlockChainProvider>();
         context.Services.AddSingleton<HomePageProvider, HomePageProvider>();
         context.Services.AddSingleton<LogEventProvider, LogEventProvider>();
         context.Services.AddSingleton<BlockChainDataProvider, BlockChainDataProvider>();

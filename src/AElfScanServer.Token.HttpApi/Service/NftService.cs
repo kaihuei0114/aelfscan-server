@@ -49,7 +49,6 @@ public class NftService : INftService, ISingletonDependency
     private const int MaxResultCount = 1000;
     private readonly IOptionsMonitor<ChainOptions> _chainOptions;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
-    private readonly IBlockChainProvider _blockChainProvider;
     private readonly ILogger<NftService> _logger;
     private readonly IObjectMapper _objectMapper;
     private readonly INftCollectionHolderProvider _collectionHolderProvider;
@@ -61,7 +60,7 @@ public class NftService : INftService, ISingletonDependency
 
     
     public NftService(ITokenIndexerProvider tokenIndexerProvider, ILogger<NftService> logger,
-        IObjectMapper objectMapper, IBlockChainProvider blockChainProvider,
+        IObjectMapper objectMapper, 
         INftCollectionHolderProvider collectionHolderProvider, INftInfoProvider nftInfoProvider, ITokenPriceService tokenPriceService, 
         IOptionsMonitor<ChainOptions> chainOptions, IOptionsMonitor<TokenInfoOptions> tokenInfoOptionsMonitor, 
         ITokenInfoProvider tokenInfoProvider, IContractProvider contractProvider)
@@ -69,7 +68,6 @@ public class NftService : INftService, ISingletonDependency
         _tokenIndexerProvider = tokenIndexerProvider;
         _logger = logger;
         _objectMapper = objectMapper;
-        _blockChainProvider = blockChainProvider;
         _collectionHolderProvider = collectionHolderProvider;
         _nftInfoProvider = nftInfoProvider;
         _tokenPriceService = tokenPriceService;

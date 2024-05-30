@@ -18,7 +18,6 @@ using AElfScanServer.TokenDataFunction.Provider;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
-
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
 namespace AElfScanServer.TokenDataFunction.Service;
@@ -37,7 +36,6 @@ public interface ITokenService
 public class TokenService : ITokenService, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
-    private readonly IBlockChainProvider _blockChainProvider;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly ITokenHolderPercentProvider _tokenHolderPercentProvider;
     private readonly IOptionsMonitor<ChainOptions> _chainOptions;
@@ -47,10 +45,11 @@ public class TokenService : ITokenService, ISingletonDependency
     private readonly IContractProvider _contractProvider;
 
 
-    public TokenService(ITokenIndexerProvider tokenIndexerProvider, IBlockChainProvider blockChainProvider,
+    public TokenService(ITokenIndexerProvider tokenIndexerProvider,
         ITokenHolderPercentProvider tokenHolderPercentProvider, IObjectMapper objectMapper,
-        IOptionsMonitor<ChainOptions> chainOptions, ITokenPriceService tokenPriceService, 
-        IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenInfoProvider tokenInfoProvider, IContractProvider contractProvider)
+        IOptionsMonitor<ChainOptions> chainOptions, ITokenPriceService tokenPriceService,
+        IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenInfoProvider tokenInfoProvider,
+        IContractProvider contractProvider)
     {
         _objectMapper = objectMapper;
         _chainOptions = chainOptions;
@@ -58,15 +57,14 @@ public class TokenService : ITokenService, ISingletonDependency
         _tokenInfoOptions = tokenInfoOptions;
         _tokenInfoProvider = tokenInfoProvider;
         _contractProvider = contractProvider;
-        _blockChainProvider = blockChainProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenHolderPercentProvider = tokenHolderPercentProvider;
     }
 
     public async Task<ListResponseDto<TokenCommonDto>> GetTokenListAsync(TokenListInput input)
-    { 
+    {
         input.SetDefaultSort();
-        
+
         var indexerTokenListDto = await _tokenIndexerProvider.GetTokenListAsync(input);
 
         if (indexerTokenListDto.Items.IsNullOrEmpty())
@@ -92,22 +90,25 @@ public class TokenService : ITokenService, ISingletonDependency
         var list = await ConvertIndexerTokenDtoAsync(indexerTokenList, chainId);
 
         var tokenInfo = list[0];
-        
+
         var tokenDetailDto = _objectMapper.Map<TokenCommonDto, TokenDetailDto>(tokenInfo);
         tokenDetailDto.TokenContractAddress = _chainOptions.CurrentValue.GetChainInfo(chainId)?.TokenContractAddress;
         if (_tokenInfoOptions.CurrentValue.NonResourceSymbols.Contains(symbol))
-        { 
+        {
             //set others
             var priceDto = await _tokenPriceService.GetTokenPriceAsync(symbol, CurrencyConstant.UsdCurrency);
             var timestamp = TimeHelper.GetTimeStampFromDateTime(DateTime.Today);
-            var priceHisDto = await _tokenPriceService.GetTokenHistoryPriceAsync(symbol, CurrencyConstant.UsdCurrency, timestamp);
+            var priceHisDto =
+                await _tokenPriceService.GetTokenHistoryPriceAsync(symbol, CurrencyConstant.UsdCurrency, timestamp);
             tokenDetailDto.Price = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
             if (priceHisDto.Price > 0)
             {
-                tokenDetailDto.PricePercentChange24h = (double)Math.Round((priceDto.Price - priceHisDto.Price) / priceHisDto.Price  * 100, 
+                tokenDetailDto.PricePercentChange24h = (double)Math.Round(
+                    (priceDto.Price - priceHisDto.Price) / priceHisDto.Price * 100,
                     CommonConstant.PercentageValueDecimals);
             }
         }
+
         return tokenDetailDto;
     }
 
@@ -122,16 +123,18 @@ public class TokenService : ITokenService, ISingletonDependency
             var priceDto = await _tokenPriceService.GetTokenPriceAsync(input.Symbol, CurrencyConstant.UsdCurrency);
             result.Value = Math.Round(result.Balance * priceDto.Price, CommonConstant.UsdValueDecimals);
         }
+
         return result;
     }
 
     public async Task<ListResponseDto<TokenHolderInfoDto>> GetTokenHolderInfosAsync(TokenHolderInput input)
     {
         input.SetDefaultSort();
-        
+
         var indexerTokenHolderInfo = await _tokenIndexerProvider.GetTokenHolderInfoAsync(input);
 
-        var list = await ConvertIndexerTokenHolderInfoDtoAsync(indexerTokenHolderInfo.Items, input.ChainId, input.Symbol);
+        var list = await ConvertIndexerTokenHolderInfoDtoAsync(indexerTokenHolderInfo.Items, input.ChainId,
+            input.Symbol);
 
         return new ListResponseDto<TokenHolderInfoDto>
         {
@@ -187,12 +190,15 @@ public class TokenService : ITokenService, ISingletonDependency
             if (tokenSupply != 0)
             {
                 tokenHolderInfoDto.Percentage =
-                    Math.Round((decimal)indexerTokenHolderInfoDto.Amount / tokenSupply * 100, CommonConstant.PercentageValueDecimals);
+                    Math.Round((decimal)indexerTokenHolderInfoDto.Amount / tokenSupply * 100,
+                        CommonConstant.PercentageValueDecimals);
             }
 
-            tokenHolderInfoDto.Value = Math.Round(tokenHolderInfoDto.Quantity * priceDto.Price, CommonConstant.UsdValueDecimals);
+            tokenHolderInfoDto.Value =
+                Math.Round(tokenHolderInfoDto.Quantity * priceDto.Price, CommonConstant.UsdValueDecimals);
             list.Add(tokenHolderInfoDto);
         }
+
         return list;
     }
 
@@ -207,14 +213,16 @@ public class TokenService : ITokenService, ISingletonDependency
         {
             var tokenListDto = _objectMapper.Map<IndexerTokenInfoDto, TokenCommonDto>(indexerTokenInfoDto);
             tokenListDto.TotalSupply = DecimalHelper.Divide(tokenListDto.TotalSupply, indexerTokenInfoDto.Decimals);
-            tokenListDto.CirculatingSupply = DecimalHelper.Divide(tokenListDto.CirculatingSupply, indexerTokenInfoDto.Decimals);
+            tokenListDto.CirculatingSupply =
+                DecimalHelper.Divide(tokenListDto.CirculatingSupply, indexerTokenInfoDto.Decimals);
             //handle image url
             tokenListDto.Token.ImageUrl = TokenInfoHelper.GetImageUrl(indexerTokenInfoDto.ExternalInfo,
                 () => _tokenInfoProvider.BuildImageUrl(indexerTokenInfoDto.Symbol));
             if (tokenHolderCountDic.TryGetValue(indexerTokenInfoDto.Symbol, out var beforeCount) && beforeCount != 0)
             {
                 tokenListDto.HolderPercentChange24H = Math.Round(
-                    (double)(tokenListDto.Holders - beforeCount) / beforeCount * 100, CommonConstant.PercentageValueDecimals);
+                    (double)(tokenListDto.Holders - beforeCount) / beforeCount * 100,
+                    CommonConstant.PercentageValueDecimals);
             }
 
             list.Add(tokenListDto);
@@ -222,5 +230,4 @@ public class TokenService : ITokenService, ISingletonDependency
 
         return list;
     }
-    
 }

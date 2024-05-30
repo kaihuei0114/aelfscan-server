@@ -39,9 +39,7 @@ public class AddressController : AElfScanServerAddressController
     public async Task<GetTransferListResultDto> GetTransferListAsync(GetTransferListInput input)
         => await _addressAppService.GetTransferListAsync(input);
 
-    [HttpGet("transactions")]
-    public async Task<GetTransactionListResultDto> GetTransactionListAsync(
-        GetTransactionListInput input) => await _addressAppService.GetTransactionListAsync(input);
+ 
 
     // account
     [HttpGet("accounts")]

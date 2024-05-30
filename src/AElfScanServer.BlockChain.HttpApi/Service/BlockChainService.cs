@@ -577,8 +577,6 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         detailDto.TransactionValues = transactionValues.Values.OrderByDescending(x => x.Amount).ToList();
         detailDto.BurntFees = burntFees.Values.OrderByDescending(x => x.Amount).ToList();
-
-        
     }
 
 
@@ -617,9 +615,15 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
             var blockHeightAsync = summariesList.First().LatestBlockHeight;
             stopwatch1.Stop();
-
             var endBlockHeight = blockHeightAsync - requestDto.SkipCount;
             var startBlockHeight = endBlockHeight - requestDto.MaxResultCount;
+
+            if (requestDto.IsLastPage)
+            {
+                endBlockHeight = requestDto.MaxResultCount;
+                startBlockHeight = 1;
+            }
+
 
             _logger.LogInformation($"Cost time by get last blockHeight:{stopwatch1.Elapsed.TotalSeconds}");
 
@@ -656,7 +660,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             stopwatch3.Start();
 
 
-            for (var i = blockList.Count - 1; i > 0; i--)
+            for (var i = blockList.Count - 1; i >= 0; i--)
             {
                 var indexerBlockDto = blockList[i];
                 var latestBlockDto = new BlockResponseDto();
@@ -672,10 +676,18 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                     ? value.ToString()
                     : "0";
 
-                latestBlockDto.TimeSpan = (Convert.ToDouble(0 < blockList.Count
-                    ? DateTimeHelper.GetTotalMilliseconds(indexerBlockDto.BlockTime) -
-                      DateTimeHelper.GetTotalMilliseconds(blockList[i - 1].BlockTime)
-                    : 0) / 1000).ToString("0.0");
+                if (i == 0)
+                {
+                    latestBlockDto.TimeSpan = result.Blocks.Last().TimeSpan;
+                }
+                else
+                {
+                    latestBlockDto.TimeSpan = (Convert.ToDouble(0 < blockList.Count
+                        ? DateTimeHelper.GetTotalMilliseconds(indexerBlockDto.BlockTime) -
+                          DateTimeHelper.GetTotalMilliseconds(blockList[i - 1].BlockTime)
+                        : 0) / 1000).ToString("0.0");
+                }
+
 
                 result.Blocks.Add(latestBlockDto);
                 latestBlockDto.Reward = "12500000";

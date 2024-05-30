@@ -36,7 +36,6 @@ public interface IAddressAppService
     Task<GetAddressTokenListResultDto> GetAddressTokenListAsync(GetAddressTokenListInput input);
     Task<GetAddressNftListResultDto> GetAddressNftListAsync(GetAddressTokenListInput input);
     Task<GetTransferListResultDto> GetTransferListAsync(GetTransferListInput input);
-    Task<GetTransactionListResultDto> GetTransactionListAsync(GetTransactionListInput input);
 }
 
 [Ump]
@@ -44,7 +43,6 @@ public class AddressAppService : IAddressAppService
 {
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<AddressAppService> _logger;
-    private readonly IBlockChainProvider _blockChainProvider;
     private readonly IIndexerGenesisProvider _indexerGenesisProvider;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly ITokenPriceService _tokenPriceService;
@@ -57,7 +55,7 @@ public class AddressAppService : IAddressAppService
 
 
     public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger,
-        BlockChainProvider blockChainProvider, IIndexerGenesisProvider indexerGenesisProvider,
+         IIndexerGenesisProvider indexerGenesisProvider,
         ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService,
         ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
         IOptionsSnapshot<GlobalOptions> globalOptions, ITokenAssetProvider tokenAssetProvider, 
@@ -65,7 +63,6 @@ public class AddressAppService : IAddressAppService
     {
         _logger = logger;
         _objectMapper = objectMapper;
-        _blockChainProvider = blockChainProvider;
         _indexerGenesisProvider = indexerGenesisProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenPriceService = tokenPriceService;
@@ -301,9 +298,7 @@ public class AddressAppService : IAddressAppService
         };
     }
 
-    public async Task<GetTransactionListResultDto> GetTransactionListAsync(GetTransactionListInput input)
-        => _objectMapper.Map<TransactionsResponseDto, GetTransactionListResultDto>(
-            await _blockChainProvider.GetTransactionsAsync(input.ChainId, input.Address));
+
 
     private async Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfosAsync(GetAddressTokenListInput input, List<SymbolType> types = null, 
         List<string> searchSymbols = null, bool ignoreSearch = true)
