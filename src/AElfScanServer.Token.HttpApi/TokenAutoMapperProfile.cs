@@ -143,5 +143,11 @@ public class TokenAutoMapperProfile : Profile
             ;
         CreateMap<NftInventoryInput, TokenListInput>();
         CreateMap<NftInventoryInput, TokenHolderInput>();
+        CreateMap<TokenTransferInfoDto, NftTransferInfoDto>()
+            .ForMember(t => t.Value, m => m.MapFrom(u => u.Quantity))
+            .ForPath(t => t.Item.Name, m => m.MapFrom(u => u.SymbolName))
+            .ForPath(t => t.Item.Symbol, m => m.MapFrom(u => u.Symbol))
+            .ForPath(t => t.Item.ImageUrl, m => m.MapFrom(u => u.SymbolImageUrl))
+            ;
     }
 }

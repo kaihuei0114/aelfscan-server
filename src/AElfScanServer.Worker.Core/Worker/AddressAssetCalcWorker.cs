@@ -30,7 +30,6 @@ public class AddressAssetCalcWorker : AsyncPeriodicBackgroundWorkerBase
         var chainIds = _workerOptions.CurrentValue.GetChainIds();
         foreach (var chainId in chainIds)
         { 
-            _logger.LogInformation("Handle daily token values chainId: {chainId}", chainId);
             await _tokenAssetProvider.HandleDailyTokenValuesAsync(chainId);
         }
     }

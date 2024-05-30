@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Dtos;
+using AElfScanServer.Enums;
 
 namespace AElfScanServer.TokenDataFunction.Dtos.Input;
 
@@ -21,14 +22,14 @@ public class TokenHolderInput : BaseInput
     //symbol or collection symbol
     public List<string> SearchSymbols { get; set; } = new();
     
+    public string FuzzySearch { get; set; } = "";
+    
     public void SetDefaultSort()
     {
-        if (!Sort.IsNullOrEmpty())
+        if (!OrderBy.IsNullOrEmpty() || !OrderInfos.IsNullOrEmpty())
         {
             return;
         }
-
-        Sort = "Desc";
-        OrderBy = "FormatAmount";
+        OfOrderInfos((SortField.FormatAmount, SortDirection.Desc), (SortField.Address, SortDirection.Desc));
     }
 }

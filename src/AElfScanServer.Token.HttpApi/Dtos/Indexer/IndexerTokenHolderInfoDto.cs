@@ -6,6 +6,7 @@ namespace AElfScanServer.TokenDataFunction.Dtos.Indexer;
 
 public class IndexerTokenHolderInfoDto
 {
+    public string Id { get; set; }
     public string Address { get; set; }
     public IndexerTokenBaseDto Token { get; set; }
     public long Amount { get; set; }
