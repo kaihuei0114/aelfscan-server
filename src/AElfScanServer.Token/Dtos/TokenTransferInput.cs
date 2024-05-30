@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Dtos;
+using AElfScanServer.Enums;
 using AElfScanServer.Helper;
 
 namespace AElfScanServer.Token.Dtos;
@@ -16,6 +17,8 @@ public class TokenTransferInput : BaseInput
 
     public List<SymbolType> Types { get; set; } = new() { SymbolType.Token };
     
+    public string FuzzySearch { get; set; } = "";
+    
     public bool IsSearchAddress()
     {
         return !Search.IsNullOrWhiteSpace() && CommomHelper.IsValidAddress(Search);
@@ -23,12 +26,10 @@ public class TokenTransferInput : BaseInput
     
     public void SetDefaultSort()
     {
-        /*if (!Sort.IsNullOrEmpty())
+        if (!OrderBy.IsNullOrEmpty() || !OrderInfos.IsNullOrEmpty())
         {
             return;
         }
-
-        Sort = "Desc";
-        OrderBy = "BlockTime";*/
+        OfOrderInfos((SortField.BlockHeight, SortDirection.Desc), (SortField.TransactionId, SortDirection.Desc));
     }
 }

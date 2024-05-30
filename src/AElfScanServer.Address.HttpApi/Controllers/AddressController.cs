@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using AElfScanServer.Address.HttpApi.AppServices;
 using AElfScanServer.Address.HttpApi.Dtos;
+using AElfScanServer.Core;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 

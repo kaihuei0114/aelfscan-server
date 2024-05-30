@@ -1,4 +1,7 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using AElfScanServer.Enums;
+using AElfScanServer.Token.Dtos.Input;
 using Volo.Abp.Application.Dtos;
 
 namespace AElfScanServer.Address.HttpApi.Dtos;
@@ -15,4 +18,13 @@ public class GetListInputBasicDto : PagedResultRequestDto
     public string OrderBy { get; set; }
     
     public string Sort { get; set; }
+    
+    public List<OrderInfo> OrderInfos { get; set; }
+    
+    public List<string> SearchAfter { get; set; }
+    
+    public void OfOrderInfos(params (SortField sortField, SortDirection sortDirection)[] orderInfos)
+    {
+        OrderInfos = OrderInfo.BuildOrderInfos(orderInfos);
+    }
 }

@@ -27,6 +27,7 @@ using AElf.CSharp.Core.Extension;
 using AElfScanServer.BlockChain.Dtos.Indexer;
 using Castle.Components.DictionaryAdapter.Xml;
 using AElfScanServer.Common.Helper;
+using AElfScanServer.Core;
 using AElfScanServer.Options;
 using AElfScanServer.TokenDataFunction.Provider;
 using Newtonsoft.Json;
@@ -57,6 +58,7 @@ public interface IBlockChainService
     public Task<LogEventResponseDto> GetLogEventsAsync(GetLogEventRequestDto request);
 }
 
+[Ump]
 public class BlockChainService : IBlockChainService, ITransientDependency
 {
     private readonly INESTRepository<BlockExtraIndex, string> _blockExtraIndexRepository;

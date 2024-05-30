@@ -34,9 +34,11 @@ public class BlockChainHttpApiModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<BlockChainHttpApiModule>(); });
         context.Services.AddSingleton<ITokenIndexerProvider, TokenIndexerProvider>();
         context.Services.AddSingleton<IHomePageService, HomePageService>();
+        context.Services.AddSingleton<IBlockChainService, BlockChainService>();
+        context.Services.AddSingleton<IAddressService, AddressService>();
         context.Services.AddSingleton<INftInfoProvider, NftInfoProvider>();
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
-
+        context.Services.AddSingleton<ISearchService, SearchService>();
         context.Services.AddSignalR();
     }
 }

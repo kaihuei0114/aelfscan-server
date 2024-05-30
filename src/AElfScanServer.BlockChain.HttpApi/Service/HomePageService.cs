@@ -12,6 +12,7 @@ using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
 using AElfScanServer.Common;
 using AElfScanServer.Common.Helper;
+using AElfScanServer.Core;
 using AElfScanServer.Dtos;
 using AElfScanServer.Helper;
 using AElfScanServer.Options;
@@ -46,6 +47,7 @@ public interface IHomePageService
     // public Task<List<GetLogEventListResultDto>> GetLogEventListAsync(GetLogEventListRequestInput input);
 }
 
+[Ump]
 public class HomePageService : AbpRedisCache, IHomePageService, ITransientDependency
 {
     private readonly INESTRepository<TransactionIndex, string> _transactionIndexRepository;

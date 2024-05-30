@@ -7,6 +7,7 @@ using AElfScanServer.ThirdPart.Exchange;
 using AElfScanServer.TokenDataFunction;
 using AElfScanServer.TokenDataFunction.Options;
 using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.TokenDataFunction.Service;
 using AElfScanServer.TokenDataFunction.Worker;
 using Microsoft.AspNetCore.DataProtection;
 using StackExchange.Redis;
@@ -42,6 +43,8 @@ public class TokenHttpApiHostModule : AbpModule
         context.Services.AddSingleton<ITokenIndexerProvider, TokenIndexerProvider>();
         context.Services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
         context.Services.AddSingleton<INftCollectionHolderProvider, NftCollectionHolderProvider>();
+        context.Services.AddTransient<ITokenService, TokenService>();
+        context.Services.AddTransient<INftService, NftService>();
         ConfigureGraphQl(context, configuration);
         Configure<AbpAspNetCoreMvcOptions>(options =>
         {
