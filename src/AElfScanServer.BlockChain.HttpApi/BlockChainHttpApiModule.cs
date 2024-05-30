@@ -36,6 +36,7 @@ public class BlockChainHttpApiModule : AbpModule
         context.Services.AddSingleton<IHomePageService, HomePageService>();
         context.Services.AddSingleton<INftInfoProvider, NftInfoProvider>();
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
+        context.Services.AddSingleton<ISearchService, SearchService>();
 
         context.Services.AddSignalR();
     }

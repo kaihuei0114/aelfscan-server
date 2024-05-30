@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Address.Provider;
 using AElfScanServer.Constant;
+using AElfScanServer.Core;
 using AElfScanServer.Dtos;
 using AElfScanServer.Enums;
 using AElfScanServer.Helper;
@@ -30,6 +31,7 @@ public interface ITokenAssetProvider
     public Task<AddressAssetDto> GetTokenValuesAsync(string chainId, string address);
 }
 
+[Ump]
 public class TokenAssetProvider : RedisCacheExtension, ITokenAssetProvider, ISingletonDependency
 {
     private const string LockKey = "HandleDailyTokenValues";

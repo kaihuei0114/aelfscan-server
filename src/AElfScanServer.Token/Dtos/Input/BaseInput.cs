@@ -14,11 +14,7 @@ public class BaseInput : OrderInfo
 
     public void OfOrderInfos(params (SortField sortField, SortDirection sortDirection)[] orderInfos)
     {
-        OrderInfos = orderInfos.Select(info => new OrderInfo
-        {
-            OrderBy = info.sortField.ToString(),
-            Sort = info.sortDirection.ToString()
-        }).ToList();
+        OrderInfos = BuildOrderInfos(orderInfos);
     }
 }
 
@@ -28,4 +24,13 @@ public class OrderInfo
     public string OrderBy { get; set; }
     
     public string Sort { get; set; }
+    
+    public static List<OrderInfo> BuildOrderInfos(params (SortField sortField, SortDirection sortDirection)[] orderInfos)
+    {
+        return orderInfos.Select(info => new OrderInfo
+        {
+            OrderBy = info.sortField.ToString(),
+            Sort = info.sortDirection.ToString()
+        }).ToList();
+    }
 }

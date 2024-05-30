@@ -1,19 +1,18 @@
 using AElfScanServer.Address.Provider;
 using AElfScanServer.Contract.Provider;
-using AutoResponseWrapper;
+using AElfScanServer.Core;
 using AElfScanServer.GraphQL;
 using AElfScanServer.HttpClient;
 using AElfScanServer.Options;
 using AElfScanServer.ThirdPart.Exchange;
 using AElfScanServer.Token.Provider;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
+using AutoResponseWrapper;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using StackExchange.Redis;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+using Volo.Abp;
 using Volo.Abp.AutoMapper;
-using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
 
@@ -47,5 +46,39 @@ public class AElfScanCommonModule : AbpModule
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();
+        
+        AddOpenTelemetry(context);
+    }
+    
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        var app = context.GetApplicationBuilder();
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
+    }
+
+    private void AddOpenTelemetry(ServiceConfigurationContext context)
+    {
+        var services = context.Services;
+        services.OnRegistred(options =>
+        {
+            if (options.ImplementationType.IsDefined(typeof(UmpAttribute), true))
+            {
+                options.Interceptors.TryAdd<UmpInterceptor>();
+            }
+        });
+        services.AddOpenTelemetry()
+            .WithTracing(builder =>
+            {
+                builder
+                    .AddSource("AElf")
+                    .SetSampler(new AlwaysOnSampler())
+                    ;
+            })
+            .WithMetrics(builder =>
+            {
+                builder
+                    .AddMeter("AElf");
+                builder.AddPrometheusExporter();
+            });
     }
 }

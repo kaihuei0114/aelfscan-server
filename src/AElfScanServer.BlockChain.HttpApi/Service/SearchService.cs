@@ -9,6 +9,7 @@ using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
 using AElfScanServer.Constant;
 using AElfScanServer.Contract.Provider;
+using AElfScanServer.Core;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
@@ -29,6 +30,7 @@ public interface ISearchService
     public Task<SearchResponseDto> SearchAsync(SearchRequestDto request);
 }
 
+[Ump]
 public class SearchService : ISearchService, ISingletonDependency
 {
     private readonly ILogger<SearchService> _logger;
@@ -164,7 +166,7 @@ public class SearchService : ISearchService, ISingletonDependency
         }
         holderInput.SetDefaultSort();
         var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
-        searchResponseDto.Accounts = tokenHolderInfos.Items.Select(i => i.Address).ToList();
+        searchResponseDto.Accounts = tokenHolderInfos.Items.Select(i => i.Address).Distinct().ToList();
     }
 
     private async Task AssemblySearchTokenAsync(SearchResponseDto searchResponseDto, SearchRequestDto request,

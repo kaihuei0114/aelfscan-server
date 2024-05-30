@@ -7,6 +7,7 @@ using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Constant;
 using AElfScanServer.Contract.Provider;
+using AElfScanServer.Core;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Enums;
@@ -42,6 +43,7 @@ public interface INftService
     Task<Dictionary<string, decimal>> GetCollectionSupplyAsync(string chainId, List<string> collectionSymbols);
 }
 
+[Ump]
 public class NftService : INftService, ISingletonDependency
 {
     private const int MaxResultCount = 1000;

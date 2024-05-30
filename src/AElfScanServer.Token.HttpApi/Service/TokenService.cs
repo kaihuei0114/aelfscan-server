@@ -6,7 +6,7 @@ using AElfScanServer.BlockChain;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Constant;
 using AElfScanServer.Contract.Provider;
-using AElfScanServer.Dtos;
+using AElfScanServer.Core;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
 using AElfScanServer.Options;
@@ -33,6 +33,7 @@ public interface ITokenService
     Task<IndexerTokenInfoDto> GetTokenBaseInfoAsync(string symbol, string chainId);
 }
 
+[Ump]
 public class TokenService : ITokenService, ITransientDependency
 {
     private readonly IObjectMapper _objectMapper;

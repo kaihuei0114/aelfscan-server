@@ -9,6 +9,7 @@ using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Constant;
 using AElfScanServer.Contract.Provider;
+using AElfScanServer.Core;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Enums;
@@ -38,6 +39,7 @@ public interface IAddressAppService
     Task<GetTransactionListResultDto> GetTransactionListAsync(GetTransactionListInput input);
 }
 
+[Ump]
 public class AddressAppService : IAddressAppService
 {
     private readonly IObjectMapper _objectMapper;
