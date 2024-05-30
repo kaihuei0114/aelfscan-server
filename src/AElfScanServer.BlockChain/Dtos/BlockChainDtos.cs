@@ -93,6 +93,8 @@ public class HomeOverviewResponseDto
 public class BlocksRequestDto : PagedResultRequestDto
 {
     public string ChainId { get; set; }
+
+    public bool IsLastPage { get; set; }
 }
 
 public class LogEventRequestDto : PagedResultRequestDto
