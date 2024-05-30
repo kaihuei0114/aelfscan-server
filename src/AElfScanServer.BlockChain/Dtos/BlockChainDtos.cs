@@ -60,7 +60,7 @@ public class TransactionsRequestDto : PagedResultRequestDto
     public string ChainId { get; set; }
     public string TransactionId { get; set; } = "";
     public int BlockHeight { get; set; }
-    
+
     public string Address { get; set; } = "";
 }
 
@@ -228,6 +228,8 @@ public class ValueInfoDto
 {
     public string Symbol { get; set; }
     public long Amount { get; set; }
+
+    public string AmountString { get; set; }
     public string NowPrice { get; set; }
     public string TradePrice { get; set; }
 }
@@ -240,6 +242,9 @@ public class TokenTransferredDto
     public string Name { get; set; }
 
     public long Amount { get; set; }
+
+    public string AmountString { get; set; }
+
     public string TradePrice { get; set; }
     public string NowPrice { get; set; }
     public string ImageUrl { get; set; }

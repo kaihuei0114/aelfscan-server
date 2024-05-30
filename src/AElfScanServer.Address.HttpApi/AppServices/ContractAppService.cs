@@ -8,6 +8,7 @@ using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Dtos.Indexer;
 using AElfScanServer.BlockChain.Provider;
+using AElfScanServer.Constant;
 using AElfScanServer.Core;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Options;
@@ -58,13 +59,14 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("GetContractListAsync");
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
 
-        // todo sort by update time
         var getContractListResult =
-            await _indexerGenesisProvider.GetContractListAsync(input.ChainId, input.SkipCount, input.MaxResultCount);
-        result.Total = getContractListResult.Count;
+            await _indexerGenesisProvider.GetContractListAsync(input.ChainId,
+                input.SkipCount,
+                input.MaxResultCount, input.OrderBy, input.Sort);
+        result.Total = getContractListResult.ContractList.TotalCount;
 
 
-        var list = getContractListResult.Select(s => s.Address).ToList();
+        var list = getContractListResult.ContractList.Items.Select(s => s.Address).ToList();
 
         var addressTransactionCountList = new List<IndexerAddressTransactionCountDto>();
 
@@ -79,17 +81,26 @@ public class ContractAppService : IContractAppService
         }
 
 
-        foreach (var info in getContractListResult)
+        foreach (var info in getContractListResult.ContractList.Items)
         {
+            var blockBlockTime = info.Metadata.Block.BlockTime;
+            if (info.Metadata.Block.BlockHeight == 1)
+            {
+                blockBlockTime = input.ChainId == "AELF"
+                    ? CommonConstant.AELFOneBlockTime
+                    : CommonConstant.TDVVOneBlockTime;
+            }
+
+
             var contractInfo = new ContractDto
             {
-                Address = info.Address, // contractInfo
+                Address = info.Address,
                 ContractVersion = info.ContractVersion == "" ? info.Version.ToString() : info.ContractVersion,
-                LastUpdateTime = info.Metadata.Block.BlockTime,
+                LastUpdateTime = blockBlockTime,
                 Type = info.ContractType,
-                Txns = 0,
                 ContractName = GetContractName(input.ChainId, info.Address).Result
             };
+
 
             if (!addressTransactionCountList.IsNullOrEmpty() && addressTransactionCountList.Count > 0)
             {
@@ -99,17 +110,14 @@ public class ContractAppService : IContractAppService
                 contractInfo.Txns = countInfo == null ? 0 : countInfo.Count;
             }
 
-            // todo: support batch search by address list.
             var addressTokenList = await _indexerTokenProvider.GetAddressTokenListAsync(input.ChainId, info.Address,
                 "ELF", input.SkipCount, input.MaxResultCount);
             contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].FormatAmount : 0;
 
-            contractInfo.Txns = addressTokenList.Count > 0 ? addressTokenList[0].TransferCount : 0;
 
             result.List.Add(contractInfo);
         }
-
-
+        
         return result;
     }
 

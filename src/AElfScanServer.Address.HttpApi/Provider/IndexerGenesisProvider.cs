@@ -14,7 +14,9 @@ namespace AElfScanServer.Address.HttpApi.Provider;
 public interface IIndexerGenesisProvider
 {
     Task<ContractInfoDto> GetContractAsync(string chainId, string address, int skipCount = 0, int maxResultCount = 10);
-    Task<List<ContractInfoDto>> GetContractListAsync(string chainId, int skipCount, int maxResultCount);
+
+    Task<IndexerContractListResultDto> GetContractListAsync(string chainId, int skipCount,
+        int maxResultCount, string orderBy, string sort);
 
     Task<List<ContractRecordDto>> GetContractRecordAsync(string chainId, string address, int skipCount = 0,
         int maxResultCount = 10);
@@ -35,17 +37,22 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
         _graphQlFactory = graphQlFactory;
     }
 
-    public async Task<List<ContractInfoDto>> GetContractListAsync(string chainId, int skipCount, int maxResultCount)
+    public async Task<IndexerContractListResultDto> GetContractListAsync(string chainId,
+        int skipCount,
+        int maxResultCount, string orderBy = "", string sort = "")
     {
+        var indexerContractListResultDto = new IndexerContractListResultDto();
         try
         {
-            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerContractListDto>(
+            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerContractListResultDto>(
                 new GraphQLRequest
                 {
                     Query =
-                        @"query($chainId:String!,$skipCount:Int!,$maxResultCount:Int!){
-                            contractInfo(input: {chainId:$chainId,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                                address
+                        @"query($chainId:String!,$orderBy:String,$sort:String,$skipCount:Int!,$maxResultCount:Int!){
+                            contractList(input: {chainId:$chainId,orderBy:$orderBy,sort:$sort,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                               totalCount
+                               items {
+                                 address
                                 contractVersion
                                 version
                                 contractType
@@ -57,19 +64,22 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                                     blockHeight
                                   }
                                 }
+
+                              }
                             }
                         }",
                     Variables = new
                     {
-                        chainId = chainId, skipCount = skipCount, maxResultCount = maxResultCount
+                        chainId = chainId, orderBy = orderBy, sort = sort, skipCount = skipCount,
+                        maxResultCount = maxResultCount
                     }
                 });
-            return result.ContractInfo;
+            return result;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Query ContractList failed.");
-            return new List<ContractInfoDto>();
+            return indexerContractListResultDto;
         }
     }
 
@@ -103,7 +113,7 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                         chainId = chainId, address = address, skipCount = skipCount, maxResultCount = maxResultCount
                     }
                 });
-            return result.ContractInfo.Count > 0 ? result.ContractInfo[0] : new ContractInfoDto();
+            return result.Items.Count > 0 ? result.Items[0] : new ContractInfoDto();
         }
         catch (Exception e)
         {

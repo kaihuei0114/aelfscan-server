@@ -17,6 +17,7 @@ using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Dtos;
+using AElfScanServer.Helper;
 using AElfScanServer.HttpClient;
 using AElfScanServer.Options;
 using Binance.Spot;
@@ -75,7 +76,6 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
     public async Task<string> GetBlockRewardAsync(long blockHeight, string chainId)
     {
-        // return "12500000";
         try
         {
             await ConnectAsync();
@@ -154,11 +154,28 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     }
 
 
+    public async Task<string> TransformTokenToUsdValueAsync(string symbol, long amount)
+    {
+        var tokenUsdPriceAsync = await GetTokenUsdPriceAsync(symbol);
+
+
+        var tokenDecimals = await GetTokenDecimals(symbol, "AELF");
+        var price = double.Parse(tokenUsdPriceAsync);
+
+        return (price * amount / Math.Pow(10, tokenDecimals)).ToString();
+    }
+
+
+    public async Task<string> GetDecimalAmountAsync(string symbol, long amount)
+    {
+        var tokenDecimals = await GetTokenDecimals(symbol, "AELF");
+
+        return amount.ToDecimalsString(tokenDecimals);
+    }
+
+
     public async Task<string> GetTokenUsdPriceAsync(string symbol)
     {
-        // var market = new Market(_blockChainOptions.BNBaseUrl, _blockChainOptions.BNApiKey,
-        //     _blockChainOptions.BNSecretKey);
-
         if (symbol == "USDT")
         {
             return "1";
@@ -212,7 +229,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
             //     return _serializer.Deserialize<BinancePriceDto>(redisValue);
             // }
 
-            var symbolPriceTicker = await market.TwentyFourHrTickerPriceChangeStatistics(symbol+"USDT");
+            var symbolPriceTicker = await market.TwentyFourHrTickerPriceChangeStatistics(symbol + "USDT");
             var binancePriceDto = JsonConvert.DeserializeObject<BinancePriceDto>(symbolPriceTicker);
             // await RedisDatabase.StringSetAsync(symbol, _serializer.Serialize(binancePriceDto), TimeSpan.FromHours(2));
             return binancePriceDto;
@@ -223,7 +240,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
             return new BinancePriceDto();
         }
     }
-    
+
 
     public async Task<string> GetTokenImageBase64Async(string symbol)
     {
@@ -375,12 +392,6 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
     public async Task<BlockDetailDto> GetBlockDetailAsync(string chainId, long blockHeight)
     {
-        // _httpService.GetResponseAsync<BlockDto>(this.GetRequestUrl(this._baseUrl, string.Format("api/blockChain/blockByHeight?blockHeight={0}&includeTransactions={1}", (object) blockHeight, (object) includeTransactions)));
-
-        // var elfClient = new AElfClient(_blockChainOptions.ChainNodeHosts[chainId]);
-
-        // var blockDto = await elfClient.GetBlockByHeightAsync(blockHeight, true);
-
         var apiPath = string.Format("/api/blockChain/blockByHeight?blockHeight={0}&includeTransactions=true",
             blockHeight);
 
@@ -392,29 +403,4 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
         return response;
     }
-
-
-    // public async Task<CommonAddressDto> GetCommonAddressAsync(string address, string chainId)
-    // {
-    //     try
-    //     {
-    //         var mustQuery = new List<Func<QueryContainerDescriptor<AddressIndex>, QueryContainer>>();
-    //         mustQuery.Add(q => q.Bool(b =>
-    //             b.Must(mu => mu.Term(t => t.Field(f => f.Address).Value(address)))
-    //         ));
-    //
-    //
-    //         QueryContainer Filter(QueryContainerDescriptor<AddressIndex> f) => f.Bool(b => b.Must(mustQuery));
-    //
-    //
-    //         var resp = await _addressIndexRepository.GetAsync(Filter,
-    //             index: BlockChainIndexNameHelper.GenerateLogEventIndexName(chainId));
-    //     }
-    //
-    //     catch (Exception e)
-    //     {
-    //         _logger.LogError(e, "GetLogEventList error,request:{@request}", request);
-    //     }
-    //     
-    // }
 }
