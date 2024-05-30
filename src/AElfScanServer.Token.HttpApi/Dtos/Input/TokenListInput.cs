@@ -15,6 +15,10 @@ public class TokenListInput : BaseInput
     public List<string> CollectionSymbols { get; set; }
     
     public string Search { get; set; } = "";
+    
+    public string ExactSearch { get; set; } = "";
+
+    public string FuzzySearch { get; set; } = "";
 
     public void SetDefaultSort()
     {

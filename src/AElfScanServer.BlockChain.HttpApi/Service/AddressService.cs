@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
+using AElfScanServer.Core;
 using AElfScanServer.Dtos;
 using Nest;
 using Volo.Abp.DependencyInjection;
@@ -17,6 +18,7 @@ public interface IAddressService
     Task<Dictionary<string, CommonAddressDto>> GetAddressDictionaryAsync(AElfAddressInput input);
 }
 
+[Ump]
 public class AddressService : IAddressService, ISingletonDependency
 {
     private readonly INESTRepository<AddressIndex, string> _repository;

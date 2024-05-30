@@ -9,6 +9,7 @@ using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Dtos.Indexer;
 using AElfScanServer.BlockChain.Provider;
 using AElfScanServer.Constant;
+using AElfScanServer.Core;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Options;
 using Microsoft.Extensions.Logging;
@@ -26,26 +27,25 @@ public interface IContractAppService
     Task<GetContractEventListResultDto> GetContractEventsAsync(GetContractEventContractsInput input);
 }
 
+[Ump]
 public class ContractAppService : IContractAppService
 {
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractAppService> _logger;
     private readonly IDecompilerProvider _decompilerProvider;
-    private readonly IBlockChainProvider _blockChainProvider;
     private readonly IIndexerTokenProvider _indexerTokenProvider;
     private readonly IIndexerGenesisProvider _indexerGenesisProvider;
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
-        IDecompilerProvider decompilerProvider, IBlockChainProvider blockChainProvider,
+        IDecompilerProvider decompilerProvider,
         IIndexerTokenProvider indexerTokenProvider, IIndexerGenesisProvider indexerGenesisProvider,
         IOptionsMonitor<GlobalOptions> globalOptions, IBlockChainIndexerProvider blockChainIndexerProvider)
     {
         _objectMapper = objectMapper;
         _logger = logger;
         _decompilerProvider = decompilerProvider;
-        _blockChainProvider = blockChainProvider;
         _indexerTokenProvider = indexerTokenProvider;
         _indexerGenesisProvider = indexerGenesisProvider;
         _globalOptions = globalOptions;
@@ -108,16 +108,13 @@ public class ContractAppService : IContractAppService
                 contractInfo.Txns = countInfo == null ? 0 : countInfo.Count;
             }
 
-            // todo: support batch search by address list.
             var addressTokenList = await _indexerTokenProvider.GetAddressTokenListAsync(input.ChainId, info.Address,
                 "ELF", input.SkipCount, input.MaxResultCount);
             contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].FormatAmount : 0;
 
-            contractInfo.Txns = addressTokenList.Count > 0 ? addressTokenList[0].TransferCount : 0;
 
             result.List.Add(contractInfo);
         }
-
 
         return result;
     }
@@ -182,7 +179,7 @@ public class ContractAppService : IContractAppService
     }
 
     public async Task<GetContractEventListResultDto> GetContractEventsAsync(GetContractEventContractsInput input)
-        => _objectMapper.Map<LogEventResponseDto, GetContractEventListResultDto>(
-            await _blockChainProvider.GetLogEventListAsync(input.ChainId, input.Address, input.SkipCount,
-                input.MaxResultCount));
+    {
+        return null;
+    }
 }
