@@ -25,7 +25,6 @@ public class AElfScanServerBlockChainModule : AbpModule
 
 
         Configure<AELFIndexerOptions>(configuration.GetSection("AELFIndexer"));
-        var globalOptions = configuration.GetSection("BlockChain").Get<GlobalOptions>();
         Configure<GlobalOptions>(configuration.GetSection("BlockChain"));
         Configure<ElasticsearchOptions>(configuration.GetSection("Elasticsearch"));
 

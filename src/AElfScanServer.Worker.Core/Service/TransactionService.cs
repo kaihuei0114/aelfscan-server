@@ -52,6 +52,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IObjectMapper _objectMapper;
     private readonly IStorageProvider _storageProvider;
     private readonly IElasticClient _elasticClient;
+    private readonly IOptionsMonitor<PullTransactionChainIdsOptions> _workerOptions;
 
     private readonly IEntityMappingRepository<TransactionIndex, string> _transactionIndexRepository;
     private readonly IEntityMappingRepository<AddressIndex, string> _addressIndexRepository;
@@ -74,7 +75,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<BlockExtraIndex, string> blockExtraIndexRepository,
         HomePageProvider homePageProvider,
         IEntityMappingRepository<LogEventIndex, string> logEventIndexRepository, IStorageProvider storageProvider,
-        IOptionsMonitor<ElasticsearchOptions> options, BlockChainIndexerProvider blockChainIndexerProvider) :
+        IOptionsMonitor<ElasticsearchOptions> options, BlockChainIndexerProvider blockChainIndexerProvider,
+        IOptionsMonitor<PullTransactionChainIdsOptions> workerOptions) :
         base(optionsAccessor)
     {
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -95,6 +97,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         _elasticClient = new ElasticClient(settings);
+        _workerOptions = workerOptions;
     }
 
 
@@ -106,20 +109,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var mergeList = new List<List<TransactionCountPerMinuteDto>>();
         try
         {
-            if (_globalOptions.CurrentValue == null)
-            {
-                _logger.LogError("globalOptions.CurrentValue is null");
-                chainIds = new List<string>() { "AELF", "tDVV" };
-            }
-
-
-            if (_globalOptions.CurrentValue.ChainIds.IsNullOrEmpty())
-            {
-                _logger.LogError("ChainIds is empty");
-                chainIds = new List<string>() { "AELF", "tDVV" };
-            }
-
-            chainIds = _globalOptions.CurrentValue.ChainIds;
+            chainIds = _workerOptions.CurrentValue.ChainIds;
 
 
             foreach (var chainId in chainIds)

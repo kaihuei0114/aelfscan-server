@@ -403,4 +403,19 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
         return response;
     }
+    
+    
+    public async Task<NodeTransactionDto> GetTransactionDetailAsync(string chainId, string transactionId)
+    {
+        var apiPath = string.Format("/api/blockChain/transactionResult?transactionId={0}",
+            transactionId);
+
+
+        var response =
+            await _httpProvider.InvokeAsync<NodeTransactionDto>(_globalOptions.ChainNodeHosts[chainId],
+                new ApiInfo(HttpMethod.Get, apiPath));
+
+
+        return response;
+    }
 }
