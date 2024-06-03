@@ -1,5 +1,6 @@
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
+using AElfScanServer.BlockChain.HttpApi.DataStrategy;
 using AElfScanServer.BlockChain.HttpApi.Service;
 using AElfScanServer.Token;
 using AElfScanServer.TokenDataFunction.Provider;
@@ -39,6 +40,7 @@ public class BlockChainHttpApiModule : AbpModule
         context.Services.AddSingleton<INftInfoProvider, NftInfoProvider>();
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
         context.Services.AddSingleton<ISearchService, SearchService>();
+        context.Services.AddSingleton<OverviewDataStrategy, OverviewDataStrategy>();
         context.Services.AddSignalR();
     }
 }

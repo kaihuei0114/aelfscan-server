@@ -173,7 +173,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         catch (Exception e)
         {
             _logger.LogError("UpdateTransactionRatePerMinuteAsync error:{e}", e.Message);
-            throw e;
         }
     }
 
@@ -570,7 +569,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             indexerTransactionDtos.AddRange(_aelfIndexerProvider.GetTransactionsAsync(
                 chainId,
                 start,
-                end).Result);
+                end, "").Result);
         }
 
 

@@ -1,5 +1,6 @@
 ﻿using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
+using AElfScanServer.BlockChain.HttpApi.DataStrategy;
 using AElfScanServer.Options;
 using AElfScanServer.Worker.Core.Options;
 using AElfScanServer.Worker.Core.Provider;
@@ -20,8 +21,8 @@ public class AElfScanServerWorkerCoreModule : AbpModule
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<AElfScanServerWorkerCoreModule>(); });
         context.Services.AddTransient<IStorageProvider, StorageProvider>();
+        context.Services.AddSingleton<OverviewDataStrategy, OverviewDataStrategy>();
         var configuration = context.Services.GetConfiguration();
         Configure<PullTransactionChainIdsOptions>(configuration.GetSection("PullTransactionChainIds"));
-        
     }
 }

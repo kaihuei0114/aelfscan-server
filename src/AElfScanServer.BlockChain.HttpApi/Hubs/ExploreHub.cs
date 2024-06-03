@@ -3,8 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using AElfScanServer.BlockChain.Dtos;
+using AElfScanServer.BlockChain.HttpApi.DataStrategy;
 using AElfScanServer.BlockChain.HttpApi.Helper;
 using AElfScanServer.BlockChain.HttpApi.Service;
+using AElfScanServer.DataStrategy;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.AspNetCore.SignalR;
@@ -19,6 +21,7 @@ public class ExploreHub : AbpHub
     private readonly IHubContext<ExploreHub> _hubContext;
     private readonly ILogger<ExploreHub> _logger;
     private static Timer _timer = new Timer();
+    private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
     private static readonly object _lockTransactionsObject = new object();
     private static readonly object _lockBlocksObject = new object();
     private static readonly object _lockBlockOverviewObject = new object();
@@ -29,12 +32,14 @@ public class ExploreHub : AbpHub
     private static bool _isPushTransactionCountPerMinuteRunning = false;
 
     public ExploreHub(IHomePageService homePageService, ILogger<ExploreHub> logger,
-        IBlockChainService blockChainService, IHubContext<ExploreHub> hubContext)
+        IBlockChainService blockChainService, IHubContext<ExploreHub> hubContext,
+        OverviewDataStrategy overviewDataStrategy)
     {
         _HomePageService = homePageService;
         _logger = logger;
         _blockChainService = blockChainService;
         _hubContext = hubContext;
+        _overviewDataStrategy = new DataStrategyContext<string, HomeOverviewResponseDto>(overviewDataStrategy);
     }
 
 
@@ -104,7 +109,7 @@ public class ExploreHub : AbpHub
 
     public async Task RequestBlockchainOverview(BlockchainOverviewRequestDto request)
     {
-        var resp = await _HomePageService.GetBlockchainOverviewAsync(request);
+        var resp = await _overviewDataStrategy.DisplayData(request.ChainId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId,
             HubGroupHelper.GetBlockOverviewGroupName(request.ChainId));
@@ -136,10 +141,7 @@ public class ExploreHub : AbpHub
 
             try
             {
-                var resp = await _HomePageService.GetBlockchainOverviewAsync(new BlockchainOverviewRequestDto()
-                {
-                    ChainId = chainId
-                });
+                var resp = await _overviewDataStrategy.DisplayData(chainId);
 
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetBlockOverviewGroupName(chainId))

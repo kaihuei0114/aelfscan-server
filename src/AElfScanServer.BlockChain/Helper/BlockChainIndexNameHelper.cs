@@ -32,6 +32,12 @@ public class BlockChainIndexNameHelper
 
 public class RedisKeyHelper
 {
+    
+    public static string HomeOverview(string chainId)
+    {
+        return $"explore_{chainId}_home_overview";
+    }
+    
     public static string TransactionChartData(string chainId)
     {
         return $"explore_{chainId}_transaction_chart";
