@@ -138,6 +138,11 @@ public class ContractAppService : IContractAppService
     {
         _logger.LogInformation("GetContractFileAsync");
         var contractInfo = await _indexerGenesisProvider.GetContractAsync(input.ChainId, input.Address);
+        if (contractInfo == null)
+        {
+            throw new UserFriendlyException("No contract info");
+        }
+
         var getContractRegistrationResult =
             await _indexerGenesisProvider.GetContractRegistrationAsync(input.ChainId, contractInfo.CodeHash);
 
