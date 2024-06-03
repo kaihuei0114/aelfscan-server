@@ -60,7 +60,7 @@ public class ContractAppService : IContractAppService
         var getContractListResult =
             await _indexerGenesisProvider.GetContractListAsync(input.ChainId,
                 input.SkipCount,
-                input.MaxResultCount, input.OrderBy, input.Sort);
+                input.MaxResultCount, input.OrderBy, input.Sort, "");
         result.Total = getContractListResult.ContractList.TotalCount;
 
 
@@ -137,14 +137,16 @@ public class ContractAppService : IContractAppService
     public async Task<GetContractFileResultDto> GetContractFileAsync(GetContractFileInput input)
     {
         _logger.LogInformation("GetContractFileAsync");
-        var contractInfo = await _indexerGenesisProvider.GetContractAsync(input.ChainId, input.Address);
+        var contractInfo =
+            await _indexerGenesisProvider.GetContractListAsync(input.ChainId, 0, 1, "", "", input.Address);
         if (contractInfo == null)
         {
             throw new UserFriendlyException("No contract info");
         }
 
         var getContractRegistrationResult =
-            await _indexerGenesisProvider.GetContractRegistrationAsync(input.ChainId, contractInfo.CodeHash);
+            await _indexerGenesisProvider.GetContractRegistrationAsync(input.ChainId,
+                contractInfo.ContractList.Items[0].CodeHash);
 
         if (getContractRegistrationResult.Count == 0)
         {
