@@ -55,10 +55,10 @@ public class AddressAppService : IAddressAppService
 
 
     public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger,
-         IIndexerGenesisProvider indexerGenesisProvider,
+        IIndexerGenesisProvider indexerGenesisProvider,
         ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService,
         ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
-        IOptionsSnapshot<GlobalOptions> globalOptions, ITokenAssetProvider tokenAssetProvider, 
+        IOptionsSnapshot<GlobalOptions> globalOptions, ITokenAssetProvider tokenAssetProvider,
         IAddressInfoProvider addressInfoProvider, IContractProvider contractProvider)
     {
         _logger = logger;
@@ -82,7 +82,7 @@ public class AddressAppService : IAddressAppService
             SkipCount = input.SkipCount, MaxResultCount = input.MaxResultCount
         };
         holderInput.SetDefaultSort();
-        
+
         var tokenHolderInfoTask = _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
         var tokenDetailTask = _tokenIndexerProvider.GetTokenDetailAsync(input.ChainId, CurrencyConstant.ElfCurrency);
 
@@ -98,8 +98,9 @@ public class AddressAppService : IAddressAppService
             TotalBalance = DecimalHelper.Divide(tokenInfo.Supply, tokenInfo.Decimals)
         };
         var contractInfosDict = await _contractProvider
-            .GetContractListAsync(input.ChainId, indexerTokenHolderInfo.Items.Select(address => address.Address).ToList());
-        
+            .GetContractListAsync(input.ChainId,
+                indexerTokenHolderInfo.Items.Select(address => address.Address).ToList());
+
         var addressList = new List<GetAddressInfoResultDto>();
         foreach (var info in indexerTokenHolderInfo.Items)
         {
@@ -111,6 +112,7 @@ public class AddressAppService : IAddressAppService
                 : AddressType.EoaAddress;
             addressList.Add(addressResult);
         }
+
         //add sort 
         addressList = addressList.OrderByDescending(item => item.Balance)
             .ThenByDescending(item => item.TransactionCount)
@@ -121,14 +123,19 @@ public class AddressAppService : IAddressAppService
 
     public async Task<GetAddressDetailResultDto> GetAddressDetailAsync(GetAddressDetailInput input)
     {
-        var priceDtoTask = _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
+        var priceDtoTask =
+            _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
         var timestamp = TimeHelper.GetTimeStampFromDateTime(DateTime.Today);
-        var priceHisDtoTask = _tokenPriceService.GetTokenHistoryPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency, timestamp);
+        var priceHisDtoTask = _tokenPriceService.GetTokenHistoryPriceAsync(CurrencyConstant.ElfCurrency,
+            CurrencyConstant.UsdCurrency, timestamp);
         var curAddressAssetTask = _tokenAssetProvider.GetTokenValuesAsync(input.ChainId, input.Address);
-        var dailyAddressAssetTask = _addressInfoProvider.GetAddressAssetAsync(AddressAssetType.Daily, input.ChainId, input.Address);
-        var holderInfoTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, CurrencyConstant.ElfCurrency, input.Address);
-        var holderInfosTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Address, new List<SymbolType> { SymbolType.Token, SymbolType.Nft });
-        var contractInfoTask = _indexerGenesisProvider.GetContractAsync(input.ChainId, input.Address);
+        var dailyAddressAssetTask =
+            _addressInfoProvider.GetAddressAssetAsync(AddressAssetType.Daily, input.ChainId, input.Address);
+        var holderInfoTask =
+            _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, CurrencyConstant.ElfCurrency, input.Address);
+        var holderInfosTask = _tokenIndexerProvider.GetHolderInfoAsync(input.ChainId, input.Address,
+            new List<SymbolType> { SymbolType.Token, SymbolType.Nft });
+        var contractInfoTask = _indexerGenesisProvider.GetContractListAsync(input.ChainId, 0, 1, "", "", input.Address);
         var transferInput = new TokenTransferInput { ChainId = input.ChainId, Address = input.Address };
         transferInput.OfOrderInfos((SortField.BlockHeight, SortDirection.Desc));
         var tokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(transferInput);
@@ -136,7 +143,7 @@ public class AddressAppService : IAddressAppService
         firstTransferInput.OfOrderInfos((SortField.BlockHeight, SortDirection.Asc));
         var firstTokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(firstTransferInput);
 
-        await Task.WhenAll(priceDtoTask, priceHisDtoTask, holderInfoTask, curAddressAssetTask, dailyAddressAssetTask, 
+        await Task.WhenAll(priceDtoTask, priceHisDtoTask, holderInfoTask, curAddressAssetTask, dailyAddressAssetTask,
             holderInfosTask, tokenTransferListDtoTask, firstTokenTransferListDtoTask, contractInfoTask);
 
         var holderInfo = await holderInfoTask;
@@ -148,16 +155,17 @@ public class AddressAppService : IAddressAppService
         var tokenTransferListDto = await tokenTransferListDtoTask;
         var firstTokenTransferListDto = await firstTokenTransferListDtoTask;
         var contractInfo = await contractInfoTask;
-        
+
         _logger.LogInformation("GetAddressDetail chainId: {chainId}, dailyAddressAsset: {dailyAddressAsset}",
             input.ChainId, JsonConvert.SerializeObject(dailyAddressAsset));
         //of result info
         var result = new GetAddressDetailResultDto();
         if (contractInfo != null)
         {
-            result = _objectMapper.Map<ContractInfoDto, GetAddressDetailResultDto>(contractInfo);
+            result = _objectMapper.Map<ContractInfoDto, GetAddressDetailResultDto>(contractInfo.ContractList.Items[0]);
             result.ContractName = _globalOptions.GetContractName(input.ChainId, input.Address);
         }
+
         result.ElfBalance = holderInfo.Balance;
         result.ElfPriceInUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
         result.ElfBalanceOfUsd = Math.Round(holderInfo.Balance * priceDto.Price, CommonConstant.UsdValueDecimals);
@@ -172,13 +180,14 @@ public class AddressAppService : IAddressAppService
                 Math.Round((curTotalValueOfUsd - dailyTotalValueOfUsd) / dailyTotalValueOfUsd * 100,
                     CommonConstant.PercentageValueDecimals);
         }
+
         result.TokenHoldings = holderInfos.Count;
-        
+
         if (!tokenTransferListDto.Items.IsNullOrEmpty())
         {
             result.LastTransactionSend = OfTransactionInfo(tokenTransferListDto.Items[0]);
         }
-        
+
         if (!firstTokenTransferListDto.Items.IsNullOrEmpty())
         {
             result.FirstTransactionSend = OfTransactionInfo(firstTokenTransferListDto.Items[0]);
@@ -186,7 +195,7 @@ public class AddressAppService : IAddressAppService
 
         return result;
     }
-    
+
     public async Task<GetAddressTokenListResultDto> GetAddressTokenListAsync(
         GetAddressTokenListInput input)
     {
@@ -201,6 +210,7 @@ public class AddressAppService : IAddressAppService
             {
                 return new GetAddressTokenListResultDto();
             }
+
             tokenDict = tokenInfos.ToDictionary(i => i.Symbol, i => i);
             holderInfos = await GetTokenHolderInfosAsync(input, searchSymbols: tokenDict.Keys.ToList());
             if (holderInfos.Items.IsNullOrEmpty())
@@ -215,10 +225,11 @@ public class AddressAppService : IAddressAppService
             {
                 return new GetAddressTokenListResultDto();
             }
+
             tokenDict = await _tokenIndexerProvider.GetTokenDictAsync(input.ChainId,
                 holderInfos.Items.Select(i => i.Token.Symbol).ToList());
         }
-        
+
         var elfPriceDto =
             await _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
         var tokenInfoList = await GetTokenInfoListAsync(holderInfos.Items, tokenDict, elfPriceDto);
@@ -240,7 +251,7 @@ public class AddressAppService : IAddressAppService
         {
             var tokenListInputNft = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
             tokenListInputNft.Types = types;
-        
+
             var tokenListInputCollection = _objectMapper.Map<GetAddressTokenListInput, TokenListInput>(input);
             tokenListInputCollection.Types = new List<SymbolType> { SymbolType.Nft_Collection };
 
@@ -250,12 +261,14 @@ public class AddressAppService : IAddressAppService
 
             var nftInfos = nftInfosTask.Result;
             var collectionInfos = collectionInfosTask.Result;
-            
+
             if (nftInfos.IsNullOrEmpty() && collectionInfos.IsNullOrEmpty())
             {
                 return new GetAddressNftListResultDto();
             }
-            var searchSymbols = new List<string>(nftInfos.Select(i => i.Symbol).ToHashSet());;
+
+            var searchSymbols = new List<string>(nftInfos.Select(i => i.Symbol).ToHashSet());
+            ;
             var searchCollectionSymbols = new List<string>(collectionInfos.Select(i => i.Symbol).ToHashSet());
             searchSymbols.AddRange(searchCollectionSymbols);
             holderInfos = await GetTokenHolderInfosAsync(input, types, searchSymbols: searchSymbols);
@@ -272,6 +285,7 @@ public class AddressAppService : IAddressAppService
                 return new GetAddressNftListResultDto();
             }
         }
+
         var collectionSymbols = new List<string>(holderInfos.Items.Select(i => i.Token.CollectionSymbol).ToHashSet());
         var symbols = new List<string>(holderInfos.Items.Select(i => i.Token.Symbol).ToHashSet());
         symbols.AddRange(collectionSymbols);
@@ -299,8 +313,8 @@ public class AddressAppService : IAddressAppService
     }
 
 
-
-    private async Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfosAsync(GetAddressTokenListInput input, List<SymbolType> types = null, 
+    private async Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfosAsync(GetAddressTokenListInput input,
+        List<SymbolType> types = null,
         List<string> searchSymbols = null, bool ignoreSearch = true)
     {
         var tokenHolderInput = _objectMapper.Map<GetAddressTokenListInput, TokenHolderInput>(input);
@@ -363,6 +377,7 @@ public class AddressAppService : IAddressAppService
                         CommonConstant.PercentageValueDecimals);
                 }
             }
+
             return tokenHolderInfo;
         }).ToList();
 
@@ -394,7 +409,7 @@ public class AddressAppService : IAddressAppService
 
         return (await Task.WhenAll(tasks)).ToList();
     }
-    
+
     private static TransactionInfoDto OfTransactionInfo(IndexerTransferInfoDto transferInfoDto)
     {
         if (transferInfoDto == null)

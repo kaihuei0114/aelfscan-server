@@ -44,7 +44,6 @@ public interface IHomePageService
         string chainId);
 
     public Task<FilterTypeResponseDto> GetFilterType();
-    // public Task<List<GetLogEventListResultDto>> GetLogEventListAsync(GetLogEventListRequestInput input);
 }
 
 [Ump]
