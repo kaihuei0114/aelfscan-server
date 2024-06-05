@@ -11,24 +11,25 @@ using Volo.Abp.Threading;
 
 namespace AElfScanServer.Worker.Core.Worker;
 
-public class HomePageOverviewWorker : AsyncPeriodicBackgroundWorkerBase
+public class LatestBlocksWorker : AsyncPeriodicBackgroundWorkerBase
 {
-    private readonly ILogger<HomePageOverviewWorker> _logger;
+    private readonly ILogger<LatestBlocksWorker> _logger;
     private readonly IOptionsMonitor<PullTransactionChainIdsOptions> _workerOptions;
 
-    private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
+    private readonly DataStrategyContext<string, BlocksResponseDto> _latestBlockssDataStrategy;
 
-    public HomePageOverviewWorker(AbpAsyncTimer timer,
+    public LatestBlocksWorker(AbpAsyncTimer timer,
         IServiceScopeFactory serviceScopeFactory,
-        ILogger<HomePageOverviewWorker> logger,
-        OverviewDataStrategy overviewDataStrategy,
+        ILogger<LatestBlocksWorker> logger,
+        LatestBlocksDataStrategy latestBlocksDataStrategy,
         IOptionsMonitor<PullTransactionChainIdsOptions> workerOptions
     ) : base(timer,
         serviceScopeFactory)
     {
         _logger = logger;
         timer.Period = 1000 * 2;
-        _overviewDataStrategy = new DataStrategyContext<string, HomeOverviewResponseDto>(overviewDataStrategy);
+        _latestBlockssDataStrategy =
+            new DataStrategyContext<string, BlocksResponseDto>(latestBlocksDataStrategy);
         _workerOptions = workerOptions;
     }
 
@@ -36,8 +37,8 @@ public class HomePageOverviewWorker : AsyncPeriodicBackgroundWorkerBase
     {
         foreach (var chainId in _workerOptions.CurrentValue.ChainIds)
         {
-            _logger.LogInformation("Start to load home page overview data for chain {0}", chainId);
-            await _overviewDataStrategy.LoadData(chainId);
+            _logger.LogInformation("Start to load latest blocks for chain {0}", chainId);
+            await _latestBlockssDataStrategy.LoadData(chainId);
         }
     }
 }

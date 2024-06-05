@@ -22,6 +22,8 @@ public class ExploreHub : AbpHub
     private readonly ILogger<ExploreHub> _logger;
     private static Timer _timer = new Timer();
     private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
+    private readonly DataStrategyContext<string, TransactionsResponseDto> _latestTransactionsDataStrategy;
+    private readonly DataStrategyContext<string, BlocksResponseDto> _latestBlocksDataStrategy;
     private static readonly object _lockTransactionsObject = new object();
     private static readonly object _lockBlocksObject = new object();
     private static readonly object _lockBlockOverviewObject = new object();
@@ -33,23 +35,24 @@ public class ExploreHub : AbpHub
 
     public ExploreHub(IHomePageService homePageService, ILogger<ExploreHub> logger,
         IBlockChainService blockChainService, IHubContext<ExploreHub> hubContext,
-        OverviewDataStrategy overviewDataStrategy)
+        OverviewDataStrategy overviewDataStrategy, LatestTransactionDataStrategy latestTransactionsDataStrategy,
+        LatestBlocksDataStrategy latestBlocksDataStrategy)
     {
         _HomePageService = homePageService;
         _logger = logger;
         _blockChainService = blockChainService;
         _hubContext = hubContext;
         _overviewDataStrategy = new DataStrategyContext<string, HomeOverviewResponseDto>(overviewDataStrategy);
+        _latestTransactionsDataStrategy =
+            new DataStrategyContext<string, TransactionsResponseDto>(latestTransactionsDataStrategy);
+        _latestBlocksDataStrategy =
+            new DataStrategyContext<string, BlocksResponseDto>(latestBlocksDataStrategy);
     }
 
 
     public async Task RequestLatestTransactions(LatestTransactionsReq request)
     {
-        var resp = await _blockChainService.GetTransactionsAsync(new TransactionsRequestDto()
-        {
-            ChainId = request.ChainId,
-            MaxResultCount = 6
-        });
+        var resp = await _latestTransactionsDataStrategy.DisplayData(request.ChainId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId,
             HubGroupHelper.GetLatestTransactionsGroupName(request.ChainId));
@@ -78,11 +81,7 @@ public class ExploreHub : AbpHub
 
             try
             {
-                var resp = await _blockChainService.GetTransactionsAsync(new TransactionsRequestDto()
-                {
-                    ChainId = chainId,
-                    MaxResultCount = 6
-                });
+                var resp = await _latestTransactionsDataStrategy.DisplayData(chainId);
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetLatestTransactionsGroupName(chainId))
                     .SendAsync("ReceiveLatestTransactions", resp);
@@ -157,11 +156,7 @@ public class ExploreHub : AbpHub
 
     public async Task RequestLatestBlocks(LatestBlocksRequestDto request)
     {
-        var resp = await _blockChainService.GetBlocksAsync(new BlocksRequestDto()
-        {
-            ChainId = request.ChainId,
-            MaxResultCount = 6
-        });
+        var resp = await _latestBlocksDataStrategy.DisplayData(request.ChainId);
 
 
         await Groups.AddToGroupAsync(Context.ConnectionId,
@@ -196,11 +191,7 @@ public class ExploreHub : AbpHub
 
             try
             {
-                var resp = await _blockChainService.GetBlocksAsync(new BlocksRequestDto()
-                {
-                    ChainId = chainId,
-                    MaxResultCount = 10
-                });
+                var resp = await _latestBlocksDataStrategy.DisplayData(chainId);
 
                 if (resp.Blocks.Count > 6)
                 {

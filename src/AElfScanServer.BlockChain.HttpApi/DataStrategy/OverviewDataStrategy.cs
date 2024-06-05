@@ -12,11 +12,10 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Volo.Abp.Caching.StackExchangeRedis;
 
 namespace AElfScanServer.BlockChain.HttpApi.DataStrategy;
 
-public class OverviewDataStrategy : AbpRedisCache, IDataStrategy<string, HomeOverviewResponseDto>
+public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewResponseDto>
 {
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
@@ -24,8 +23,6 @@ public class OverviewDataStrategy : AbpRedisCache, IDataStrategy<string, HomeOve
     private readonly BlockChainDataProvider _blockChainProvider;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
-
-    private readonly ILogger<OverviewDataStrategy> _logger;
 
 
     public OverviewDataStrategy(IOptions<RedisCacheOptions> optionsAccessor,
@@ -35,7 +32,7 @@ public class OverviewDataStrategy : AbpRedisCache, IDataStrategy<string, HomeOve
         BlockChainDataProvider blockChainProvider,
         ITokenIndexerProvider tokenIndexerProvider,
         IBlockChainIndexerProvider blockChainIndexerProvider,
-        ILogger<OverviewDataStrategy> logger) : base(optionsAccessor)
+        ILogger<DataStrategyBase<string, HomeOverviewResponseDto>> logger) : base(optionsAccessor, logger)
     {
         _globalOptions = globalOptions;
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -43,16 +40,15 @@ public class OverviewDataStrategy : AbpRedisCache, IDataStrategy<string, HomeOve
         _blockChainProvider = blockChainProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _blockChainIndexerProvider = blockChainIndexerProvider;
-        _logger = logger;
     }
 
-    public async Task LoadData(string chainId)
+    public override async Task LoadData(string chainId)
     {
-        _logger.LogInformation("GetBlockchainOverviewAsync:{c}", chainId);
+        DataStrategyLogger.LogInformation("GetBlockchainOverviewAsync:{c}", chainId);
         var overviewResp = new HomeOverviewResponseDto();
         if (!_globalOptions.CurrentValue.ChainIds.Exists(s => s == chainId))
         {
-            _logger.LogWarning("Get blockchain overview chainId not exist:{c},chainIds:{l}", chainId,
+            DataStrategyLogger.LogWarning("Get blockchain overview chainId not exist:{c},chainIds:{l}", chainId,
                 _globalOptions.CurrentValue.ChainIds);
             return;
         }
@@ -96,35 +92,17 @@ public class OverviewDataStrategy : AbpRedisCache, IDataStrategy<string, HomeOve
 
             var homeOverview = RedisKeyHelper.HomeOverview(chainId);
             RedisDatabase.StringSet(homeOverview, serializeObject);
-            _logger.LogInformation("Set home page overview success:{c}", chainId);
+            DataStrategyLogger.LogInformation("Set home page overview success:{c}", chainId);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "get home page overview err,chainId:{c}", chainId);
+            DataStrategyLogger.LogError(e, "get home page overview err,chainId:{c}", chainId);
         }
     }
 
-    public async Task<HomeOverviewResponseDto> DisplayData(string chainId)
+
+    public override string DisplayKey(string chainId)
     {
-        var homeOverviewResponseDto = new HomeOverviewResponseDto();
-        try
-        {
-            await ConnectAsync();
-            var key = RedisKeyHelper.HomeOverview(chainId);
-            var redisValue = RedisDatabase.StringGet(key);
-            if (!redisValue.HasValue)
-            {
-                _logger.LogError("Get home page overview is null:{c}", chainId);
-                return homeOverviewResponseDto;
-            }
-
-            return JsonConvert.DeserializeObject<HomeOverviewResponseDto>(redisValue);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("Get home page overview error:{e}", e.Message);
-        }
-
-        return homeOverviewResponseDto;
+        return RedisKeyHelper.HomeOverview(chainId);
     }
 }

@@ -41,6 +41,8 @@ public class BlockChainHttpApiModule : AbpModule
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
         context.Services.AddSingleton<ISearchService, SearchService>();
         context.Services.AddSingleton<OverviewDataStrategy, OverviewDataStrategy>();
+        context.Services.AddSingleton<LatestTransactionDataStrategy, LatestTransactionDataStrategy>();
+        context.Services.AddSingleton<LatestBlocksDataStrategy, LatestBlocksDataStrategy>();
         context.Services.AddSignalR();
     }
 }

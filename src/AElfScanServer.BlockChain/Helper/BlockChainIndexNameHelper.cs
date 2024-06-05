@@ -33,6 +33,16 @@ public class BlockChainIndexNameHelper
 public class RedisKeyHelper
 {
     
+    public static string LatestBlocks(string chainId)
+    {
+        return $"explore_{chainId}_latest_blocks";
+    }
+
+    public static string LatestTransactions(string chainId)
+    {
+        return $"explore_{chainId}_latest_transaction";
+    }
+    
     public static string HomeOverview(string chainId)
     {
         return $"explore_{chainId}_home_overview";
