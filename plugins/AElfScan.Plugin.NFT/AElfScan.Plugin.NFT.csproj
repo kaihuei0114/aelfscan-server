@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>NFT</RootNamespace>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\AElfScanServer.Client\AElfScanServer.Client.csproj" />
+        <ProjectReference Include="..\..\src\AElfScanServer.Common\AElfScanServer.Common.csproj" />
+        <ProjectReference Include="..\..\src\AElfScanServer.Token.HttpApi\AElfScanServer.Token.HttpApi.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="backend\Dtos\Indexer\" />
+      <Folder Include="backend\Provider\" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Compile Remove="backend\Provider\NftCollectionHolderProvider.cs" />
+      <Compile Remove="backend\Dtos\Indexer\IndexerTransferInfoDto.cs" />
+      <Compile Remove="backend\Dtos\Indexer\IndexerTokenHolderInfoDto.cs" />
+    </ItemGroup>
+</Project>
