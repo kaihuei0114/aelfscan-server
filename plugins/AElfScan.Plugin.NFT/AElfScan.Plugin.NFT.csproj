@@ -8,7 +8,6 @@
     </PropertyGroup>
     
     <ItemGroup>
-        <ProjectReference Include="..\..\src\AElfScanServer.Client\AElfScanServer.Client.csproj" />
         <ProjectReference Include="..\..\src\AElfScanServer.Common\AElfScanServer.Common.csproj" />
         <ProjectReference Include="..\..\src\AElfScanServer.Token.HttpApi\AElfScanServer.Token.HttpApi.csproj" />
     </ItemGroup>

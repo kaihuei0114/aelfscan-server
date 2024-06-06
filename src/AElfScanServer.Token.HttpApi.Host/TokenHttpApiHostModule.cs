@@ -1,9 +1,7 @@
-using System.Reflection;
 using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain;
 using AElfScanServer.GraphQL;
 using AElfScanServer.Options;
-using AElfScanServer.Plugins.Core.Plugins;
 using AElfScanServer.TokenDataFunction;
 using AElfScanServer.TokenDataFunction.Options;
 using AElfScanServer.TokenDataFunction.Provider;
@@ -62,8 +60,6 @@ public class TokenHttpApiHostModule : AbpModule
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();
-        var env = context.GetEnvironment();
-        Configure(app,env);
     }
 
     private void ConfigureGraphQl(ServiceConfigurationContext context, IConfiguration configuration)
@@ -71,35 +67,4 @@ public class TokenHttpApiHostModule : AbpModule
         context.Services.AddSingleton<IGraphQlFactory, GraphQlFactory>();
         Configure<IndexerOptions>(configuration.GetSection("Indexer"));
     }
-    public void ConfigureServices(IServiceCollection services)
-    {   
-        var pluginsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
-        var pluginAssemblies = Directory.GetFiles(pluginsPath, "*.dll");
-        foreach (var pluginAssembly in pluginAssemblies)
-        {   
-            var assembly = Assembly.LoadFrom(pluginAssembly);
-            var pluginTypes = assembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface);
-            foreach (var pluginType in pluginTypes)
-            {var plugin = (IPlugin)Activator.CreateInstance(pluginType);
-                plugin.ConfigureServices(services);
-            }
-        }
-    }
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-    {   
-        var pluginsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
-        var pluginAssemblies = Directory.GetFiles(pluginsPath, "*.dll");
-        foreach (var pluginAssembly in pluginAssemblies)
-        {
-            var assembly = Assembly.LoadFrom(pluginAssembly);
-            var pluginTypes = assembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface);
-            foreach (var pluginType in pluginTypes)
-            {   
-                var plugin = (IPlugin)Activator.CreateInstance(pluginType);
-                plugin.Configure(app, env);
-            }
-        }
-    }
-    
-    
 }

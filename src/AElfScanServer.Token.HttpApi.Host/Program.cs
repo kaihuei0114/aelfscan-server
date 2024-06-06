@@ -2,6 +2,7 @@
 using AElfScanServer.Token.HttpApi.Host.Extension;
 using Serilog;
 using Serilog.Events;
+using Volo.Abp.Modularity.PlugIns;
 
 namespace AElfScanServer.TokenDataFunction;
 
@@ -36,7 +37,10 @@ public class Program
                 .UseAutofac()
                 .UseApollo()
                 .UseSerilog();
-            await builder.AddApplicationAsync<TokenHttpApiHostModule>();
+            await builder.AddApplicationAsync<TokenHttpApiHostModule>(options =>
+            {
+                options.PlugInSources.AddFolder(builder.Configuration.GetSection("PlugIns")["Path"]);
+            });
             var app = builder.Build();
             await app.InitializeApplicationAsync();
             await app.RunAsync();

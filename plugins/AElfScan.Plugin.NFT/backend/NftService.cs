@@ -1,4 +1,3 @@
-using System.Transactions;
 using AElfScanServer.Constant;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
@@ -7,7 +6,6 @@ using AElfScanServer.Options;
 using AElfScanServer.Token;
 using AElfScanServer.Token.Provider;
 using AElfScanServer.TokenDataFunction.Dtos;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
 using AElfScanServer.TokenDataFunction.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
