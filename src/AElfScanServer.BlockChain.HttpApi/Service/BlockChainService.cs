@@ -105,7 +105,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             var transactionsAsync =
                 await _aelfIndexerProvider.GetTransactionsAsync(request.ChainId,
                     request.BlockHeight == 0 ? 0 : request.BlockHeight,
-                    request.BlockHeight);
+                    request.BlockHeight, request.TransactionId);
 
             var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[request.ChainId]);
 
@@ -233,7 +233,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         var transactionListTask =
             _aelfIndexerProvider.GetTransactionsAsync(requestDto.ChainId, requestDto.BlockHeight,
-                requestDto.BlockHeight).ContinueWith(task => { transactionList = task.Result; });
+                requestDto.BlockHeight, "").ContinueWith(task => { transactionList = task.Result; });
 
         var blockListTask = _aelfIndexerProvider.GetLatestBlocksAsync(requestDto.ChainId, requestDto.BlockHeight - 1,
             requestDto.BlockHeight + 1).ContinueWith(task => { blockList = task.Result; });
