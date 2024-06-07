@@ -47,6 +47,22 @@ public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataSt
 
     public abstract Task LoadData(TInput input);
 
+    public async Task SaveData(TOutPut data, TInput input)
+    {
+        try
+        {
+            await ConnectAsync();
+            var key = DisplayKey(input);
+            var value = JsonConvert.SerializeObject(data);
+            await RedisDatabase.StringSetAsync(key, value);
+        }
+        catch (Exception e)
+        {
+            DataStrategyLogger.LogError(e, "SaveData error");
+        }
+    }
+
+
     public async Task<TOutPut> DisplayData(TInput input)
     {
         try
@@ -64,7 +80,6 @@ public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataSt
             return default;
         }
     }
-
 
     public abstract string DisplayKey(TInput input);
 }

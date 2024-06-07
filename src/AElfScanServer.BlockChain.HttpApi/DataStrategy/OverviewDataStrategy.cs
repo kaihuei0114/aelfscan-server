@@ -86,12 +86,8 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
 
             await Task.WhenAll(tasks);
 
-            var serializeObject = JsonConvert.SerializeObject(overviewResp);
+            await SaveData(overviewResp, chainId);
 
-            await ConnectAsync();
-
-            var homeOverview = RedisKeyHelper.HomeOverview(chainId);
-            RedisDatabase.StringSet(homeOverview, serializeObject);
             DataStrategyLogger.LogInformation("Set home page overview success:{c}", chainId);
         }
         catch (Exception e)

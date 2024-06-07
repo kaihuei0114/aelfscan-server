@@ -74,9 +74,7 @@ public class LatestTransactionDataStrategy : DataStrategyBase<string, Transactio
                 result.Transactions.Add(transactionRespDto);
             }
 
-            await ConnectAsync();
-            var key = DisplayKey(chainId);
-            await RedisDatabase.StringSetAsync(key, JsonConvert.SerializeObject(result));
+            await SaveData(result, chainId);
         }
         catch (Exception e)
         {

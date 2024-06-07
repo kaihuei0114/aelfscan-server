@@ -86,9 +86,7 @@ public class LatestBlocksDataStrategy : DataStrategyBase<string, BlocksResponseD
             result.Blocks = result.Blocks.GetRange(result.Blocks.Count - 6, 6);
         }
 
-        await ConnectAsync();
-        var key = DisplayKey(chainId);
-        await RedisDatabase.StringSetAsync(key, JsonConvert.SerializeObject(result));
+        await SaveData(result, chainId);
     }
 
 
