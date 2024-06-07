@@ -3,7 +3,7 @@ using AElfScanServer.Token.Dtos;
 using AElfScanServer.Dtos;
 using AElfScanServer.Enums;
 
-namespace AElfScanServer.TokenDataFunction.Dtos;
+namespace AElfScanServer.Common.Token.HttpApi.Dtos;
 
 public class NftTransferInfoDto
 { 

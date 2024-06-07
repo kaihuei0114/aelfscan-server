@@ -1,7 +1,7 @@
 using System.Net.Http;
 using AElfScanServer.HttpClient;
 
-namespace AElfScanServer.Token.Constant;
+namespace AElfScanServer.Common.Token.Constant;
 
 public class ApiInfoConstant
 {

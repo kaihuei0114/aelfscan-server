@@ -1,13 +1,13 @@
 using System.Threading.Tasks;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Dtos;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Service;
+using AElfScanServer.Token.HttpApi.Dtos;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Service;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
-namespace AElfScanServer.TokenDataFunction.Controllers;
+namespace AElfScanServer.Common.Token.HttpApi.Controllers;
 
 [RemoteService]
 [Area("app")]

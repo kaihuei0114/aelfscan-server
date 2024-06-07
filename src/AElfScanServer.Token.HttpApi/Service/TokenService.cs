@@ -12,15 +12,15 @@ using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using AElfScanServer.Token;
 using AElfScanServer.Token.Provider;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Token.HttpApi.Dtos.Indexer;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
-namespace AElfScanServer.TokenDataFunction.Service;
+namespace AElfScanServer.Common.Token.HttpApi.Service;
 
 public interface ITokenService
 {

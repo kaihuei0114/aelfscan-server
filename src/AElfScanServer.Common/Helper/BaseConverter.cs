@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AElfScanServer.Common.Dtos;
 using AElfScanServer.Dtos;
-using AElfScanServer.Dtos.Indexer;
 
-namespace AElfScanServer.Helper;
+namespace AElfScanServer.Common.Helper;
 
 public class BaseConverter
 {

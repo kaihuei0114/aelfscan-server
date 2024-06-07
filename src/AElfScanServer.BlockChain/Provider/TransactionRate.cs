@@ -1,6 +1,6 @@
 using Nito.Collections;
 
-namespace AElfScanServer.BlockChain.Provider;
+namespace AElfScanServer.Common.BlockChain.Provider;
 
 public class TransactionRate
 {

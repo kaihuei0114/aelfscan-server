@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 
-namespace AElfScanServer.Worker
+namespace AElfScanServer.Common.Worker
 {
     public class Program
     {

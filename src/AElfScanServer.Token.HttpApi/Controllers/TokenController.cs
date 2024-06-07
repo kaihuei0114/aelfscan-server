@@ -2,14 +2,14 @@
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Service;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Service;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
-namespace AElfScanServer.TokenDataFunction.Controllers;
+namespace AElfScanServer.Common.Token.HttpApi.Controllers;
 
 [RemoteService]
 [Area("app")]

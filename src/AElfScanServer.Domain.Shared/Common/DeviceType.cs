@@ -1,4 +1,4 @@
-namespace AElfScanServer.Common;
+namespace AElfScanServer.Common.Common;
 
 public enum DeviceType
 {

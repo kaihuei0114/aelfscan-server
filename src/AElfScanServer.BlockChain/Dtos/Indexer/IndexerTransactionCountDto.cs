@@ -1,4 +1,4 @@
-namespace AElfScanServer.BlockChain.Dtos.Indexer;
+namespace AElfScanServer.Common.BlockChain.Dtos.Indexer;
 
 public class IndexerTransactionCountDto
 {

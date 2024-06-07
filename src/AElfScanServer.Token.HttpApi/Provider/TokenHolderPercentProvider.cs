@@ -10,7 +10,7 @@ using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.TokenDataFunction.Provider;
+namespace AElfScanServer.Common.Token.HttpApi.Provider;
 
 public interface ITokenHolderPercentProvider
 {

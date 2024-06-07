@@ -6,7 +6,7 @@ using AElfScanServer.Entities;
 using Microsoft.Extensions.Logging;
 using Nest;
 
-namespace AElfScanServer.TokenDataFunction.Provider;
+namespace AElfScanServer.Common.Token.HttpApi.Provider;
 
 public interface INftCollectionHolderProvider
 {

@@ -4,7 +4,7 @@ using AElf.Contracts.MultiToken;
 using AElfScanServer.BlockChain.Dtos;
 using AutoMapper;
 
-namespace AElfScanServer.BlockChain;
+namespace AElfScanServer.Common.BlockChain;
 
 public class AElfScanServerBlockChainAutoMapperProfile : Profile
 {

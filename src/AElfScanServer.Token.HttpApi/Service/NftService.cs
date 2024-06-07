@@ -15,10 +15,10 @@ using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using AElfScanServer.Token;
 using AElfScanServer.Token.Provider;
-using AElfScanServer.TokenDataFunction.Dtos;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Token.HttpApi.Dtos;
+using AElfScanServer.Token.HttpApi.Dtos.Indexer;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
@@ -27,7 +27,7 @@ using NftInfoDto = AElfScanServer.Token.Dtos.NftInfoDto;
 using SymbolType = AElfScanServer.Dtos.SymbolType;
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 using TransactionStatus = AElfScanServer.Enums.TransactionStatus;
-namespace AElfScanServer.TokenDataFunction.Service;
+namespace AElfScanServer.Common.Token.HttpApi.Service;
 
 public interface INftService
 {

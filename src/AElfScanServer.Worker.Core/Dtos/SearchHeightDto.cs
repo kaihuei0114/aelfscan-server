@@ -1,4 +1,4 @@
-namespace AElfScanServer.Worker.Core.Dtos;
+namespace AElfScanServer.Common.Worker.Core.Dtos;
 
 public class SearchHeightDto
 {

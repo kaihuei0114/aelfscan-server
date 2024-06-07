@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Enums;
 using AElfScanServer.Dtos;
-using AElfScanServer.Enums;
+using AElfScanServer.Common.Enums;
+
 using Newtonsoft.Json;
 
-namespace AElfScanServer.Helper;
+namespace AElfScanServer.Common.Helper;
 
 public class TokenInfoHelper
 {

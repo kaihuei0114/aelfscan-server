@@ -18,16 +18,16 @@ using AElfScanServer.Options;
 using AElfScanServer.Token;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Provider;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Token.HttpApi.Dtos.Indexer;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.ObjectMapping;
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
-namespace AElfScanServer.Address.HttpApi.AppServices;
+namespace AElfScanServer.Common.Address.HttpApi.AppServices;
 
 public interface IAddressAppService
 {

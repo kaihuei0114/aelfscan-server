@@ -1,12 +1,13 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Token.Provider;
 using AElfScanServer.Dtos;
-using AElfScanServer.Token.Provider;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Token;
+namespace AElfScanServer.Common.Token;
 
 public interface ITokenPriceService
 {

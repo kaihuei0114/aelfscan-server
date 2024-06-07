@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using AElf.Types;
 
-namespace AElfScanServer.Helper;
+namespace AElfScanServer.Common.Helper;
 
 public class DecimalHelper
 {

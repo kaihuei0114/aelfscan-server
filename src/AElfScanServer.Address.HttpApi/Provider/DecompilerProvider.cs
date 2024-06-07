@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Address.HttpApi.Provider;
+namespace AElfScanServer.Common.Address.HttpApi.Provider;
 
 public interface IDecompilerProvider
 {

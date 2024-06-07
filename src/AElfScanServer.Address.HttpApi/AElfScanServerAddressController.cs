@@ -1,6 +1,6 @@
 using Volo.Abp.AspNetCore.Mvc;
 
-namespace AElfScanServer.Address.HttpApi;
+namespace AElfScanServer.Common.Address.HttpApi;
 
 public abstract class AElfScanServerAddressController : AbpControllerBase
 {

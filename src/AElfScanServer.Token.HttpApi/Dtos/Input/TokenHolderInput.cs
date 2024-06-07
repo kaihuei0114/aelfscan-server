@@ -4,7 +4,7 @@ using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Dtos;
 using AElfScanServer.Enums;
 
-namespace AElfScanServer.TokenDataFunction.Dtos.Input;
+namespace AElfScanServer.Common.Token.HttpApi.Dtos.Input;
 
 public class TokenHolderInput : BaseInput
 {

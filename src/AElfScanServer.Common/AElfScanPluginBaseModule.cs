@@ -4,7 +4,7 @@ using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer;
+namespace AElfScanServer.Common;
 
 public abstract class AElfScanPluginBaseModule<TModule> : AbpModule 
     where TModule : AElfScanPluginBaseModule<TModule>

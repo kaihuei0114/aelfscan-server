@@ -8,7 +8,7 @@ using HotChocolate.Resolvers;
 using HotChocolate.Types;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AElfScanServer.BFF.Core.Adaptor;
+namespace AElfScanServer.Common.BFF.Core.Adaptor;
 
 public class HttpDirectiveMiddleware
 {

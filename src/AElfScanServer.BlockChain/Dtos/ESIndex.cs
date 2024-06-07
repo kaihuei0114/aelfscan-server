@@ -6,7 +6,7 @@ using AElfScanServer.Dtos;
 using AElfScanServer.Entities;
 using Nest;
 
-namespace AElfScanServer.BlockChain.Dtos;
+namespace AElfScanServer.Common.BlockChain.Dtos;
 
 public class TransactionIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {

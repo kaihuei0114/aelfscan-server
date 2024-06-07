@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RequestDelegate = Microsoft.AspNetCore.Http.RequestDelegate;
 
-namespace AElfScanServer.BFF.Core.RequestHandler;
+namespace AElfScanServer.Common.BFF.Core.RequestHandler;
 
 public class CustomHttpPostMiddlewareBase
 { 

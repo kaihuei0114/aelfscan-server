@@ -1,4 +1,4 @@
-namespace AElfScanServer.Address.HttpApi.Dtos;
+namespace AElfScanServer.Common.Address.HttpApi.Dtos;
 
 public class GetContractTransactionContracts : GetListInputBasicDto
 {

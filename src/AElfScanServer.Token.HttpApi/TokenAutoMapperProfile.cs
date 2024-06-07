@@ -7,12 +7,12 @@ using AutoMapper;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
-using AElfScanServer.TokenDataFunction.Dtos;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Dtos;
+using AElfScanServer.Token.HttpApi.Dtos.Indexer;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
 using NftInfoDto = AElfScanServer.Token.Dtos.NftInfoDto;
 
-namespace AElfScanServer.TokenDataFunction;
+namespace AElfScanServer.Common.Token.HttpApi;
 
 public class TokenAutoMapperProfile : Profile
 {

@@ -1,4 +1,4 @@
-namespace AElfScanServer.BlockChain.HttpApi.Helper;
+namespace AElfScanServer.Common.BlockChain.HttpApi.Helper;
 
 public class HubGroupHelper
 {

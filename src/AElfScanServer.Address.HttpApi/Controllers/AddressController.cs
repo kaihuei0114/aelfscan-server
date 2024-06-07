@@ -5,7 +5,7 @@ using AElfScanServer.Core;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
-namespace AElfScanServer.Address.HttpApi.Controllers;
+namespace AElfScanServer.Common.Address.HttpApi.Controllers;
 
 [RemoteService]
 [Area("app")]

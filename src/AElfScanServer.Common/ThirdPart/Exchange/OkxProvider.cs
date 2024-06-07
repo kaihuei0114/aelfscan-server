@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 using HttpProvider = AElfScanServer.HttpClient.New.HttpProvider;
 using IHttpProvider = AElfScanServer.HttpClient.New.IHttpProvider;
 
-namespace AElfScanServer.ThirdPart.Exchange;
+namespace AElfScanServer.Common.ThirdPart.Exchange;
 
 public static class OkxApi
 {

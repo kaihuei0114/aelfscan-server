@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.BlockChain.Provider;
+namespace AElfScanServer.Common.BlockChain.Provider;
 
 public static class AELFIndexerApi
 {

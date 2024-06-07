@@ -2,7 +2,7 @@ using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Helper;
 using NUglify.Helpers;
 
-namespace AElfScanServer.TokenDataFunction.Dtos.Input;
+namespace AElfScanServer.Common.Token.HttpApi.Dtos.Input;
 
 public class NftInventoryInput : BaseInput
 {

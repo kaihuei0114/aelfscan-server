@@ -1,11 +1,15 @@
-using AElfScanServer.Address.Provider;
+using AElfScanServer.Common.Address.Provider;
+using AElfScanServer.Common.Contract.Provider;
+using AElfScanServer.Common.GraphQL;
+using AElfScanServer.Common.HttpClient;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.ThirdPart.Exchange;
+using AElfScanServer.Common.Token.Provider;
 using AElfScanServer.Contract.Provider;
 using AElfScanServer.Core;
 using AElfScanServer.GraphQL;
 using AElfScanServer.HttpClient;
-using AElfScanServer.Options;
 using AElfScanServer.ThirdPart.Exchange;
-using AElfScanServer.Token.Provider;
 using AutoResponseWrapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +20,7 @@ using Volo.Abp.AutoMapper;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer;
+namespace AElfScanServer.Common;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),
@@ -46,10 +50,10 @@ public class AElfScanCommonModule : AbpModule
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();
-        
+
         AddOpenTelemetry(context);
     }
-    
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();

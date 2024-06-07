@@ -1,4 +1,4 @@
-namespace AElfScanServer.BlockChain.Constant;
+namespace AElfScanServer.Common.BlockChain.Constant;
 
 public static class BlockChainConstant
 {

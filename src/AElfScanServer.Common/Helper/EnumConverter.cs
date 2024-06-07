@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace AElfScanServer.Helper;
+namespace AElfScanServer.Common.Helper;
 
 public class EnumConverter
 {

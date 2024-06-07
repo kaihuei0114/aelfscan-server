@@ -2,7 +2,7 @@ using System;
 using AElfScanServer.Dtos;
 using AElfScanServer.Enums;
 
-namespace AElfScanServer.TokenDataFunction.Dtos;
+namespace AElfScanServer.Common.Token.HttpApi.Dtos;
 
 public class NftItemActivityDto
 {

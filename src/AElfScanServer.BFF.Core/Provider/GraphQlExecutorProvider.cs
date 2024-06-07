@@ -6,7 +6,7 @@ using HotChocolate.Execution;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.BFF.Core.Provider;
+namespace AElfScanServer.Common.BFF.Core.Provider;
 
 public interface IGraphQlExecutorProvider
 {

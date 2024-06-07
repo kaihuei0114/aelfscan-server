@@ -1,7 +1,8 @@
 using System.Threading.Tasks;
+using AElfScanServer.Common.Dtos;
 using AElfScanServer.Dtos;
 
-namespace AElfScanServer.ThirdPart.Exchange;
+namespace AElfScanServer.Common.ThirdPart.Exchange;
 
 public interface IExchangeProvider
 {

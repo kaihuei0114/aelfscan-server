@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Token;
+namespace AElfScanServer.Common.Token;
 
 public interface ITokenProvider
 {

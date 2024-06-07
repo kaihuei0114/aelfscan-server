@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace AElfScanServer.Token.Dtos;
+namespace AElfScanServer.Common.Token.Dtos;
 
 public class IndexerNftListingInfo
 {

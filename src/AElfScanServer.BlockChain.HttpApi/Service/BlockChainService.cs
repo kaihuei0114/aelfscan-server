@@ -29,7 +29,7 @@ using Castle.Components.DictionaryAdapter.Xml;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Core;
 using AElfScanServer.Options;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Token.HttpApi.Provider;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -40,7 +40,7 @@ using Nito.AsyncEx;
 using IndexerTransactionDto = AElfScanServer.BlockChain.Dtos.IndexerTransactionDto;
 using TransactionStatus = AElfScanServer.BlockChain.Dtos.TransactionStatus;
 
-namespace AElfScanServer.BlockChain.HttpApi.Service;
+namespace AElfScanServer.Common.BlockChain.HttpApi.Service;
 
 public interface IBlockChainService
 

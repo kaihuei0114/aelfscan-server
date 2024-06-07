@@ -1,7 +1,7 @@
 using AElf.EntityMapping.Entities;
 using Nest;
 
-namespace AElfScanServer.Entities;
+namespace AElfScanServer.Common.Entities;
 
 public class NftCollectionHolderInfoIndex: AElfIndexerEntity<string>, IEntityMappingEntity
 {

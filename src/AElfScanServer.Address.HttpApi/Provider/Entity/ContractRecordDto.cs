@@ -1,7 +1,7 @@
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 
-namespace AElfScanServer.Address.HttpApi.Provider.Entity;
+namespace AElfScanServer.Common.Address.HttpApi.Provider.Entity;
 
 public class ContractRecordDto : GraphQLDto
 {

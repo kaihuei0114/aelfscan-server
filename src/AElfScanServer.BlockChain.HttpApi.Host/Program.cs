@@ -9,7 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 
-namespace AElfScanServer.BlockChainDataFunction;
+namespace AElfScanServer.Common.BlockChainDataFunction;
 
 public class Program
 {

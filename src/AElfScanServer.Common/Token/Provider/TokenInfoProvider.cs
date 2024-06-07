@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElfScanServer.Constant;
-using AElfScanServer.Dtos;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.Helper;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.Options;
+
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Token.Provider;
+namespace AElfScanServer.Common.Token.Provider;
 
 public interface ITokenInfoProvider
 {

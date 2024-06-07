@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace AElfScanServer.Token.Dtos.Input;
+namespace AElfScanServer.Common.Token.Dtos.Input;
 
 public class GetActivitiesInput : BaseInput
 {

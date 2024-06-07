@@ -1,6 +1,6 @@
 using Volo.Abp.Domain.Entities;
 
-namespace AElfScanServer.Worker.Core.Entities;
+namespace AElfScanServer.Common.Worker.Core.Entities;
 
 public abstract class AElfIndexerEntity<TKey> : Entity, IEntity<TKey>
 {

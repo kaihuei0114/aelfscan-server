@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Concurrent;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Options;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.GraphQL;
+namespace AElfScanServer.Common.GraphQL;
 
 public interface IGraphQlFactory
 {

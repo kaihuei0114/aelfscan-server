@@ -9,13 +9,13 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using AElfScanServer.Dtos;
+using AElfScanServer.Common.Dtos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.HttpClient;
+namespace AElfScanServer.Common.HttpClient;
 
 public interface IHttpProvider : ISingletonDependency
 {

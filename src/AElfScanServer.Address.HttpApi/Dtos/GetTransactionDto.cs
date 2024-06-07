@@ -6,7 +6,7 @@ using AElfScanServer.Address.HttpApi.Provider.Entity;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Dtos;
 
-namespace AElfScanServer.Address.HttpApi.Dtos;
+namespace AElfScanServer.Common.Address.HttpApi.Dtos;
 
 public class GetTransactionListInput : GetListInputBasicDto
 {

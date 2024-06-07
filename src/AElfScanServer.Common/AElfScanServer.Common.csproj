@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net7.0</TargetFramework>
-        <RootNamespace>AElfScanServer</RootNamespace>
+        <RootNamespace>AElfScanServer.Common</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -38,5 +38,9 @@
         <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.6.0" />
         <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.6.0" />
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.6.0-alpha.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Provider\" />
     </ItemGroup>
 </Project>

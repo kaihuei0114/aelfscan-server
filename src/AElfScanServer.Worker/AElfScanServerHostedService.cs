@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Volo.Abp;
 
-namespace AElfScanServer.Worker
+namespace AElfScanServer.Common.Worker
 {
     public class AElfScanServerHostedService : IHostedService
     {

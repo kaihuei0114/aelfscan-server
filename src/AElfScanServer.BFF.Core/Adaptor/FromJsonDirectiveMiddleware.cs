@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using HotChocolate.Resolvers;
 
-namespace AElfScanServer.BFF.Core.Adaptor;
+namespace AElfScanServer.Common.BFF.Core.Adaptor;
 
 public class FromJsonDirectiveMiddleware
 {

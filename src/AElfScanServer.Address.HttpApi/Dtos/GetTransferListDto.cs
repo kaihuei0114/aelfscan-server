@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using AElfScanServer.Dtos;
 using AElfScanServer.Token.Dtos;
 
-namespace AElfScanServer.Address.HttpApi.Dtos;
+namespace AElfScanServer.Common.Address.HttpApi.Dtos;
 
 public class GetTransferListInput : GetListInputBasicDto
 {

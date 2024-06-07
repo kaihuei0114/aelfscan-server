@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.BFF.Core.SchemaManager;
+namespace AElfScanServer.Common.BFF.Core.SchemaManager;
 
 public interface ISchemaManager
 {

@@ -11,15 +11,15 @@ using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.GraphQL;
 using AElfScanServer.Helper;
 using AElfScanServer.Token.Provider;
-using AElfScanServer.TokenDataFunction.Dtos;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Dtos;
+using AElfScanServer.Token.HttpApi.Dtos.Indexer;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
 using GraphQL;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
-namespace AElfScanServer.TokenDataFunction.Provider;
+namespace AElfScanServer.Common.Token.HttpApi.Provider;
 
 public interface ITokenIndexerProvider
 {

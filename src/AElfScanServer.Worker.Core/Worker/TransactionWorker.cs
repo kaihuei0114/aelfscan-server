@@ -18,7 +18,7 @@ using Nito.AsyncEx;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.Worker.Core.Worker;
+namespace AElfScanServer.Common.Worker.Core.Worker;
 
 public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
 {

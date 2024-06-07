@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AElfScanServer.BFF.Core.Options;
+namespace AElfScanServer.Common.BFF.Core.Options;
 
 public class SchemaOption
 {

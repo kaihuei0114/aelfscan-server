@@ -9,7 +9,7 @@ using Nest;
 using Newtonsoft.Json;
 using Volo.Abp.Application.Dtos;
 
-namespace AElfScanServer.BlockChain.Dtos;
+namespace AElfScanServer.Common.BlockChain.Dtos;
 
 public enum TransactionStatus
 {

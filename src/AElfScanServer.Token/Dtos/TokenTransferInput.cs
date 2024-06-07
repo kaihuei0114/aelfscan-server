@@ -5,7 +5,7 @@ using AElfScanServer.Dtos;
 using AElfScanServer.Enums;
 using AElfScanServer.Helper;
 
-namespace AElfScanServer.Token.Dtos;
+namespace AElfScanServer.Common.Token.Dtos;
 
 public class TokenTransferInput : BaseInput
 {

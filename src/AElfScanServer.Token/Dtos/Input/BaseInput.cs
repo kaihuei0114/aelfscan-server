@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AElfScanServer.Enums;
 
-namespace AElfScanServer.Token.Dtos.Input;
+namespace AElfScanServer.Common.Token.Dtos.Input;
 
 public class BaseInput : OrderInfo
 {

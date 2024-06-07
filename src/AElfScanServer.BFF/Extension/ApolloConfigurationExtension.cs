@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace AElfScanServer.BFF.Extension;
+namespace AElfScanServer.Common.BFF.Extension;
 
 public static class ApolloConfigurationExtension
 {

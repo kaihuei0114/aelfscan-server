@@ -1,4 +1,4 @@
-namespace AElfScanServer.Token.Dtos.Input;
+namespace AElfScanServer.Common.Token.Dtos.Input;
 
 public class GetTokenListInput : BaseInput
 {

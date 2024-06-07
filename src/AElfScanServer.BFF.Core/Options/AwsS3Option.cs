@@ -1,4 +1,4 @@
-namespace AElfScanServer.BFF.Core.Options;
+namespace AElfScanServer.Common.BFF.Core.Options;
 
 public class AwsS3Option
 {

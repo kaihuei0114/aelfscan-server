@@ -22,7 +22,7 @@ using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.BlockChainDataFunction;
+namespace AElfScanServer.Common.BlockChainDataFunction;
 
 [DependsOn(
     typeof(AbpAutofacModule),

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.Worker.Core;
+namespace AElfScanServer.Common.Worker.Core;
 
 public class TransactionRatePerMinuteWorker : AsyncPeriodicBackgroundWorkerBase
 {

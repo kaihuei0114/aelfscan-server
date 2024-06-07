@@ -9,7 +9,7 @@ using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.BFF;
+namespace AElfScanServer.Common.BFF;
 
 [DependsOn(
     typeof(AElfScanServerBffCoreModule),

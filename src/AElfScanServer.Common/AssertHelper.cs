@@ -5,7 +5,7 @@ using System.Text;
 using JetBrains.Annotations;
 using Volo.Abp;
 
-namespace AElfScanServer;
+namespace AElfScanServer.Common;
 
 public static class AssertHelper
 {

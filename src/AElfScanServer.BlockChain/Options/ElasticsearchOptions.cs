@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AElfScanServer.BlockChain.Options;
+namespace AElfScanServer.Common.BlockChain.Options;
 
 public class ElasticsearchOptions
 {

@@ -1,6 +1,6 @@
 ﻿using Volo.Abp.Localization;
 
-namespace AElfScanServer.Address.HttpApi;
+namespace AElfScanServer.Common.Address.HttpApi;
 
 [LocalizationResourceName("AElfScanServer")]
 public class AddressServerResource

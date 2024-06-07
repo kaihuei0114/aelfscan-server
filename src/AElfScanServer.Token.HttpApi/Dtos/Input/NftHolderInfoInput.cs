@@ -1,6 +1,6 @@
 using AElfScanServer.Token.Dtos.Input;
 
-namespace AElfScanServer.TokenDataFunction.Dtos.Input;
+namespace AElfScanServer.Common.Token.HttpApi.Dtos.Input;
 
 public class NftHolderInfoInput : BaseInput
 {

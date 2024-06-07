@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace AElfScanServer.BlockChain.Dtos;
+namespace AElfScanServer.Common.BlockChain.Dtos;
 
 public class GetLogEventListResultDto
 {

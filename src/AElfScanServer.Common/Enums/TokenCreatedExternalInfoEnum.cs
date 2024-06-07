@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace AElfScanServer.Enums;
+namespace AElfScanServer.Common.Enums;
 
 public enum TokenCreatedExternalInfoEnum
 {

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Nest;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Worker.Core.Service;
+namespace AElfScanServer.Common.Worker.Core.Service;
 
 public interface IAddressService
 {

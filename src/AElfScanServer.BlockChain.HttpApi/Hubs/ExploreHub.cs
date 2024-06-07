@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Volo.Abp.AspNetCore.SignalR;
 using Timer = System.Timers.Timer;
 
-namespace AElfScanServer.BlockChainDataFunction.Hubs;
+namespace AElfScanServer.Common.BlockChainDataFunction.Hubs;
 
 public class ExploreHub : AbpHub
 {

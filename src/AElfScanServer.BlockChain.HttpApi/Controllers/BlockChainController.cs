@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
-namespace AElfScanServer.BlockChain.HttpApi.Controllers;
+namespace AElfScanServer.Common.BlockChain.HttpApi.Controllers;
 
 [RemoteService]
 [ControllerName("Block")]

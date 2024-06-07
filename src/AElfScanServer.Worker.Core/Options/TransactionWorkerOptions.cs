@@ -1,4 +1,4 @@
-namespace AElfScanServer.Worker.Core.Options;
+namespace AElfScanServer.Common.Worker.Core.Options;
 
 public class TransactionWorkerOptions
 {

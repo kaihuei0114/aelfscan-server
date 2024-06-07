@@ -2,17 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.HttpClient.New;
+using AElfScanServer.Common.Options;
 using CoinGecko.Entities.Response.Simple;
-using AElfScanServer.Constant;
-using AElfScanServer.Dtos;
-using AElfScanServer.Helper;
-using AElfScanServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using HttpProvider = AElfScanServer.HttpClient.New.HttpProvider;
-using IHttpProvider = AElfScanServer.HttpClient.New.IHttpProvider;
 
-namespace AElfScanServer.ThirdPart.Exchange;
+
+namespace AElfScanServer.Common.ThirdPart.Exchange;
 
 public class CoinGeckoProvider : IExchangeProvider
 {

@@ -11,7 +11,7 @@ using AElfScanServer.HttpClient;
 using AElfScanServer.Options;
 using AElfScanServer.Token.Constant;
 using AElfScanServer.Token.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
+using AElfScanServer.Token.HttpApi.Dtos.Indexer;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using IHttpProvider = AElfScanServer.HttpClient.New.IHttpProvider;
 
-namespace AElfScanServer.TokenDataFunction.Provider;
+namespace AElfScanServer.Common.Token.HttpApi.Provider;
 
 public interface INftInfoProvider
 {

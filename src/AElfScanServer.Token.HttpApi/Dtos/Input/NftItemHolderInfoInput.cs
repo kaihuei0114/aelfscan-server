@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using AElfScanServer.Token.Dtos.Input;
 using AElfScanServer.Dtos;
 
-namespace AElfScanServer.TokenDataFunction.Dtos.Input;
+namespace AElfScanServer.Common.Token.HttpApi.Dtos.Input;
 
 public class NftItemHolderInfoInput : BaseInput
 {

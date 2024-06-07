@@ -4,7 +4,7 @@ using Serilog;
 using Serilog.Events;
 using Volo.Abp.Modularity.PlugIns;
 
-namespace AElfScanServer.TokenDataFunction;
+namespace AElfScanServer.Common.Token.HttpApi;
 
 public class Program
 {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AElfScanServer.Address.HttpApi.Provider.Entity;
 
-namespace AElfScanServer.Address.HttpApi.Dtos;
+namespace AElfScanServer.Common.Address.HttpApi.Dtos;
 
 public class GetContractHistoryInput : GetDetailBasicDto
 {

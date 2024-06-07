@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 using AElfScanServer.Token.Dtos;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
 
-namespace AElfScanServer.TokenDataFunction.Controllers;
+namespace AElfScanServer.Common.Token.HttpApi.Controllers;
 
 public interface ITokenController
 {

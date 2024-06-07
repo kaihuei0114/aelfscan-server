@@ -1,4 +1,4 @@
-namespace AElfScanServer.Constant;
+namespace AElfScanServer.Common.Constant;
 
 public class AElfIndexerConstant
 {

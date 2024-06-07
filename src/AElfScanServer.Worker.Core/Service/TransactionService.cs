@@ -31,7 +31,7 @@ using Volo.Abp.ObjectMapping;
 using IndexerTransactionDto = AElfScanServer.BlockChain.Dtos.IndexerTransactionDto;
 using TransactionFeeCharged = AElf.Contracts.MultiToken.TransactionFeeCharged;
 
-namespace AElfScanServer.Worker.Core.Service;
+namespace AElfScanServer.Common.Worker.Core.Service;
 
 public interface ITransactionService
 {

@@ -1,7 +1,7 @@
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.BFF.Core;
+namespace AElfScanServer.Common.BFF.Core;
 
 [DependsOn(
     typeof(AbpAutoMapperModule)

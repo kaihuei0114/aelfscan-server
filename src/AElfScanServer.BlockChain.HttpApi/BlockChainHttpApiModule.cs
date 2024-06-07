@@ -2,7 +2,7 @@ using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain.HttpApi.Service;
 using AElfScanServer.Token;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
 using Volo.Abp.AspNetCore.SignalR;
@@ -13,7 +13,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 
-namespace AElfScanServer.BlockChain.HttpApi;
+namespace AElfScanServer.Common.BlockChain.HttpApi;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),

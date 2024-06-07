@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.Worker.Core;
+namespace AElfScanServer.Common.Worker.Core;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),

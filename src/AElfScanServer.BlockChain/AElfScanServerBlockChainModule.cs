@@ -8,7 +8,7 @@ using Volo.Abp.AutoMapper;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.BlockChain;
+namespace AElfScanServer.Common.BlockChain;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),

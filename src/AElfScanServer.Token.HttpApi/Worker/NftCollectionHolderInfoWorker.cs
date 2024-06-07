@@ -3,17 +3,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Dtos;
 using AElfScanServer.Entities;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Options;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Token.HttpApi.Dtos.Indexer;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Options;
+using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.TokenDataFunction.Worker;
+namespace AElfScanServer.Common.Token.HttpApi.Worker;
 
 public class NftCollectionHolderInfoWorker : AsyncPeriodicBackgroundWorkerBase
 {

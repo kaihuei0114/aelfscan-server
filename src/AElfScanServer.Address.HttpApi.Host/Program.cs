@@ -2,7 +2,7 @@
 using Serilog;
 using Serilog.Events;
 
-namespace AElfScanServer.Address.HttpApi.Host;
+namespace AElfScanServer.Common.Address.HttpApi.Host;
 
 public class Program
 {

@@ -1,6 +1,6 @@
 using AElf.Types;
 
-namespace AElfScanServer.Helper;
+namespace AElfScanServer.Common.Helper;
 
 public class BlockHelper
 {

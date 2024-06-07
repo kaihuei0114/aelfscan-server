@@ -1,4 +1,4 @@
-namespace AElfScanServer.BlockChain.Dtos;
+namespace AElfScanServer.Common.BlockChain.Dtos;
 
 public class BlockChainTestInput
 {

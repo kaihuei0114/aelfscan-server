@@ -12,8 +12,8 @@ using AElfScanServer.Helper;
 using AElfScanServer.Options;
 using AElfScanServer.Redis;
 using AElfScanServer.Token;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Dtos.Indexer;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
 using HotChocolate.Execution;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 
-namespace AElfScanServer.TokenDataFunction.Provider;
+namespace AElfScanServer.Common.Token.HttpApi.Provider;
 
 public interface ITokenAssetProvider
 {

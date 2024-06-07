@@ -9,7 +9,7 @@ using GraphQL;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Address.HttpApi.Provider;
+namespace AElfScanServer.Common.Address.HttpApi.Provider;
 
 public interface IIndexerGenesisProvider
 {

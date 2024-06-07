@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.HttpClient.New;
+namespace AElfScanServer.Common.HttpClient.New;
 
 public interface IHttpProvider : ISingletonDependency
 {

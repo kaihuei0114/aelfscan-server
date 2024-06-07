@@ -2,7 +2,7 @@ using AElfScanServer.BFF.Extension;
 using Serilog;
 using Serilog.Events;
 
-namespace AElfScanServer.BFF;
+namespace AElfScanServer.Common.BFF;
 
 public class Program
 {

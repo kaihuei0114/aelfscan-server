@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using AElfScanServer.Token.Dtos;
 
-namespace AElfScanServer.Address.HttpApi.Dtos;
+namespace AElfScanServer.Common.Address.HttpApi.Dtos;
 
 
 public class GetAddressNftListResultDto

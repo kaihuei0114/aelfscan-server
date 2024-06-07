@@ -1,18 +1,19 @@
-using System;
+using 
+    System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AElfScanServer.Dtos;
-using AElfScanServer.Options;
-using AElfScanServer.Redis;
-using AElfScanServer.ThirdPart.Exchange;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Redis;
+using AElfScanServer.Common.ThirdPart.Exchange;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Token.Provider;
+namespace AElfScanServer.Common.Token.Provider;
 
 public interface ITokenExchangeProvider
 {

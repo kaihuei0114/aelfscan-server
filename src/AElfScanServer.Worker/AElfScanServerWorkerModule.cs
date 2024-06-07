@@ -9,7 +9,7 @@ using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.Options;
 using AElfScanServer.Token;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Token.HttpApi.Provider;
 using AElfScanServer.Worker.Core;
 using AElfScanServer.Worker.Core.Options;
 using AElfScanServer.Worker.Core.Service;
@@ -27,7 +27,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.Worker;
+namespace AElfScanServer.Common.Worker;
 
 [DependsOn(
     typeof(AElfScanServerWorkerCoreModule),

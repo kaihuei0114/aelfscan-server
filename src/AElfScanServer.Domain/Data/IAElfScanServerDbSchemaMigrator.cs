@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace AElfScanServer.Data;
+namespace AElfScanServer.Common.Data;
 
 public interface IAElfScanServerDbSchemaMigrator
 {

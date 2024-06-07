@@ -3,14 +3,14 @@ using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.BlockChain;
 using AElfScanServer.Options;
 using AElfScanServer.Token;
-using AElfScanServer.TokenDataFunction.Provider;
-using AElfScanServer.TokenDataFunction.Service;
+using AElfScanServer.Token.HttpApi.Provider;
+using AElfScanServer.Token.HttpApi.Service;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.Address.HttpApi;
+namespace AElfScanServer.Common.Address.HttpApi;
 
 [DependsOn(
     typeof(AbpAspNetCoreMvcModule),

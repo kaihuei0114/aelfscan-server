@@ -4,7 +4,7 @@ using AElfScanServer.Enums;
 using AElfScanServer.Token.Dtos.Input;
 using Volo.Abp.Application.Dtos;
 
-namespace AElfScanServer.Address.HttpApi.Dtos;
+namespace AElfScanServer.Common.Address.HttpApi.Dtos;
 
 public class GetDetailBasicDto
 {

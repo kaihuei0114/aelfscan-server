@@ -17,7 +17,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
-namespace AElfScanServer.Address.HttpApi.AppServices;
+namespace AElfScanServer.Common.Address.HttpApi.AppServices;
 
 public interface IContractAppService
 {

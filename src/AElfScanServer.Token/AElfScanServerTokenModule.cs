@@ -2,7 +2,7 @@ using AElfScanServer.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.Token;
+namespace AElfScanServer.Common.Token;
 
 public class AElfScanServerTokenModule : AbpModule
 {

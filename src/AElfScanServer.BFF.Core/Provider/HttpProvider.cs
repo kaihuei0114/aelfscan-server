@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.BFF.Core.Provider;
+namespace AElfScanServer.Common.BFF.Core.Provider;
 
 public interface IHttpRequestProvider
 {

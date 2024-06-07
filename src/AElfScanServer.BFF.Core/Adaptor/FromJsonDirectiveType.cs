@@ -1,6 +1,6 @@
 using HotChocolate.Types;
 
-namespace AElfScanServer.BFF.Core.Adaptor;
+namespace AElfScanServer.Common.BFF.Core.Adaptor;
 
 public class FromJsonDirectiveType : DirectiveType<FromJsonDirective>
 {

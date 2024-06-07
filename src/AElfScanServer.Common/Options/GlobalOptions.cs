@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AElfScanServer.Options;
+namespace AElfScanServer.Common.Options;
 
 public class GlobalOptions
 {

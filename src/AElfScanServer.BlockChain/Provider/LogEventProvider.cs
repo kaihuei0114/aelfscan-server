@@ -14,7 +14,7 @@ using Nest;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.BlockChain.Provider;
+namespace AElfScanServer.Common.BlockChain.Provider;
 
 public class LogEventProvider : AbpRedisCache, ISingletonDependency
 {

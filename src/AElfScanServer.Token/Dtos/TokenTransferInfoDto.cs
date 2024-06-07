@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using AElfScanServer.Dtos;
 using AElfScanServer.Enums;
 
-namespace AElfScanServer.Token.Dtos;
+namespace AElfScanServer.Common.Token.Dtos;
 
 public class TokenTransferInfoDto
 {

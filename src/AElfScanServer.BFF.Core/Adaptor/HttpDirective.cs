@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AElfScanServer.BFF.Core.Adaptor;
+namespace AElfScanServer.Common.BFF.Core.Adaptor;
 
 public class HttpDirective
 {

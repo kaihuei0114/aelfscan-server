@@ -36,7 +36,7 @@ using Volo.Abp.DependencyInjection;
 using Convert = System.Convert;
 using TokenInfo = AElf.Contracts.MultiToken.TokenInfo;
 
-namespace AElfScanServer.BlockChain.Provider;
+namespace AElfScanServer.Common.BlockChain.Provider;
 
 public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 {

@@ -16,7 +16,7 @@ using AElfScanServer.Core;
 using AElfScanServer.Dtos;
 using AElfScanServer.Helper;
 using AElfScanServer.Options;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Token.HttpApi.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
@@ -27,7 +27,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Field = Google.Protobuf.WellKnownTypes.Field;
 
-namespace AElfScanServer.BlockChain.HttpApi.Service;
+namespace AElfScanServer.Common.BlockChain.HttpApi.Service;
 
 public interface IHomePageService
 {

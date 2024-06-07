@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.Worker.Core.Worker;
+namespace AElfScanServer.Common.Worker.Core.Worker;
 
 public class ContractInfoSyncWorker : AsyncPeriodicBackgroundWorkerBase
 {

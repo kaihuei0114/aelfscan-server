@@ -11,7 +11,7 @@ using Nest;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
-namespace AElfScanServer.BlockChain.HttpApi.Service;
+namespace AElfScanServer.Common.BlockChain.HttpApi.Service;
 
 public interface IAddressService
 {

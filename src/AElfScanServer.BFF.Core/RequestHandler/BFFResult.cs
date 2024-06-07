@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace AElfScanServer.BFF.Core.RequestHandler;
+namespace AElfScanServer.Common.BFF.Core.RequestHandler;
 
 public class BffResult
 {

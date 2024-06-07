@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using AElfScanServer.Dtos;
 using AElfScanServer.Dtos.Indexer;
 
-namespace AElfScanServer.TokenDataFunction.Dtos.Indexer;
+namespace AElfScanServer.Common.Token.HttpApi.Dtos.Indexer;
 
 public class IndexerTransferInfoDto
 {

@@ -13,7 +13,7 @@ using Volo.Abp.Identity;
 using Volo.Abp.MultiTenancy;
 using Volo.Abp.TenantManagement;
 
-namespace AElfScanServer.Data;
+namespace AElfScanServer.Common.Data;
 
 public class AElfScanServerDbMigrationService : ITransientDependency
 {

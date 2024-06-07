@@ -1,4 +1,4 @@
-namespace AElfScanServer.Token.Constant;
+namespace AElfScanServer.Common.Token.Constant;
 
 public class TokenServerConstant
 {

@@ -2,11 +2,11 @@ using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain;
 using AElfScanServer.GraphQL;
 using AElfScanServer.Options;
-using AElfScanServer.TokenDataFunction;
-using AElfScanServer.TokenDataFunction.Options;
-using AElfScanServer.TokenDataFunction.Provider;
-using AElfScanServer.TokenDataFunction.Service;
-using AElfScanServer.TokenDataFunction.Worker;
+using AElfScanServer.Token.HttpApi;
+using AElfScanServer.Token.HttpApi.Options;
+using AElfScanServer.Token.HttpApi.Provider;
+using AElfScanServer.Token.HttpApi.Service;
+using AElfScanServer.Token.HttpApi.Worker;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Serilog;
@@ -16,7 +16,7 @@ using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.Token.HttpApi.Host;
+namespace AElfScanServer.Common.Token.HttpApi.Host;
 
 [DependsOn(
     typeof(TokenHttpApiModule),

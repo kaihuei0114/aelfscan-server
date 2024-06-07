@@ -1,7 +1,7 @@
 using System;
 using Nethereum.Util;
 
-namespace AElfScanServer.Helper;
+namespace AElfScanServer.Common.Helper;
 
 public class CommomHelper
 {

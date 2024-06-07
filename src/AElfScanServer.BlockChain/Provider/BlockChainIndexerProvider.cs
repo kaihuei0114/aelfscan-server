@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
-namespace AElfScanServer.BlockChain.Provider;
+namespace AElfScanServer.Common.BlockChain.Provider;
 
 public interface IBlockChainIndexerProvider
 {

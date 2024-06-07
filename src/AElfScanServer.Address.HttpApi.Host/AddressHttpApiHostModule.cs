@@ -8,7 +8,7 @@ using Microsoft.OpenApi.Models;
 using Volo.Abp.Localization;
 using Volo.Abp.Swashbuckle;
 
-namespace AElfScanServer.Address.HttpApi.Host;
+namespace AElfScanServer.Common.Address.HttpApi.Host;
 
 [DependsOn(
     typeof(AElfScanServerAddressHttpApiModule),

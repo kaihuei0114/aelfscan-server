@@ -1,4 +1,4 @@
-namespace AElfScanServer.TokenDataFunction.Dtos.Input;
+namespace AElfScanServer.Common.Token.HttpApi.Dtos.Input;
 
 public class NftItemInput
 {

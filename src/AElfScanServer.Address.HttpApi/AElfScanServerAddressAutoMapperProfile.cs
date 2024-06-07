@@ -5,12 +5,12 @@ using AElfScanServer.Dtos.Indexer;
 using AElfScanServer.Helper;
 using AElfScanServer.Token.Dtos;
 using AElfScanServer.Token.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
+using AElfScanServer.Token.HttpApi.Dtos.Indexer;
+using AElfScanServer.Token.HttpApi.Dtos.Input;
 using AutoMapper;
 using ContractRecordDto = AElfScanServer.Address.HttpApi.Dtos.ContractRecordDto;
 
-namespace AElfScanServer.Address.HttpApi;
+namespace AElfScanServer.Common.Address.HttpApi;
 
 public class AElfScanServerAddressAutoMapperProfile : Profile
 {
