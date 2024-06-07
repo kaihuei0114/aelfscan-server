@@ -1,15 +1,12 @@
 using AElfScanServer.Common.Address.Provider;
 using AElfScanServer.Common.Contract.Provider;
+using AElfScanServer.Common.Core;
 using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.HttpClient;
+using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.ThirdPart.Exchange;
 using AElfScanServer.Common.Token.Provider;
-using AElfScanServer.Contract.Provider;
-using AElfScanServer.Core;
-using AElfScanServer.GraphQL;
-using AElfScanServer.HttpClient;
-using AElfScanServer.ThirdPart.Exchange;
 using AutoResponseWrapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,6 +44,11 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
         context.Services.AddTransient<IAddressInfoProvider, AddressInfoProvider>();
         context.Services.AddTransient<IContractProvider, ContractProvider>();
+        context.Services.AddTransient<ITokenIndexerProvider, TokenIndexerProvider>();
+        context.Services.AddTransient<INftCollectionHolderProvider, NftCollectionHolderProvider>();
+        context.Services.AddTransient<INftInfoProvider, NftInfoProvider>();
+        context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
+
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();

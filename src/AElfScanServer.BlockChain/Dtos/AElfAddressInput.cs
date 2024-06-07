@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using AElfScanServer.Dtos;
+using AElfScanServer.Common.Dtos;
 
-namespace AElfScanServer.Common.BlockChain.Dtos;
+namespace AElfScanServer.BlockChain.Dtos;
 
 public class AElfAddressInput
 {

@@ -1,10 +1,10 @@
-using AElfScanServer.Token;
+using AElfScanServer.Common.Token;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.Common.Token.HttpApi;
+namespace AElfScanServer.Token.HttpApi;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AElfScanServer.Common.Token.HttpApi.Options;
+namespace AElfScanServer.Token.HttpApi.Options;
 
 public class WorkerOptions
 {

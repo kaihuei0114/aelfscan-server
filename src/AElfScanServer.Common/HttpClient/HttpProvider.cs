@@ -29,17 +29,31 @@ public interface IHttpProvider : ISingletonDependency
     Task<T> PostAsync<T>(string url, RequestMediaType requestMediaType, object paramObj,
         Dictionary<string, string> headers = null);
 
-    Task<T> PostInternalServerAsync<T>(string url, object paramObj);
-    Task<T> GetInternalServerAsync<T>(string url, object param);
+    // Task<T> InvokeAsync<T>(string domain, ApiInfo apiInfo,
+    //     Dictionary<string, string> pathParams = null,
+    //     Dictionary<string, string> param = null,
+    //     string body = null,
+    //     Dictionary<string, string> header = null, JsonSerializerSettings settings = null, int? timeout = null,
+    //     bool withInfoLog = false, bool withDebugLog = true);
+    //
+    Task<T> InvokeAsync<T>(HttpMethod method, string url,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, int? timeout = null,
+        bool withInfoLog = false, bool withDebugLog = true);
+
+    public Task<T> PostInternalServerAsync<T>(string url, object paramObj);
 }
 
 public class HttpProvider : IHttpProvider
 {
-    private static readonly JsonSerializerSettings DefaultJsonSettings = JsonSettingsBuilder.New()
+    public static readonly JsonSerializerSettings DefaultJsonSettings = JsonSettingsBuilder.New()
         .WithCamelCasePropertyNamesResolver()
         .IgnoreNullValue()
         .Build();
 
+    private const int DefaultTimeout = 10000;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<HttpProvider> _logger;
 
@@ -47,6 +61,43 @@ public class HttpProvider : IHttpProvider
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+    }
+
+    public async Task<T> InvokeAsync<T>(string domain, ApiInfo apiInfo,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, int? timeout = null,
+        bool withInfoLog = false, bool withDebugLog = true)
+    {
+        var resp = await InvokeAsync(apiInfo.Method, domain + apiInfo.Path, pathParams, param, body, header, timeout,
+            withInfoLog, withDebugLog);
+        try
+        {
+            return JsonConvert.DeserializeObject<T>(resp, settings ?? DefaultJsonSettings);
+        }
+        catch (Exception ex)
+        {
+            throw new HttpRequestException($"Error deserializing service [{apiInfo.Path}] response body: {resp}", ex);
+        }
+    }
+
+    public async Task<T> InvokeAsync<T>(HttpMethod method, string url,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, int? timeout = null,
+        bool withInfoLog = false, bool withDebugLog = true)
+    {
+        var resp = await InvokeAsync(method, url, pathParams, param, body, header, timeout, withInfoLog, withDebugLog);
+        try
+        {
+            return JsonConvert.DeserializeObject<T>(resp, settings ?? DefaultJsonSettings);
+        }
+        catch (Exception ex)
+        {
+            throw new HttpRequestException($"Error deserializing service [{url}] response body: {resp}", ex);
+        }
     }
 
     public async Task<T> PostAsync<T>(string url, RequestMediaType requestMediaType, object paramObj,
@@ -71,17 +122,6 @@ public class HttpProvider : IHttpProvider
         return result.Data;
     }
 
-    public async Task<T> GetInternalServerAsync<T>(string url, object param)
-    {
-        var response = await InvokeAsync(HttpMethod.Get, url, param: ObjectToDictionary(param));
-        var result = JsonConvert.DeserializeObject<CommonResponseDto<T>>(response, DefaultJsonSettings);
-        if (result.Code != "20000")
-        {
-            throw new UserFriendlyException($"Token service get request failed, message:{result.Message}.");
-        }
-
-        return result.Data;
-    }
 
     public async Task<T> InvokeAsync<T>(string domain, ApiInfo apiInfo,
         object pathParams = null,
@@ -214,28 +254,13 @@ public class HttpProvider : IHttpProvider
         if (body != null)
             request.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
-        // send
-        var stopwatch = Stopwatch.StartNew();
         var client = _httpClientFactory.CreateClient();
         client.DefaultRequestHeaders
             .Accept
             .Add(new MediaTypeWithQualityHeaderValue("application/json"));
         var response = await client.SendAsync(request);
-        var content = await response.Content.ReadAsStringAsync();
-        var time = stopwatch.ElapsedMilliseconds;
-        // log
-        // if (withLog)
-        //     _logger.LogInformation(
-        //         "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, body={Body}, resp={Content}",
-        //         fullUrl, response.StatusCode, time, builder.Query, body, content);
-        // else if (debugLog)
-        //     _logger.LogDebug(
-        //         "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, header={Header}, body={Body}, resp={Content}",
-        //         fullUrl, response.StatusCode, time, builder.Query, request.Headers.ToString(), body, content);
-        // else
-        //     _logger.LogDebug(
-        //         "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}",
-        //         fullUrl, response.StatusCode, time, builder.Query);
+
+
         return response;
     }
 
@@ -268,6 +293,72 @@ public class HttpProvider : IHttpProvider
         }
 
         return dict;
+    }
+
+    public async Task<string> InvokeAsync(HttpMethod method, string url,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null,
+        int? timeout = null,
+        bool withInfoLog = false, bool withDebugLog = true)
+    {
+        var response = await InvokeResponseAsync(method, url, pathParams, param, body, header, timeout, withInfoLog,
+            withDebugLog);
+        var content = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException(
+                $"Server [{url}] returned status code {response.StatusCode} : {content}", null, response.StatusCode);
+        }
+
+        return content;
+    }
+
+    public async Task<HttpResponseMessage> InvokeResponseAsync(HttpMethod method, string url,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null,
+        int? timeout = null,
+        bool withLog = false, bool debugLog = true)
+    {
+        // url params
+        var fullUrl = PathParamUrl(url, pathParams);
+
+        var builder = new UriBuilder(fullUrl);
+        var query = HttpUtility.ParseQueryString(builder.Query);
+        foreach (var item in param ?? new Dictionary<string, string>())
+            query[item.Key] = item.Value;
+        builder.Query = query.ToString() ?? string.Empty;
+
+        var request = new HttpRequestMessage(method, builder.ToString());
+
+        // headers
+        foreach (var h in header ?? new Dictionary<string, string>())
+            request.Headers.Add(h.Key, h.Value);
+
+        // body
+        if (body != null)
+            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+
+        // send
+        var stopwatch = Stopwatch.StartNew();
+        var client = _httpClientFactory.CreateClient();
+        client.Timeout = TimeSpan.FromMilliseconds(timeout ?? DefaultTimeout);
+        var response = await client.SendAsync(request);
+        var content = await response.Content.ReadAsStringAsync();
+        var time = stopwatch.ElapsedMilliseconds;
+        // log
+        if (withLog)
+            _logger.LogInformation(
+                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, body={Body}, resp={Content}",
+                fullUrl, response.StatusCode, time, builder.Query, body, content);
+        else if (debugLog)
+            _logger.LogDebug(
+                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, header={Header}, body={Body}, resp={Content}",
+                fullUrl, response.StatusCode, time, builder.Query, request.Headers.ToString(), body, content);
+        return response;
     }
 }
 

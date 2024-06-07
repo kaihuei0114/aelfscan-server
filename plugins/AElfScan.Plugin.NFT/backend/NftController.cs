@@ -1,14 +1,14 @@
 using System.Threading.Tasks;
-using AElfScanServer.Token.Dtos;
-using AElfScanServer.Token.Dtos.Input;
-using AElfScanServer.Token.HttpApi.Dtos;
-using AElfScanServer.Token.HttpApi.Dtos.Input;
-using AElfScanServer.Token.HttpApi.Service;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Input;
+
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
+
 namespace NFT.backend;
 
 [RemoteService]
+[ApiController]
 [Area("app")]
 [ControllerName("Nft")]
 [Route("api/app/token/nft/")]
@@ -45,7 +45,7 @@ public class NftController
     {
         return await _nftService.GetNftCollectionHolderInfosAsync(input);
     }
-    
+
     [HttpGet("inventory")]
     public async Task<NftInventorysDto> GetNftCollectionInventoryAsync(NftInventoryInput input)
     {
@@ -57,13 +57,13 @@ public class NftController
     {
         return await _nftService.GetNftItemDetailAsync(chainId, symbol);
     }
-    
+
     [HttpGet("item-activity")]
     public async Task<ListResponseDto<NftItemActivityDto>> GetNftItemDetailAsync(NftItemActivityInput input)
     {
         return await _nftService.GetNftItemActivityAsync(input);
     }
-    
+
     [HttpGet("item-holders")]
     public async Task<ListResponseDto<NftItemHolderInfoDto>> GetNftItemHoldersAsync(NftItemHolderInfoInput input)
     {

@@ -1,7 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Token.HttpApi.Options;
 using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +11,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.Common.Token.HttpApi.Worker;
+namespace AElfScanServer.Token.HttpApi.Worker;
 
 public class TokenHolderPercentWorker : AsyncPeriodicBackgroundWorkerBase
 {

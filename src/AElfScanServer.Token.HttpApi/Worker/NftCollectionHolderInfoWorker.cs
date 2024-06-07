@@ -1,19 +1,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElfScanServer.Dtos;
-using AElfScanServer.Entities;
-using AElfScanServer.Token.HttpApi.Dtos.Indexer;
-using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Domain.Common.Entities;
 using AElfScanServer.Token.HttpApi.Options;
-using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.Common.Token.HttpApi.Worker;
+namespace AElfScanServer.Token.HttpApi.Worker;
 
 public class NftCollectionHolderInfoWorker : AsyncPeriodicBackgroundWorkerBase
 {
@@ -45,7 +45,8 @@ public class NftCollectionHolderInfoWorker : AsyncPeriodicBackgroundWorkerBase
             };
             var tokenListDto = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
             var collectionSymbols = tokenListDto.Items.Select(token => token.CollectionSymbol).ToList();
-            var tasks = collectionSymbols.Select(collectionSymbol => UpdateNftCollectionHolderInfo(chainInfo.ChainId, collectionSymbol));
+            var tasks = collectionSymbols.Select(collectionSymbol =>
+                UpdateNftCollectionHolderInfo(chainInfo.ChainId, collectionSymbol));
             await Task.WhenAll(tasks);
         }
     }
@@ -75,8 +76,10 @@ public class NftCollectionHolderInfoWorker : AsyncPeriodicBackgroundWorkerBase
             {
                 skipCount += batchSize;
             }
+
             list.AddRange(tokenHolderInfos.Items);
         }
+
         var result = list
             .GroupBy(n => n.Address)
             .Select(g => new NftCollectionHolderInfoIndex

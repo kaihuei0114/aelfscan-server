@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Enums;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Redis;
-using AElfScanServer.Dtos;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using StackExchange.Redis;
 using Volo.Abp.DependencyInjection;
 
 namespace AElfScanServer.Common.Address.Provider;

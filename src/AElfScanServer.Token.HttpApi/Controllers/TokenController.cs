@@ -1,15 +1,13 @@
 ﻿using System.Threading.Tasks;
-using AElfScanServer.Token.Dtos;
-using AElfScanServer.Token.Dtos.Input;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Token.HttpApi.Service;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
-using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
-namespace AElfScanServer.Common.Token.HttpApi.Controllers;
+namespace AElfScanServer.Token.HttpApi.Controllers;
 
 [RemoteService]
 [Area("app")]
@@ -51,7 +49,7 @@ public class TokenController : AbpControllerBase
     }
 
     [HttpGet("price")]
-    public async Task<TokenPriceDto> GetTokenPriceInfoAsync(CurrencyDto input)
+    public async Task<CommonTokenPriceDto> GetTokenPriceInfoAsync(CurrencyDto input)
     {
         return await _tokenService.GetTokenPriceInfoAsync(input);
     }

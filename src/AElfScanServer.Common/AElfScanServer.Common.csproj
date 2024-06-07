@@ -38,9 +38,12 @@
         <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.6.0" />
         <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.6.0" />
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.6.0-alpha.1" />
+        <PackageReference Include="AElf.EntityMapping" Version="1.0.0-rc9" />
+        <PackageReference Include="AElf.EntityMapping.Elasticsearch" Version="1.0.0-rc9" />
+        <PackageReference Include="AElf.Indexing.Elasticsearch" Version="0.0.16" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Provider\" />
+      <ProjectReference Include="..\AElfScanServer.Domain.Shared\AElfScanServer.Domain.Shared.csproj" />
     </ItemGroup>
 </Project>

@@ -1,4 +1,4 @@
-using AElfScanServer.Localization;
+using AElfScanServer.Domain.Shared.Localization;
 using Volo.Abp.AuditLogging;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
@@ -12,7 +12,7 @@ using Volo.Abp.TenantManagement;
 using Volo.Abp.Validation.Localization;
 using Volo.Abp.VirtualFileSystem;
 
-namespace AElfScanServer;
+namespace AElfScanServer.Domain.Shared;
 
 [DependsOn(
     typeof(AbpAuditLoggingDomainSharedModule),

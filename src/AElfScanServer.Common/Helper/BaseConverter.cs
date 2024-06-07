@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElfScanServer.Common.Dtos;
-using AElfScanServer.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
 
 namespace AElfScanServer.Common.Helper;
 

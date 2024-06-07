@@ -18,7 +18,7 @@ public interface ITokenInfoProvider
     
     string BuildImageUrl(string symbol, bool useAssetUrl = false);
     
-    Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, TokenPriceDto> priceDict, List<ExternalInfoDto> externalInfos);
+    Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, CommonTokenPriceDto> priceDict, List<ExternalInfoDto> externalInfos);
 }
 
 public class TokenInfoProvider : ITokenInfoProvider, ISingletonDependency
@@ -66,7 +66,7 @@ public class TokenInfoProvider : ITokenInfoProvider, ISingletonDependency
         return useAssetUrl ? _assetsInfoOptionsMonitor.CurrentValue.BuildImageUrl(symbol) : string.Empty;
     }
 
-    public async Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, TokenPriceDto> priceDict, List<ExternalInfoDto> externalInfos)
+    public async Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, CommonTokenPriceDto> priceDict, List<ExternalInfoDto> externalInfos)
     {
         var feeDtos = TokenInfoHelper.GetTransactionFee(externalInfos);
         foreach (var transactionFeeDto in feeDtos)

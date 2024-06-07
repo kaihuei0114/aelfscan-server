@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain.Dtos.Indexer;
-using AElfScanServer.Constant;
-using AElfScanServer.GraphQL;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.GraphQL;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
-namespace AElfScanServer.Common.BlockChain.Provider;
+namespace AElfScanServer.BlockChain.Provider;
 
 public interface IBlockChainIndexerProvider
 {

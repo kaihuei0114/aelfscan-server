@@ -16,10 +16,10 @@ using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.Common.Helper;
-using AElfScanServer.Dtos;
-using AElfScanServer.Helper;
-using AElfScanServer.HttpClient;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.HttpClient;
+using AElfScanServer.Common.Options;
 using Binance.Spot;
 using Binance.Spot.Models;
 using Google.Protobuf;
@@ -36,7 +36,7 @@ using Volo.Abp.DependencyInjection;
 using Convert = System.Convert;
 using TokenInfo = AElf.Contracts.MultiToken.TokenInfo;
 
-namespace AElfScanServer.Common.BlockChain.Provider;
+namespace AElfScanServer.BlockChain.Provider;
 
 public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 {

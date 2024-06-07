@@ -1,4 +1,4 @@
-namespace AElfScanServer.Common.BlockChain.Helper;
+namespace AElfScanServer.BlockChain.Helper;
 
 public class BlockChainIndexNameHelper
 {

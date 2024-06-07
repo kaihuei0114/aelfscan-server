@@ -3,51 +3,14 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Net.NetworkInformation;
 using System.Transactions;
-using AElfScanServer.Dtos;
+using AElfScanServer.Common.Dtos;
 using Google.Protobuf;
 using Nest;
 using Newtonsoft.Json;
 using Volo.Abp.Application.Dtos;
 
-namespace AElfScanServer.Common.BlockChain.Dtos;
+namespace AElfScanServer.BlockChain.Dtos;
 
-public enum TransactionStatus
-{
-    /// <summary>
-    /// The execution result of the transaction does not exist.
-    /// </summary>
-    NotExisted = 0,
-
-    /// <summary>
-    /// The transaction is in the transaction pool waiting to be packaged.
-    /// </summary>
-    Pending = 1,
-
-    /// <summary>
-    /// Transaction execution failed.
-    /// </summary>
-    Failed = 2,
-
-    /// <summary>
-    /// The transaction was successfully executed and successfully packaged into a block.
-    /// </summary>
-    Mined = 3,
-
-    /// <summary>
-    /// When executed in parallel, there are conflicts with other transactions.
-    /// </summary>
-    Conflict = 4,
-
-    /// <summary>
-    /// The transaction is waiting for validation.
-    /// </summary>
-    PendingValidation = 5,
-
-    /// <summary>
-    /// Transaction validation failed.
-    /// </summary>
-    NodeValidationFailed = 6,
-}
 
 public class LatestTransactionsReq
 {
@@ -69,12 +32,6 @@ public class BlockchainOverviewRequestDto
     public string ChainId { get; set; }
 }
 
-public class BinancePriceDto
-{
-    public string Symbol { get; set; }
-    public decimal PriceChangePercent { get; set; }
-    public decimal LastPrice { get; set; }
-}
 
 public class HomeOverviewResponseDto
 {

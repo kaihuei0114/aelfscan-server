@@ -1,6 +1,7 @@
 using System.Collections.Generic;
+using AElfScanServer.Common.Enums;
 
-namespace AElfScanServer.Common.BlockChain.Dtos.Indexer;
+namespace AElfScanServer.BlockChain.Dtos.Indexer;
 
 public class GetIndexerTransactionListInput
 {

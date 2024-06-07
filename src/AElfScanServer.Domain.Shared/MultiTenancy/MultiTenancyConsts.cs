@@ -1,4 +1,4 @@
-namespace AElfScanServer.Common.MultiTenancy;
+namespace AElfScanServer.Domain.Shared.MultiTenancy;
 
 public static class MultiTenancyConsts
 {

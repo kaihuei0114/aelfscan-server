@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using AElfScanServer.Common.Dtos;
-using AElfScanServer.Dtos;
 
 namespace AElfScanServer.Common.ThirdPart.Exchange;
 

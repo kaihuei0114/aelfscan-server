@@ -5,7 +5,7 @@ using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Options;
 using Elasticsearch.Net;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
@@ -14,7 +14,7 @@ using Nest;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Common.BlockChain.Provider;
+namespace AElfScanServer.BlockChain.Provider;
 
 public class LogEventProvider : AbpRedisCache, ISingletonDependency
 {

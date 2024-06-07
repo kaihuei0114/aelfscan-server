@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Transactions;
 using Newtonsoft.Json;
 
-namespace AElfScanServer.Common.BlockChain.Dtos;
+namespace AElfScanServer.BlockChain.Dtos;
 
 public class GetTokenResp
 {

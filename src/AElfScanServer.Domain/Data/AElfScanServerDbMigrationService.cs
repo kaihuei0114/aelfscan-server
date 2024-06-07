@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using AElfScanServer.Domain.Common.Data;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Volo.Abp.Data;
@@ -13,7 +14,7 @@ using Volo.Abp.Identity;
 using Volo.Abp.MultiTenancy;
 using Volo.Abp.TenantManagement;
 
-namespace AElfScanServer.Common.Data;
+namespace AElfScanServer.Domain.Domain.Data;
 
 public class AElfScanServerDbMigrationService : ITransientDependency
 {

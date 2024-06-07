@@ -5,15 +5,15 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Options;
-using AElfScanServer;
-using AElfScanServer.HttpClient;
+using AElfScanServer.Common;
+using AElfScanServer.Common.HttpClient;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Common.BlockChain.Provider;
+namespace AElfScanServer.BlockChain.Provider;
 
 public static class AELFIndexerApi
 {

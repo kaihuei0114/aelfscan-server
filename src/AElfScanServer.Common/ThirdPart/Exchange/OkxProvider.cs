@@ -2,15 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using AElfScanServer.Dtos;
-using AElfScanServer.Helper;
-using AElfScanServer.HttpClient;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.HttpClient;
+using AElfScanServer.Common.Options;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
-using HttpProvider = AElfScanServer.HttpClient.New.HttpProvider;
-using IHttpProvider = AElfScanServer.HttpClient.New.IHttpProvider;
+
 
 namespace AElfScanServer.Common.ThirdPart.Exchange;
 

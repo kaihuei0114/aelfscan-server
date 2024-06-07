@@ -1,4 +1,4 @@
-namespace AElfScanServer;
+namespace AElfScanServer.Domain.Shared;
 
 public static class AElfScanServerDomainErrorCodes
 {

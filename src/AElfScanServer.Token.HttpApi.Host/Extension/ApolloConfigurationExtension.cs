@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace AElfScanServer.Common.Token.HttpApi.Host.Extension;
+namespace AElfScanServer.Token.HttpApi.Host.Extension;
 
 public static class ApolloConfigurationExtension
 {

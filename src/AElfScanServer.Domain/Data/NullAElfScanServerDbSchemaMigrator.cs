@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Common.Data;
+namespace AElfScanServer.Domain.Common.Data;
 
 /* This is used if database provider does't define
  * IAElfScanServerDbSchemaMigrator implementation.

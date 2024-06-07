@@ -10,7 +10,7 @@ using AElf.Standards.ACS10;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Options;
 using Elasticsearch.Net;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Common.BlockChain.Provider;
+namespace AElfScanServer.BlockChain.Provider;
 
 public class HomePageProvider : AbpRedisCache, ISingletonDependency
 {

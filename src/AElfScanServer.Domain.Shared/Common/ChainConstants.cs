@@ -1,4 +1,4 @@
-namespace AElfScanServer.Common.Common;
+namespace AElfScanServer.Domain.Shared.Common;
 
 public static class ChainId
 {
