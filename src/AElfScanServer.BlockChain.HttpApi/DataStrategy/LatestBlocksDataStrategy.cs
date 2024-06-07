@@ -32,7 +32,7 @@ public class LatestBlocksDataStrategy : DataStrategyBase<string, BlocksResponseD
         _aelfIndexerProvider = aelfIndexerProvider;
     }
 
-    public override async Task LoadData(string chainId)
+    public override async Task<BlocksResponseDto> QueryData(string chainId)
     {
         var result = new BlocksResponseDto()
         {
@@ -86,9 +86,8 @@ public class LatestBlocksDataStrategy : DataStrategyBase<string, BlocksResponseD
             result.Blocks = result.Blocks.GetRange(result.Blocks.Count - 6, 6);
         }
 
-        await SaveData(result, chainId);
+        return result;
     }
-
 
     public override string DisplayKey(string chainId)
     {

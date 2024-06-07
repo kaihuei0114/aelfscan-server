@@ -42,17 +42,10 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         _blockChainIndexerProvider = blockChainIndexerProvider;
     }
 
-    public override async Task LoadData(string chainId)
+    public override async Task<HomeOverviewResponseDto> QueryData(string chainId)
     {
         DataStrategyLogger.LogInformation("GetBlockchainOverviewAsync:{c}", chainId);
         var overviewResp = new HomeOverviewResponseDto();
-        if (!_globalOptions.CurrentValue.ChainIds.Exists(s => s == chainId))
-        {
-            DataStrategyLogger.LogWarning("Get blockchain overview chainId not exist:{c},chainIds:{l}", chainId,
-                _globalOptions.CurrentValue.ChainIds);
-            return;
-        }
-
         try
         {
             var tasks = new List<Task>();
@@ -86,7 +79,6 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
 
             await Task.WhenAll(tasks);
 
-            await SaveData(overviewResp, chainId);
 
             DataStrategyLogger.LogInformation("Set home page overview success:{c}", chainId);
         }
@@ -94,6 +86,8 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         {
             DataStrategyLogger.LogError(e, "get home page overview err,chainId:{c}", chainId);
         }
+
+        return overviewResp;
     }
 
 

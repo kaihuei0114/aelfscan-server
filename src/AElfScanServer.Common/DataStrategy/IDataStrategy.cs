@@ -45,7 +45,16 @@ public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataSt
         DataStrategyLogger = logger;
     }
 
-    public abstract Task LoadData(TInput input);
+    public async Task LoadData(TInput input)
+    {
+        var queryData = await QueryData(input);
+        await SaveData(queryData, input);
+    }
+
+    public virtual Task<TOutPut> QueryData(TInput input)
+    {
+        return default;
+    }
 
     public async Task SaveData(TOutPut data, TInput input)
     {

@@ -30,7 +30,7 @@ public class LatestTransactionDataStrategy : DataStrategyBase<string, Transactio
         _blockChainIndexerProvider = blockChainIndexerProvider;
     }
 
-    public override async Task LoadData(string chainId)
+    public override async Task<TransactionsResponseDto> QueryData(string chainId)
     {
         var result = new TransactionsResponseDto();
         result.Transactions = new List<TransactionResponseDto>();
@@ -73,13 +73,13 @@ public class LatestTransactionDataStrategy : DataStrategyBase<string, Transactio
 
                 result.Transactions.Add(transactionRespDto);
             }
-
-            await SaveData(result, chainId);
         }
         catch (Exception e)
         {
             DataStrategyLogger.LogError(e, "GetLatestTransactionsAsync error");
         }
+
+        return result;
     }
 
     public override string DisplayKey(string chainId)
