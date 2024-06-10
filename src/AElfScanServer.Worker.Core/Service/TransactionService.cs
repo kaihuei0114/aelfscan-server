@@ -13,12 +13,12 @@ using AElfScanServer.BlockChain.Dtos.Indexer;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
+using AElfScanServer.Common.Dtos;
 using AElfScanServer.Worker.Core.Dtos;
 using AElfScanServer.Worker.Core.Provider;
 using Elasticsearch.Net;
-using AElfScanServer.Dtos;
-using AElfScanServer.Helper;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.Options;
 using Google.Protobuf;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
@@ -31,7 +31,7 @@ using Volo.Abp.ObjectMapping;
 using IndexerTransactionDto = AElfScanServer.BlockChain.Dtos.IndexerTransactionDto;
 using TransactionFeeCharged = AElf.Contracts.MultiToken.TransactionFeeCharged;
 
-namespace AElfScanServer.Common.Worker.Core.Service;
+namespace AElfScanServer.Worker.Core.Service;
 
 public interface ITransactionService
 {

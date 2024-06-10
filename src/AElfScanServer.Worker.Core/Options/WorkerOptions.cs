@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AElfScanServer.Common.Worker.Core.Options;
+namespace AElfScanServer.Worker.Core.Options;
 
 public class WorkerOptions
 {

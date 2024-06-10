@@ -1,13 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain.Dtos;
-using AElfScanServer.BlockChain.HttpApi.Service;
-using AElfScanServer.BlockChain.Options;
-using AElfScanServer.Dtos;
-using AElfScanServer.Options;
+using AElfScanServer.Common.BlockChain.HttpApi.Service;
+using AElfScanServer.Common.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 

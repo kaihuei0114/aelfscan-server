@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElfScanServer.Address.HttpApi.Provider.Entity;
-using AElfScanServer.Constant;
-using AElfScanServer.GraphQL;
+using AElfScanServer.Common.Address.HttpApi.Provider.Entity;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.GraphQL;
+
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;

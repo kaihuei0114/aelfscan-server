@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
-using AElfScanServer.BlockChainDataFunction.Extension;
-using AElfScanServer.BlockChainDataFunction.Hubs;
+using AElfScanServer.Common.BlockChainDataFunction.Extension;
+using AElfScanServer.Common.BlockChainDataFunction.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

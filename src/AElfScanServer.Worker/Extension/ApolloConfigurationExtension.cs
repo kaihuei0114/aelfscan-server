@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
-namespace AElfScanServer.Common.Worker.Extension;
+namespace AElfScanServer.Worker.Extension;
 
 public static class ApolloConfigurationExtension
 {

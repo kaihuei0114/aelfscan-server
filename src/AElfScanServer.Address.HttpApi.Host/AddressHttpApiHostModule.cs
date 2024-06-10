@@ -1,4 +1,4 @@
-using AElfScanServer.Address.HttpApi.Options;
+using AElfScanServer.Common.Address.HttpApi.Options;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Serilog;

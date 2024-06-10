@@ -1,6 +1,6 @@
 using AElfScanServer.BlockChain.Dtos;
+using AElfScanServer.Common.Dtos;
 using AutoMapper;
-using AElfScanServer.Dtos;
 
 namespace AElfScanServer.Common.BlockChainDataFunction;
 

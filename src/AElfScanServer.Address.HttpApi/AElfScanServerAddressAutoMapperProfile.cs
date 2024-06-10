@@ -1,14 +1,12 @@
-using AElfScanServer.Address.HttpApi.Dtos;
-using AElfScanServer.Address.HttpApi.Provider.Entity;
+using AElfScanServer.Common.Address.HttpApi.Dtos;
+using AElfScanServer.Common.Address.HttpApi.Provider.Entity;
 using AElfScanServer.BlockChain.Dtos;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.Helper;
-using AElfScanServer.Token.Dtos;
-using AElfScanServer.Token.Dtos.Input;
-using AElfScanServer.Token.HttpApi.Dtos.Indexer;
-using AElfScanServer.Token.HttpApi.Dtos.Input;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Helper;
 using AutoMapper;
-using ContractRecordDto = AElfScanServer.Address.HttpApi.Dtos.ContractRecordDto;
+using ContractRecordDto = AElfScanServer.Common.Address.HttpApi.Dtos.ContractRecordDto;
 
 namespace AElfScanServer.Common.Address.HttpApi;
 
@@ -24,7 +22,7 @@ public class AElfScanServerAddressAutoMapperProfile : Profile
         CreateMap<ContractInfoDto, ContractRecordDto>();
         CreateMap<TransactionsResponseDto, GetTransactionListResultDto>();
         CreateMap<LogEventResponseDto, GetContractEventListResultDto>();
-            
+
         CreateMap<IndexerTokenHolderInfoDto, GetAddressInfoResultDto>()
             .ForPath(t => t.Balance, m => m.MapFrom(u => u.FormatAmount))
             .ForPath(t => t.TransactionCount, m => m.MapFrom(u => u.TransferCount))
@@ -32,7 +30,7 @@ public class AElfScanServerAddressAutoMapperProfile : Profile
         CreateMap<GetAddressTokenListInput, TokenHolderInput>();
         CreateMap<GetAddressTokenListInput, TokenListInput>();
         CreateMap<GetTransferListInput, TokenTransferInput>();
-        
+
         CreateMap<IndexerTokenHolderInfoDto, TokenInfoDto>()
             .ForPath(t => t.Token.Name, m => m.MapFrom(u => u.Token.CollectionSymbol))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))
@@ -44,7 +42,7 @@ public class AElfScanServerAddressAutoMapperProfile : Profile
             .ForPath(t => t.Quantity, m => m.MapFrom(u => u.FormatAmount))
             ;
         CreateMap<IndexerTransferInfoDto, TokenTransferInfoDto>()
-            .ForMember(t => t.ChainId, m => m.MapFrom(u =>BaseConverter.OfChainId(u.Metadata)))
+            .ForMember(t => t.ChainId, m => m.MapFrom(u => BaseConverter.OfChainId(u.Metadata)))
             .ForMember(t => t.TransactionId, m => m.MapFrom(u => u.TransactionId))
             .ForMember(t => t.Method, m => m.MapFrom(u => u.Method))
             .ForMember(t => t.BlockHeight, m => m.MapFrom(u => BaseConverter.OfBlockHeight(u.Metadata)))

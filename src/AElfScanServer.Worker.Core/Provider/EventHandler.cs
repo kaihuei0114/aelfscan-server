@@ -6,7 +6,7 @@ using AElf.Types;
 using AElfScanServer.Worker.Core.Service;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Common.Worker.Core.Provider;
+namespace AElfScanServer.Worker.Core.Provider;
 
 public interface IEventHandler
 {

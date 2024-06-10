@@ -1,5 +1,6 @@
-using AElfScanServer.Dtos;
-using AElfScanServer.Dtos.Indexer;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+
 
 namespace AElfScanServer.Common.Address.HttpApi.Provider.Entity;
 

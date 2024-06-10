@@ -7,18 +7,17 @@ using AElf.Client.Service;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
-using AElfScanServer.Constant;
-using AElfScanServer.Contract.Provider;
-using AElfScanServer.Core;
-using AElfScanServer.Dtos;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.Helper;
-using AElfScanServer.Options;
-using AElfScanServer.Token;
-using AElfScanServer.Token.Provider;
-using AElfScanServer.Token.HttpApi.Dtos.Indexer;
-using AElfScanServer.Token.HttpApi.Dtos.Input;
-using AElfScanServer.Token.HttpApi.Provider;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.Contract.Provider;
+using AElfScanServer.Common.Core;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Token;
+using AElfScanServer.Common.Token.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
@@ -186,7 +185,7 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             return;
         }
-        var priceDict = new Dictionary<string, TokenPriceDto>();
+        var priceDict = new Dictionary<string, CommonTokenPriceDto>();
         var symbols = indexerTokenInfoList.Items.Select(i => i.Symbol).Distinct().ToList();
         //batch query nft price
         var lastSaleInfoDict = new Dictionary<string, NftActivityItem>();
@@ -276,7 +275,7 @@ public class SearchService : ISearchService, ISingletonDependency
         }
     }
 
-    private async Task<decimal> GetTokenOfUsdPriceAsync(Dictionary<string, TokenPriceDto> priceDict, string symbol)
+    private async Task<decimal> GetTokenOfUsdPriceAsync(Dictionary<string, CommonTokenPriceDto> priceDict, string symbol)
     {
         if (priceDict.TryGetValue(symbol, out var priceDto))
         {

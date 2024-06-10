@@ -8,7 +8,6 @@ using Volo.Abp;
 namespace NFT.backend;
 
 [RemoteService]
-[ApiController]
 [Area("app")]
 [ControllerName("Nft")]
 [Route("api/app/token/nft/")]

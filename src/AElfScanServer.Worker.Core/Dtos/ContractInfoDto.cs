@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AElfScanServer.Common.Worker.Core.Dtos;
+namespace AElfScanServer.Worker.Core.Dtos;
 
 public class GetContractsInfoResponseDto
 {

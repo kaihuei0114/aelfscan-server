@@ -1,7 +1,11 @@
-using AElfScanServer.Address.HttpApi.AppServices;
-using AElfScanServer.Address.HttpApi.Provider;
-using AElfScanServer.BlockChain;
-using AElfScanServer.Options;
+
+using AElfScanServer.Common.Address.HttpApi.AppServices;
+using AElfScanServer.Common.Address.HttpApi.Provider;
+using AElfScanServer.Common.BlockChain;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Token;
+
 using AElfScanServer.Token;
 using AElfScanServer.Token.HttpApi.Provider;
 using AElfScanServer.Token.HttpApi.Service;

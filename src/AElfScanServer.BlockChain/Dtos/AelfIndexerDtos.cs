@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Transactions;
+using AElfScanServer.Common.Enums;
 using Newtonsoft.Json;
 
 namespace AElfScanServer.BlockChain.Dtos;

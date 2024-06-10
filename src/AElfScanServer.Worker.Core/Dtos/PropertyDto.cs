@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Nest;
 
-namespace AElfScanServer.Common.Worker.Core.Dtos;
+namespace AElfScanServer.Worker.Core.Dtos;
 
 public class SearchResult
 {

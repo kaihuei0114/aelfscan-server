@@ -1,8 +1,9 @@
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
-using AElfScanServer.BlockChain.HttpApi.Service;
+using AElfScanServer.Common.BlockChain.HttpApi.Service;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Token;
 using AElfScanServer.Token;
-using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
 using Volo.Abp.AspNetCore.SignalR;

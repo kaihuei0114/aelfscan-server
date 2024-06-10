@@ -1,4 +1,4 @@
-﻿using AElfScanServer.Address.HttpApi.Host.Extension;
+﻿using AElfScanServer.Common.Address.HttpApi.Host.Extension;
 using Serilog;
 using Serilog.Events;
 

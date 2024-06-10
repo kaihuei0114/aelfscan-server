@@ -10,6 +10,7 @@ using AElfScanServer.Worker.Core.Dtos;
 using AElfScanServer.Worker.Core.Options;
 using AElfScanServer.Worker.Core.Provider;
 using AElfScanServer.Worker.Core.Service;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,7 +19,7 @@ using Nito.AsyncEx;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.Common.Worker.Core.Worker;
+namespace AElfScanServer.Worker.Core.Worker;
 
 public class TransactionWorker : AsyncPeriodicBackgroundWorkerBase
 {

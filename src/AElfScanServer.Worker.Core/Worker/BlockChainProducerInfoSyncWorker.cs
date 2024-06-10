@@ -5,14 +5,14 @@ using System.Threading.Tasks;
 using AElfScanServer.Worker.Core.Dtos;
 using AElfScanServer.Worker.Core.Options;
 using AElfScanServer.Worker.Core.Service;
-using AElfScanServer.HttpClient;
+using AElfScanServer.Common.HttpClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.Common.Worker.Core.Worker;
+namespace AElfScanServer.Worker.Core.Worker;
 
 public class BlockChainProducerInfoSyncWorker : AsyncPeriodicBackgroundWorkerBase
 {

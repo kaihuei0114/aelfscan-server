@@ -7,7 +7,7 @@ using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Common.Worker.Core.Provider;
+namespace AElfScanServer.Worker.Core.Provider;
 
 public interface IStorageProvider
 {

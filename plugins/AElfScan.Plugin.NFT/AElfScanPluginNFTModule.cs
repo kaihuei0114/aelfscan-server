@@ -36,7 +36,7 @@ public class AElfScanPluginNFTModule : AElfScanPluginBaseModule<AElfScanPluginNF
         Configure<AssetsInfoOptions>(configuration.GetSection("AssetsInfoOptions"));
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
         context.Services.AddSingleton<IGraphQlFactory, GraphQlFactory>();
-
+        context.Services.AddSingleton<NftController, NftController>();
 
         context.Services.AddSingleton<INftService, NftService>();
         context.Services.AddTransient<ITokenIndexerProvider, TokenIndexerProvider>();

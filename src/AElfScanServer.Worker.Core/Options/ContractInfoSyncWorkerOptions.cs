@@ -1,4 +1,4 @@
-namespace AElfScanServer.Common.Worker.Core.Options;
+namespace AElfScanServer.Worker.Core.Options;
 
 public class ContractInfoSyncWorkerOptions
 {
