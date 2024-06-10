@@ -23,5 +23,9 @@
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.0" />
         <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.2" />
     </ItemGroup>
+
+    <ItemGroup>
+        <AssetsSourceFiles Include="Plugins/*" />
+    </ItemGroup>
     
 </Project>

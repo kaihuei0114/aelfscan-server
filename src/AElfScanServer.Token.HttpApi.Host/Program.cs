@@ -37,10 +37,22 @@ public class Program
                 .UseAutofac()
                 .UseApollo()
                 .UseSerilog();
+
+            var combine = Path.Combine(Directory.GetCurrentDirectory(), "Plugins");
+
             await builder.AddApplicationAsync<TokenHttpApiHostModule>(options =>
             {
-                options.PlugInSources.AddFolder(Path.Combine(Directory.GetCurrentDirectory(), "Plugins"));
+                options.PlugInSources.AddFolder(combine);
             });
+  
+            string[] files = Directory.GetFiles(combine);
+            Log.Information("Plugins path:{0}", combine);
+            foreach (var file in files)
+            {
+                Log.Information("Plugins file name:{0}", file.ToString());
+            }
+
+
             var app = builder.Build();
             await app.InitializeApplicationAsync();
             await app.RunAsync();
