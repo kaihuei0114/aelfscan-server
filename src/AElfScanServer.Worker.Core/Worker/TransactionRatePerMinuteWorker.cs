@@ -13,11 +13,11 @@ public class TransactionRatePerMinuteWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly ITransactionService _transactionService;
 
-    private readonly ILogger<TransactionWorker> _logger;
+    private readonly ILogger<TransactionRatePerMinuteWorker> _logger;
 
 
     public TransactionRatePerMinuteWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        ILogger<TransactionWorker> logger, ITransactionService transactionService) : base(timer,
+        ILogger<TransactionRatePerMinuteWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
         timer.Period = 1000 * 30;

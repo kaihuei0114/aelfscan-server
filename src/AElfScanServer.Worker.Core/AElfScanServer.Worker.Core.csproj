@@ -19,6 +19,7 @@
         <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="7.0.0" />
     </ItemGroup>
     <ItemGroup>
+        <ProjectReference Include="..\AElfScanServer.BlockChain.HttpApi\AElfScanServer.BlockChain.HttpApi.csproj" />
         <ProjectReference Include="..\AElfScanServer.BlockChain\AElfScanServer.BlockChain.csproj" />
         <ProjectReference Include="..\AElfScanServer.Common\AElfScanServer.Common.csproj" />
         <ProjectReference Include="..\AElfScanServer.Token.HttpApi\AElfScanServer.Token.HttpApi.csproj" />

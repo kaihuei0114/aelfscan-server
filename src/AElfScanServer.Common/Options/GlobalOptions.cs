@@ -9,7 +9,9 @@ public class GlobalOptions
     public const string PrivateKey = "09da44778f8db2e602fb484334f37df19e221c84c4582ce5b7770ccfbc3ddbef";
     public int MaxResultCount { get; set; }
 
-    public Dictionary<string, List<string>> BurntFeeContractAddresses { get; set; }
+    public Dictionary<string, List<string>> BurntFeeContractAddresses { get; set; } =
+        new Dictionary<string, List<string>>();
+
     public List<string> ChainIds { get; set; }
 
     public Dictionary<string, string> TokenImageUrls { get; set; }
