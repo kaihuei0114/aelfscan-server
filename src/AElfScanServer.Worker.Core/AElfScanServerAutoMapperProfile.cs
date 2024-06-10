@@ -14,7 +14,5 @@ public class AelfExploreServerAutoMapperProfile : Profile
 
         CreateMap<IndexerTransactionDto, TransactionIndex>()
             ;
-
-        CreateMap<TokenCreated, TokenInfoIndex>();
     }
 }
