@@ -1,14 +1,14 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElfScanServer.Common.Address.HttpApi.Dtos;
+using AElfScanServer.Address.HttpApi.Dtos;
 
-using AElfScanServer.Common.Address.HttpApi.Options;
+using AElfScanServer.Address.HttpApi.Options;
 using AElfScanServer.Common.HttpClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Common.Address.HttpApi.Provider;
+namespace AElfScanServer.Address.HttpApi.Provider;
 
 public interface IDecompilerProvider
 {

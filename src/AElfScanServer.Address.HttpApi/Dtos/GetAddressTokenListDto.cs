@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AElfScanServer.Common.Dtos;
 
-namespace AElfScanServer.Common.Address.HttpApi.Dtos;
+namespace AElfScanServer.Address.HttpApi.Dtos;
 
 public class GetAddressTokenListInput : GetListInputBasicDto
 {

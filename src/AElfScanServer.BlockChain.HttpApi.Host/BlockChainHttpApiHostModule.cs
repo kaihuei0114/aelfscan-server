@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using AElf.EntityMapping.Elasticsearch;
-using AElfScanServer.Common.BlockChain.HttpApi;
+using AElfScanServer.Common;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -21,7 +19,7 @@ using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.Common.BlockChainDataFunction;
+namespace AElfScanServer.BlockChain.HttpApi.Host;
 
 [DependsOn(
     typeof(AbpAutofacModule),

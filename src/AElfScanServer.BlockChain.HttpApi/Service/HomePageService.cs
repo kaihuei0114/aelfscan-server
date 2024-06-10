@@ -26,7 +26,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Field = Google.Protobuf.WellKnownTypes.Field;
 
-namespace AElfScanServer.Common.BlockChain.HttpApi.Service;
+namespace AElfScanServer.BlockChain.HttpApi.Service;
 
 public interface IHomePageService
 {

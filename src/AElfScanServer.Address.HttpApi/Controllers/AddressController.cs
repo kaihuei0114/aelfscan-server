@@ -1,11 +1,11 @@
 using System.Threading.Tasks;
 
-using AElfScanServer.Common.Address.HttpApi.AppServices;
-using AElfScanServer.Common.Address.HttpApi.Dtos;
+using AElfScanServer.Address.HttpApi.AppServices;
+using AElfScanServer.Address.HttpApi.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
-namespace AElfScanServer.Common.Address.HttpApi.Controllers;
+namespace AElfScanServer.Address.HttpApi.Controllers;
 
 [RemoteService]
 [Area("app")]

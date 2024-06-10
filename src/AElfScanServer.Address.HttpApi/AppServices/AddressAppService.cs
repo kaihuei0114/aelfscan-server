@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 
 
-using AElfScanServer.Common.Address.HttpApi.Dtos;
-using AElfScanServer.Common.Address.HttpApi.Provider;
+using AElfScanServer.Address.HttpApi.Dtos;
+using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.Common.Address.Provider;
 using AElfScanServer.Common.Constant;
 using AElfScanServer.Common.Contract.Provider;
@@ -26,7 +26,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.ObjectMapping;
 
-namespace AElfScanServer.Common.Address.HttpApi.AppServices;
+namespace AElfScanServer.Address.HttpApi.AppServices;
 
 public interface IAddressAppService
 {

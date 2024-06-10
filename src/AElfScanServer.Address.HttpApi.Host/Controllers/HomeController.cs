@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc;
 
-namespace AElfScanServer.Common.Address.HttpApi.Host.Controllers;
+namespace AElfScanServer.Address.HttpApi.Host.Controllers;
 
 public class HomeController : AbpController
 {

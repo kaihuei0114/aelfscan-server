@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain.Dtos;
-using AElfScanServer.Common.BlockChain.HttpApi.Service;
+using AElfScanServer.BlockChain.HttpApi.Service;
 using AElfScanServer.Common.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
-namespace AElfScanServer.Common.BlockChain.HttpApi.Controllers;
+namespace AElfScanServer.BlockChain.HttpApi.Controllers;
 
 [RemoteService]
 [ControllerName("Block")]

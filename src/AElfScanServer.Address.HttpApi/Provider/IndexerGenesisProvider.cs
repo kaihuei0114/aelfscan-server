@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElfScanServer.Common.Address.HttpApi.Provider.Entity;
+using AElfScanServer.Address.HttpApi.Provider.Entity;
 using AElfScanServer.Common.Constant;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.GraphQL;
@@ -9,7 +9,7 @@ using GraphQL;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Common.Address.HttpApi.Provider;
+namespace AElfScanServer.Address.HttpApi.Provider;
 
 public interface IIndexerGenesisProvider
 {

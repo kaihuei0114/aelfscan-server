@@ -1,6 +1,6 @@
 using AElf.Indexing.Elasticsearch;
+using AElfScanServer.BlockChain;
 using AElfScanServer.Common;
-using AElfScanServer.Common.BlockChain;
 using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;

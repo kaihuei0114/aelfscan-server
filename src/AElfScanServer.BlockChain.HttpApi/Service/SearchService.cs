@@ -22,7 +22,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Common.BlockChain.HttpApi.Service;
+namespace AElfScanServer.BlockChain.HttpApi.Service;
 
 public interface ISearchService
 {

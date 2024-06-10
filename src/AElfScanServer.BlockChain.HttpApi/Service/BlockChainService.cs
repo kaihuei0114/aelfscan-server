@@ -40,7 +40,7 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Nito.AsyncEx;
 using IndexerTransactionDto = AElfScanServer.BlockChain.Dtos.IndexerTransactionDto;
 
-namespace AElfScanServer.Common.BlockChain.HttpApi.Service;
+namespace AElfScanServer.BlockChain.HttpApi.Service;
 
 public interface IBlockChainService
 

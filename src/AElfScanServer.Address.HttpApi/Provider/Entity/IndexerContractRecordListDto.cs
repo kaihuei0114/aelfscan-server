@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AElfScanServer.Common.Address.HttpApi.Provider.Entity;
+namespace AElfScanServer.Address.HttpApi.Provider.Entity;
 
 public class IndexerContractRecordListDto
 {

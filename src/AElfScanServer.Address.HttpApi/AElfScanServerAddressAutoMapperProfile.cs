@@ -1,14 +1,14 @@
-using AElfScanServer.Common.Address.HttpApi.Dtos;
-using AElfScanServer.Common.Address.HttpApi.Provider.Entity;
+using AElfScanServer.Address.HttpApi.Dtos;
+using AElfScanServer.Address.HttpApi.Provider.Entity;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.Helper;
 using AutoMapper;
-using ContractRecordDto = AElfScanServer.Common.Address.HttpApi.Dtos.ContractRecordDto;
+using ContractRecordDto = AElfScanServer.Address.HttpApi.Dtos.ContractRecordDto;
 
-namespace AElfScanServer.Common.Address.HttpApi;
+namespace AElfScanServer.Address.HttpApi;
 
 public class AElfScanServerAddressAutoMapperProfile : Profile
 {

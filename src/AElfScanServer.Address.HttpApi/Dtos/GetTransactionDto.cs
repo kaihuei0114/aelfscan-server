@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Common.Dtos;
 
-namespace AElfScanServer.Common.Address.HttpApi.Dtos;
+namespace AElfScanServer.Address.HttpApi.Dtos;
 
 public class GetTransactionListInput : GetListInputBasicDto
 {

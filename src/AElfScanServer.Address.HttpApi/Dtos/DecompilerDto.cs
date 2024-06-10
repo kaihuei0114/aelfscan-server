@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AElfScanServer.Common.Address.HttpApi.Dtos;
+namespace AElfScanServer.Address.HttpApi.Dtos;
 
 public class GetContractFilesResponseDto
 {

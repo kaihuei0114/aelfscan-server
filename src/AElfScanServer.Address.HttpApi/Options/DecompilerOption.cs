@@ -1,4 +1,4 @@
-namespace AElfScanServer.Common.Address.HttpApi.Options;
+namespace AElfScanServer.Address.HttpApi.Options;
 
 public class DecompilerOption
 {

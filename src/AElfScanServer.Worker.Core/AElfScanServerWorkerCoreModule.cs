@@ -3,14 +3,13 @@ using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.HttpApi;
 using AElfScanServer.BlockChain.HttpApi.DataStrategy;
-using AElfScanServer.Options;
-using AElfScanServer.Worker.Core.Options;
+using AElfScanServer.Common.Options;
 using AElfScanServer.Worker.Core.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.Common.Worker.Core;
+namespace AElfScanServer.Worker.Core;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),

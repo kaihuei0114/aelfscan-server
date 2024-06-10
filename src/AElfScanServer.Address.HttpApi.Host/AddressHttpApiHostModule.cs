@@ -1,4 +1,4 @@
-using AElfScanServer.Common.Address.HttpApi.Options;
+using AElfScanServer.Address.HttpApi.Options;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Serilog;
@@ -8,7 +8,7 @@ using Microsoft.OpenApi.Models;
 using Volo.Abp.Localization;
 using Volo.Abp.Swashbuckle;
 
-namespace AElfScanServer.Common.Address.HttpApi.Host;
+namespace AElfScanServer.Address.HttpApi.Host;
 
 [DependsOn(
     typeof(AElfScanServerAddressHttpApiModule),

@@ -7,14 +7,12 @@ using AElfScanServer.BlockChain.HttpApi.DataStrategy;
 using AElfScanServer.BlockChain.HttpApi.Helper;
 using AElfScanServer.BlockChain.HttpApi.Service;
 using AElfScanServer.DataStrategy;
-using AElfScanServer.Common.BlockChain.HttpApi.Helper;
-using AElfScanServer.Common.BlockChain.HttpApi.Service;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.AspNetCore.SignalR;
 using Timer = System.Timers.Timer;
 
-namespace AElfScanServer.Common.BlockChainDataFunction.Hubs;
+namespace AElfScanServer.BlockChain.HttpApi.Hubs;
 
 public class ExploreHub : AbpHub
 {

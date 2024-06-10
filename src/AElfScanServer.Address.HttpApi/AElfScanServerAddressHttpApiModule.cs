@@ -1,7 +1,8 @@
 
-using AElfScanServer.Common.Address.HttpApi.AppServices;
-using AElfScanServer.Common.Address.HttpApi.Provider;
-using AElfScanServer.Common.BlockChain;
+using AElfScanServer.BlockChain;
+using AElfScanServer.Common;
+using AElfScanServer.Address.HttpApi.AppServices;
+using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
@@ -14,7 +15,7 @@ using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.Common.Address.HttpApi;
+namespace AElfScanServer.Address.HttpApi;
 
 [DependsOn(
     typeof(AbpAspNetCoreMvcModule),

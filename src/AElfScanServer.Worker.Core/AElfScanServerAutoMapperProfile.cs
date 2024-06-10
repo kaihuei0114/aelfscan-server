@@ -3,7 +3,7 @@ using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Common.Dtos;
 using AutoMapper;
 
-namespace AElfScanServer.Common.Worker.Core;
+namespace AElfScanServer.Worker.Core;
 
 public class AelfExploreServerAutoMapperProfile : Profile
 {

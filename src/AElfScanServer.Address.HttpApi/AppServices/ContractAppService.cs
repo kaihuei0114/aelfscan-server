@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain.Dtos.Indexer;
 using AElfScanServer.BlockChain.Provider;
-using AElfScanServer.Common.Address.HttpApi.Dtos;
-using AElfScanServer.Common.Address.HttpApi.Provider;
+using AElfScanServer.Address.HttpApi.Dtos;
+using AElfScanServer.Address.HttpApi.Provider;
 using AElfScanServer.Common.Constant;
 using AElfScanServer.Common.Core;
 using AElfScanServer.Common.Dtos.Indexer;
@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
-namespace AElfScanServer.Common.Address.HttpApi.AppServices;
+namespace AElfScanServer.Address.HttpApi.AppServices;
 
 public interface IContractAppService
 {

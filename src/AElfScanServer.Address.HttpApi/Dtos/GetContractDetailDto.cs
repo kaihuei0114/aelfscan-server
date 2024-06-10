@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AElfScanServer.Common.Address.HttpApi.Dtos;
+namespace AElfScanServer.Address.HttpApi.Dtos;
 
 public class GetContractDetailInput : GetDetailBasicDto
 {
