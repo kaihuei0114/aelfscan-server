@@ -101,7 +101,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
         var key = RedisKeyHelper.TransactionChartData(chainId);
 
         var dataValue = RedisDatabase.StringGet(key);
-
+        
         var data =
             JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(dataValue);
 
@@ -156,7 +156,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
                     overviewResp.TokenPriceRate24h = task.Result.PriceChangePercent;
                     overviewResp.TokenPriceInUsd = task.Result.LastPrice;
                 }));
-            tasks.Add(_homePageProvider.GetTransactionCount(req.ChainId).ContinueWith(
+            tasks.Add(_homePageProvider.GetTransactionCountPerLastMinute(req.ChainId).ContinueWith(
                 task => { overviewResp.Tps = task.Result; }));
 
             await Task.WhenAll(tasks);
