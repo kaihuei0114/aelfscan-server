@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using AElfScanServer.Enums;
-using AElfScanServer.Token.Dtos.Input;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Enums;
 using Volo.Abp.Application.Dtos;
 
 namespace AElfScanServer.Address.HttpApi.Dtos;

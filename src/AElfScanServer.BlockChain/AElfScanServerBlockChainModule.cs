@@ -1,8 +1,8 @@
 using AElf.EntityMapping.Elasticsearch;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
-using AElfScanServer.Options;
-using Microsoft.Extensions.Configuration;
+using AElfScanServer.Common;
+using AElfScanServer.Common.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Caching.StackExchangeRedis;

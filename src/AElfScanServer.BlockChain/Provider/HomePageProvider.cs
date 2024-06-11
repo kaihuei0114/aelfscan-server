@@ -10,7 +10,7 @@ using AElf.Standards.ACS10;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Options;
 using Elasticsearch.Net;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;

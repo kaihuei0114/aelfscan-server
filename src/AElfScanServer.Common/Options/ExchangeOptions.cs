@@ -1,4 +1,4 @@
-namespace AElfScanServer.Options;
+namespace AElfScanServer.Common.Options;
 
 public class ExchangeOptions
 {

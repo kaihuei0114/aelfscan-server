@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using AElfScanServer.Address.Provider;
-using AElfScanServer.Constant;
-using AElfScanServer.Core;
-using AElfScanServer.Dtos;
-using AElfScanServer.Enums;
-using AElfScanServer.Helper;
-using AElfScanServer.Options;
-using AElfScanServer.Redis;
-using AElfScanServer.Token;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
+using AElfScanServer.Common.Address.Provider;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.Core;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Enums;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Redis;
+using AElfScanServer.Common.Token;
 using HotChocolate.Execution;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
@@ -22,7 +23,7 @@ using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 
-namespace AElfScanServer.TokenDataFunction.Provider;
+namespace AElfScanServer.Token.HttpApi.Provider;
 
 public interface ITokenAssetProvider
 {

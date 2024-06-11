@@ -2,17 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElfScanServer.Dtos;
-using AElfScanServer.Enums;
-using AElfScanServer.Options;
-using AElfScanServer.Redis;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Enums;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Redis;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using StackExchange.Redis;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Address.Provider;
+namespace AElfScanServer.Common.Address.Provider;
 
 public interface IAddressInfoProvider
 {

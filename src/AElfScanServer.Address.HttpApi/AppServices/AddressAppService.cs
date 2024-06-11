@@ -2,30 +2,29 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
+
 using AElfScanServer.Address.HttpApi.Dtos;
 using AElfScanServer.Address.HttpApi.Provider;
-using AElfScanServer.Address.Provider;
-using AElfScanServer.BlockChain;
-using AElfScanServer.BlockChain.Dtos;
-using AElfScanServer.Constant;
-using AElfScanServer.Contract.Provider;
-using AElfScanServer.Core;
-using AElfScanServer.Dtos;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.Enums;
-using AElfScanServer.Helper;
-using AElfScanServer.Options;
-using AElfScanServer.Token;
-using AElfScanServer.Token.Dtos;
-using AElfScanServer.Token.Provider;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Common.Address.Provider;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.Contract.Provider;
+using AElfScanServer.Common.Core;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Enums;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Token;
+using AElfScanServer.Common.Token.Provider;
+
+using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.ObjectMapping;
-using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
 namespace AElfScanServer.Address.HttpApi.AppServices;
 
@@ -338,7 +337,7 @@ public class AddressAppService : IAddressAppService
     }
 
     private async Task<List<TokenInfoDto>> GetTokenInfoListAsync(IEnumerable<IndexerTokenHolderInfoDto> holderInfos,
-        Dictionary<string, IndexerTokenInfoDto> tokenDict, TokenPriceDto elfPriceDto)
+        Dictionary<string, IndexerTokenInfoDto> tokenDict, CommonTokenPriceDto elfPriceDto)
     {
         var list = new List<TokenInfoDto>();
 

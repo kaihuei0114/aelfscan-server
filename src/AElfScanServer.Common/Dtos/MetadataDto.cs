@@ -1,6 +1,6 @@
 using System;
 
-namespace AElfScanServer.Dtos;
+namespace AElfScanServer.Common.Dtos;
 
 public class MetadataDto
 {

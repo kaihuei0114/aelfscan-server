@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Org.BouncyCastle.Utilities.Encoders;
 
-namespace AElfScanServer.HttpClient;
+namespace AElfScanServer.Common.HttpClient;
 
 public class JsonSettingsBuilder
 {

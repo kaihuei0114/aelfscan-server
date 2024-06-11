@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Transactions;
-using AElfScanServer.Address.HttpApi.Provider;
-using AElfScanServer.Address.HttpApi.Provider.Entity;
+
 using AElfScanServer.BlockChain.Dtos;
-using AElfScanServer.Dtos;
+using AElfScanServer.Common.Dtos;
 
 namespace AElfScanServer.Address.HttpApi.Dtos;
 

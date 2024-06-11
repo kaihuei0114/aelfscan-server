@@ -4,7 +4,7 @@ using AElf.Cryptography.ECDSA;
 using AElf.Types;
 using Google.Protobuf;
 
-namespace AElfScanServer.AElfSdk.Dtos;
+namespace AElfScanServer.Common.AElfSdk.Dtos;
 
 public class SenderAccount
 {

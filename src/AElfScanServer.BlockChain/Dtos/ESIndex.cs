@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Transactions;
 using AElf.EntityMapping.Entities;
-using AElfScanServer.Dtos;
-using AElfScanServer.Entities;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Domain.Common.Entities;
 using Nest;
 
 namespace AElfScanServer.BlockChain.Dtos;

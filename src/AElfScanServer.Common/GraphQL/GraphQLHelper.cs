@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using GraphQL;
 using GraphQL.Client.Abstractions;
 
-namespace AElfScanServer.GraphQL;
+namespace AElfScanServer.Common.GraphQL;
 
 public interface IGraphQlHelper
 {

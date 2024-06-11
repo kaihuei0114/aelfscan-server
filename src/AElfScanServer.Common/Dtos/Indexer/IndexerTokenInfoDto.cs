@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AElfScanServer.Dtos.Indexer;
+namespace AElfScanServer.Common.Dtos.Indexer;
 
 public class IndexerTokenInfoDto : IndexerTokenBaseDto
 {

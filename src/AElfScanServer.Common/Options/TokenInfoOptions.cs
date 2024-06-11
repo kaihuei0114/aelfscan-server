@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using AElfScanServer.Dtos;
+using AElfScanServer.Common.Dtos;
 
-namespace AElfScanServer.Options;
+namespace AElfScanServer.Common.Options;
 
 public class TokenInfoOptions
 {

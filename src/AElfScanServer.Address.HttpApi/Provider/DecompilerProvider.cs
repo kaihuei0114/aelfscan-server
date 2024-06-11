@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.Address.HttpApi.Dtos;
+
 using AElfScanServer.Address.HttpApi.Options;
-using AElfScanServer.HttpClient;
+using AElfScanServer.Common.HttpClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;

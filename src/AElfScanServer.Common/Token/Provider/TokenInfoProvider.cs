@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElfScanServer.Constant;
-using AElfScanServer.Dtos;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.Helper;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.Options;
+
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Token.Provider;
+namespace AElfScanServer.Common.Token.Provider;
 
 public interface ITokenInfoProvider
 {
@@ -17,7 +18,7 @@ public interface ITokenInfoProvider
     
     string BuildImageUrl(string symbol, bool useAssetUrl = false);
     
-    Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, TokenPriceDto> priceDict, List<ExternalInfoDto> externalInfos);
+    Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, CommonTokenPriceDto> priceDict, List<ExternalInfoDto> externalInfos);
 }
 
 public class TokenInfoProvider : ITokenInfoProvider, ISingletonDependency
@@ -65,7 +66,7 @@ public class TokenInfoProvider : ITokenInfoProvider, ISingletonDependency
         return useAssetUrl ? _assetsInfoOptionsMonitor.CurrentValue.BuildImageUrl(symbol) : string.Empty;
     }
 
-    public async Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, TokenPriceDto> priceDict, List<ExternalInfoDto> externalInfos)
+    public async Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, CommonTokenPriceDto> priceDict, List<ExternalInfoDto> externalInfos)
     {
         var feeDtos = TokenInfoHelper.GetTransactionFee(externalInfos);
         foreach (var transactionFeeDto in feeDtos)

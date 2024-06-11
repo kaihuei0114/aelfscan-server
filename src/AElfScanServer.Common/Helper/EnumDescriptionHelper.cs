@@ -1,8 +1,8 @@
 using System;
 using System.ComponentModel;
-using AElfScanServer.Enums;
+using AElfScanServer.Common.Enums;
 
-namespace AElfScanServer.Helper;
+namespace AElfScanServer.Common.Helper;
 
 public class EnumDescriptionHelper
 {

@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Concurrent;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Options;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.GraphQL;
+namespace AElfScanServer.Common.GraphQL;
 
 public interface IGraphQlFactory
 {
@@ -23,6 +24,7 @@ public class GraphQlFactory : IGraphQlFactory, ISingletonDependency
         _options = options.Value;
     }
 
+
     public IGraphQlHelper GetGraphQlHelper(string indexerName)
     {
         if (_graphQlHelperDic.TryGetValue(indexerName, out var graphQlHelper))
@@ -34,6 +36,7 @@ public class GraphQlFactory : IGraphQlFactory, ISingletonDependency
         {
             throw new ArgumentException("Indexer {indexerName} not exists", indexerName);
         }
+
 
         var graphQlHttpClient = new GraphQLHttpClient(indexerInfo.BaseUrl, new NewtonsoftJsonSerializer());
         graphQlHelper = new GraphQlHelper(graphQlHttpClient);

@@ -1,6 +1,6 @@
 using System;
 
-namespace AElfScanServer.Samples.Users;
+namespace AElfScanServer.Domain.Shared.Samples.Users;
 
 public class UserGrainDto
 {

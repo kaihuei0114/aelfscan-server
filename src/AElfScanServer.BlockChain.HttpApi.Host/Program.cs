@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using AElfScanServer.BlockChainDataFunction.Extension;
-using AElfScanServer.BlockChainDataFunction.Hubs;
+using AElfScanServer.BlockChain.HttpApi.Host;
+using AElfScanServer.BlockChain.HttpApi.Host.Extension;
+using AElfScanServer.BlockChain.HttpApi.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 
-namespace AElfScanServer.BlockChainDataFunction;
+namespace AElfScanServer.Common.BlockChainDataFunction;
 
 public class Program
 {

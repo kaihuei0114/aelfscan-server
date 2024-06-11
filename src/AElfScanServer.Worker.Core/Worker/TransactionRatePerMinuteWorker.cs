@@ -1,13 +1,11 @@
 using System.Threading.Tasks;
-using AElfScanServer.BlockChain.Options;
 using AElfScanServer.Worker.Core.Service;
-using AElfScanServer.Worker.Core.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.Worker.Core;
+namespace AElfScanServer.Worker.Core.Worker;
 
 public class TransactionRatePerMinuteWorker : AsyncPeriodicBackgroundWorkerBase
 {

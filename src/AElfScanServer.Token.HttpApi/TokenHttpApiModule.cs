@@ -1,9 +1,10 @@
-using AElfScanServer.Token;
+using AElfScanServer.Common.Token;
+using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
-namespace AElfScanServer.TokenDataFunction;
+namespace AElfScanServer.Token.HttpApi;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),
@@ -15,5 +16,10 @@ public class TokenHttpApiModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<TokenHttpApiModule>(); });
+    }
+
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        base.OnApplicationInitialization(context);
     }
 }

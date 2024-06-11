@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElfScanServer.Constant;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.GraphQL;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.GraphQL;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.Contract.Provider;
+namespace AElfScanServer.Common.Contract.Provider;
 
 public interface IContractProvider
 {

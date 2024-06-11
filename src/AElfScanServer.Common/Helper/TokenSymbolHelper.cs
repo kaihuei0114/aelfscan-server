@@ -1,4 +1,5 @@
-using AElfScanServer.Dtos;
+
+using AElfScanServer.Common.Dtos;
 
 namespace AElfScanServer.Common.Helper;
 

@@ -1,6 +1,6 @@
 using System.Net.Http;
 
-namespace AElfScanServer.HttpClient;
+namespace AElfScanServer.Common.HttpClient;
 
 public class ApiInfo
 {

@@ -1,18 +1,11 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using AElfScanServer.Token.Dtos;
-using AElfScanServer.Token.Dtos.Input;
 using AutoMapper;
-using AElfScanServer.Dtos;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.Helper;
-using AElfScanServer.TokenDataFunction.Dtos;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
-using NftInfoDto = AElfScanServer.Token.Dtos.NftInfoDto;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Helper;
 
-namespace AElfScanServer.TokenDataFunction;
+namespace AElfScanServer.Token.HttpApi;
 
 public class TokenAutoMapperProfile : Profile
 {

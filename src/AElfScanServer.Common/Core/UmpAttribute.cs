@@ -1,6 +1,6 @@
 using System;
 
-namespace AElfScanServer.Core;
+namespace AElfScanServer.Common.Core;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class UmpAttribute : Attribute
