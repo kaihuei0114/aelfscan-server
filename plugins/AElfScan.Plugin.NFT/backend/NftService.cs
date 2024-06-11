@@ -44,7 +44,7 @@ public class NftService : INftService, ISingletonDependency
     private readonly INftInfoProvider _nftInfoProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
-    private readonly IContractProvider _contractProvider;
+    private readonly IGenesisPluginProvider _genesisPluginProvider;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptionsMonitor;
 
 
@@ -53,7 +53,7 @@ public class NftService : INftService, ISingletonDependency
         INftCollectionHolderProvider collectionHolderProvider, INftInfoProvider nftInfoProvider,
         ITokenPriceService tokenPriceService,
         IOptionsMonitor<ChainOptions> chainOptions, IOptionsMonitor<TokenInfoOptions> tokenInfoOptionsMonitor,
-        ITokenInfoProvider tokenInfoProvider, IContractProvider contractProvider)
+        ITokenInfoProvider tokenInfoProvider, IGenesisPluginProvider genesisPluginProvider)
     {
         _tokenIndexerProvider = tokenIndexerProvider;
         _logger = logger;
@@ -64,7 +64,7 @@ public class NftService : INftService, ISingletonDependency
         _chainOptions = chainOptions;
         _tokenInfoOptionsMonitor = tokenInfoOptionsMonitor;
         _tokenInfoProvider = tokenInfoProvider;
-        _contractProvider = contractProvider;
+        _genesisPluginProvider = genesisPluginProvider;
     }
 
 
@@ -286,7 +286,7 @@ public class NftService : INftService, ISingletonDependency
         var addressList = nftItemHolderInfos.Items
             .Where(value => !string.IsNullOrEmpty(value.Address))
             .Select(value => value.Address).Distinct().ToList();
-        var contractInfoDict = await _contractProvider.GetContractListAsync(input.ChainId, addressList);
+        var contractInfoDict = await _genesisPluginProvider.GetContractListAsync(input.ChainId, addressList);
 
         var list = new List<NftItemHolderInfoDto>();
         foreach (var nftCollectionHolderInfoIndex in nftItemHolderInfos.Items)
@@ -322,7 +322,7 @@ public class NftService : INftService, ISingletonDependency
         var addressList = items
             .SelectMany(c => new[] { c.From, c.To })
             .Where(value => !string.IsNullOrEmpty(value)).Distinct().ToList();
-        var contractInfoDict = await _contractProvider.GetContractListAsync(chainId, addressList);
+        var contractInfoDict = await _genesisPluginProvider.GetContractListAsync(chainId, addressList);
         foreach (var item in items)
         {
             var activityDto = _objectMapper.Map<NftActivityItem, NftItemActivityDto>(item);
@@ -425,7 +425,7 @@ public class NftService : INftService, ISingletonDependency
             .Where(value => !string.IsNullOrEmpty(value.Address))
             .Select(value => value.Address).Distinct().ToList();
         var groupAndSumSupplyTask = GetCollectionSupplyAsync(chainId, collectionSymbols);
-        var contractInfoDictTask = _contractProvider.GetContractListAsync(chainId, addressList);
+        var contractInfoDictTask = _genesisPluginProvider.GetContractListAsync(chainId, addressList);
         await Task.WhenAll(groupAndSumSupplyTask, contractInfoDictTask);
 
         var list = new List<TokenHolderInfoDto>();

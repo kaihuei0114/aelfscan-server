@@ -40,17 +40,17 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
     private readonly IGraphQlFactory _graphQlFactory;
     private readonly IObjectMapper _objectMapper;
     private readonly ITokenInfoProvider _tokenInfoProvider;
-    private readonly IContractProvider _contractProvider;
+    private readonly IGenesisPluginProvider _genesisPluginProvider;
     private ILogger<TokenIndexerProvider> _logger;
 
 
     public TokenIndexerProvider(IGraphQlFactory graphQlFactory, IObjectMapper objectMapper,
-        ITokenInfoProvider tokenInfoProvider, IContractProvider contractProvider, ILogger<TokenIndexerProvider> logger)
+        ITokenInfoProvider tokenInfoProvider, IGenesisPluginProvider genesisPluginProvider, ILogger<TokenIndexerProvider> logger)
     {
         _graphQlFactory = graphQlFactory;
         _objectMapper = objectMapper;
         _tokenInfoProvider = tokenInfoProvider;
-        _contractProvider = contractProvider;
+        _genesisPluginProvider = genesisPluginProvider;
         _logger = logger;
     }
 
@@ -381,7 +381,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         var addressList = indexerTokenTransfer
             .SelectMany(c => new[] { c.From, c.To })
             .Where(value => !string.IsNullOrEmpty(value)).Distinct().ToList();
-        var contractInfoDictTask = _contractProvider.GetContractListAsync(chainId, addressList);
+        var contractInfoDictTask = _genesisPluginProvider.GetContractListAsync(chainId, addressList);
         var tokenDictTask = GetTokenDictAsync(chainId, symbols);
         await Task.WhenAll(contractInfoDictTask, tokenDictTask);
         var contractInfoDict = await contractInfoDictTask;

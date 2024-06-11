@@ -7,6 +7,7 @@ using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.GraphQL;
 using GraphQL;
 using Microsoft.Extensions.Logging;
+using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
 namespace AElfScanServer.Address.HttpApi.Provider;
@@ -29,10 +30,11 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
     private readonly ILogger<IndexerGenesisProvider> _logger;
     private const string IndexerType = AElfIndexerConstant.GenesisIndexer;
 
+
     public IndexerGenesisProvider(GraphQlFactory graphQlFactory, ILogger<IndexerGenesisProvider> logger)
     {
-        _logger = logger;
         _graphQlFactory = graphQlFactory;
+        _logger = logger;
     }
 
     public async Task<IndexerContractListResultDto> GetContractListAsync(string chainId,
