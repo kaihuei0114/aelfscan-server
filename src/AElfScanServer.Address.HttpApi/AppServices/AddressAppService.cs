@@ -50,7 +50,7 @@ public class AddressAppService : IAddressAppService
     private readonly GlobalOptions _globalOptions;
     private readonly ITokenAssetProvider _tokenAssetProvider;
     private readonly IAddressInfoProvider _addressInfoProvider;
-    private readonly IContractProvider _contractProvider;
+    private readonly IGenesisPluginProvider _genesisPluginProvider;
 
 
     public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger,
@@ -58,7 +58,7 @@ public class AddressAppService : IAddressAppService
         ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService,
         ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
         IOptionsSnapshot<GlobalOptions> globalOptions, ITokenAssetProvider tokenAssetProvider,
-        IAddressInfoProvider addressInfoProvider, IContractProvider contractProvider)
+        IAddressInfoProvider addressInfoProvider, IGenesisPluginProvider genesisPluginProvider)
     {
         _logger = logger;
         _objectMapper = objectMapper;
@@ -69,7 +69,7 @@ public class AddressAppService : IAddressAppService
         _tokenInfoOptions = tokenInfoOptions;
         _tokenAssetProvider = tokenAssetProvider;
         _addressInfoProvider = addressInfoProvider;
-        _contractProvider = contractProvider;
+        _genesisPluginProvider = genesisPluginProvider;
         _globalOptions = globalOptions.Value;
     }
 
@@ -96,7 +96,7 @@ public class AddressAppService : IAddressAppService
             Total = indexerTokenHolderInfo.TotalCount,
             TotalBalance = DecimalHelper.Divide(tokenInfo.Supply, tokenInfo.Decimals)
         };
-        var contractInfosDict = await _contractProvider
+        var contractInfosDict = await _genesisPluginProvider
             .GetContractListAsync(input.ChainId,
                 indexerTokenHolderInfo.Items.Select(address => address.Address).ToList());
 

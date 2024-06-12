@@ -26,7 +26,6 @@ public class TransactionRatePerMinuteWorker : AsyncPeriodicBackgroundWorkerBase
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         await _transactionService.UpdateTransactionRatePerMinuteAsync();
-
-        _logger.LogInformation("Update transaction rate per minute success.");
+        
     }
 }

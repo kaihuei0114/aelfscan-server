@@ -74,7 +74,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
                     overviewResp.TokenPriceRate24h = task.Result.PriceChangePercent;
                     overviewResp.TokenPriceInUsd = task.Result.LastPrice;
                 }));
-            tasks.Add(_homePageProvider.GetTransactionCount(chainId).ContinueWith(
+            tasks.Add(_homePageProvider.GetTransactionCountPerLastMinute(chainId).ContinueWith(
                 task => { overviewResp.Tps = task.Result; }));
 
             await Task.WhenAll(tasks);

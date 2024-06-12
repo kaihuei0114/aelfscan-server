@@ -41,21 +41,21 @@ public class TokenService : ITokenService, ISingletonDependency
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
-    private readonly IContractProvider _contractProvider;
+    private readonly IGenesisPluginProvider _genesisPluginProvider;
 
 
     public TokenService(ITokenIndexerProvider tokenIndexerProvider,
         ITokenHolderPercentProvider tokenHolderPercentProvider, IObjectMapper objectMapper,
         IOptionsMonitor<ChainOptions> chainOptions, ITokenPriceService tokenPriceService,
         IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenInfoProvider tokenInfoProvider,
-        IContractProvider contractProvider)
+        IGenesisPluginProvider genesisPluginProvider)
     {
         _objectMapper = objectMapper;
         _chainOptions = chainOptions;
         _tokenPriceService = tokenPriceService;
         _tokenInfoOptions = tokenInfoOptions;
         _tokenInfoProvider = tokenInfoProvider;
-        _contractProvider = contractProvider;
+        _genesisPluginProvider = genesisPluginProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenHolderPercentProvider = tokenHolderPercentProvider;
     }
@@ -174,7 +174,7 @@ public class TokenService : ITokenService, ISingletonDependency
             .Select(value => value.Address).Distinct().ToList();
 
         var priceDtoTask = _tokenPriceService.GetTokenPriceAsync(symbol, CurrencyConstant.UsdCurrency);
-        var contractInfoDictTask = _contractProvider.GetContractListAsync(chainId, addressList);
+        var contractInfoDictTask = _genesisPluginProvider.GetContractListAsync(chainId, addressList);
 
         await Task.WhenAll(priceDtoTask, contractInfoDictTask);
 

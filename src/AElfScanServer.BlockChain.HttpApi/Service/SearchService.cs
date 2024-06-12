@@ -39,13 +39,13 @@ public class SearchService : ISearchService, ISingletonDependency
     private readonly INftInfoProvider _nftInfoProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
-    private readonly IContractProvider _contractProvider;
+    private readonly IGenesisPluginProvider _genesisPluginProvider;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
-    
+
     public SearchService(ILogger<SearchService> logger, ITokenIndexerProvider tokenIndexerProvider,
-        IOptionsMonitor<GlobalOptions> globalOptions, INftInfoProvider nftInfoProvider, 
-        ITokenPriceService tokenPriceService, ITokenInfoProvider tokenInfoProvider, 
-        IContractProvider contractProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, 
+        IOptionsMonitor<GlobalOptions> globalOptions, INftInfoProvider nftInfoProvider,
+        ITokenPriceService tokenPriceService, ITokenInfoProvider tokenInfoProvider,
+        IGenesisPluginProvider genesisPluginProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
         AELFIndexerProvider aelfIndexerProvider)
     {
         _logger = logger;
@@ -54,7 +54,7 @@ public class SearchService : ISearchService, ISingletonDependency
         _nftInfoProvider = nftInfoProvider;
         _tokenPriceService = tokenPriceService;
         _tokenInfoProvider = tokenInfoProvider;
-        _contractProvider = contractProvider;
+        _genesisPluginProvider = genesisPluginProvider;
         _tokenInfoOptions = tokenInfoOptions;
         _aelfIndexerProvider = aelfIndexerProvider;
     }
@@ -70,7 +70,7 @@ public class SearchService : ISearchService, ISingletonDependency
                 return searchResp;
             }
             //Step 2: convert 
-           
+
             //Step 3: execute query
             switch (request.FilterType)
             {
@@ -78,22 +78,23 @@ public class SearchService : ISearchService, ISingletonDependency
                     await AssemblySearchAddressAsync(searchResp, request);
                     break;
                 case FilterTypes.Contracts:
-                    await AssemblySearchContractAddressAsync(searchResp, request);
+                    await AssemblySearchAddressAsync(searchResp, request);
                     break;
                 case FilterTypes.Tokens:
                     await AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Token });
                     break;
                 case FilterTypes.Nfts:
-                    await AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Nft, SymbolType.Nft_Collection });
+                    await AssemblySearchTokenAsync(searchResp, request,
+                        new List<SymbolType> { SymbolType.Nft, SymbolType.Nft_Collection });
                     break;
                 case FilterTypes.AllFilter:
-                    var types = new List<SymbolType> { SymbolType.Token, SymbolType.Nft, SymbolType.Nft_Collection};
+                    var types = new List<SymbolType> { SymbolType.Token, SymbolType.Nft, SymbolType.Nft_Collection };
                     var tokenTask = AssemblySearchTokenAsync(searchResp, request, types);
                     var addressTask = AssemblySearchAddressAsync(searchResp, request);
-                    var contractAddressTask = AssemblySearchContractAddressAsync(searchResp, request);
+                    // var contractAddressTask = AssemblySearchContractAddressAsync(searchResp, request);
                     var txTask = AssemblySearchTransactionAsync(searchResp, request);
                     var blockTask = AssemblySearchBlockAsync(searchResp, request);
-                    await Task.WhenAll(tokenTask, addressTask, contractAddressTask, txTask, blockTask);
+                    await Task.WhenAll(tokenTask, addressTask, txTask, blockTask);
                     break;
             }
 
@@ -111,42 +112,7 @@ public class SearchService : ISearchService, ISingletonDependency
         return _globalOptions.CurrentValue.ChainIds.Exists(s => s == chainId)
                && !Regex.IsMatch(keyword, CommonConstant.SearchKeyPattern);
     }
-    
-    private async Task AssemblySearchContractAddressAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
-    {
-        Dictionary<string, ContractInfoDto>? contractInfoDict = null;
-        Dictionary<string, string>? contractNameDict = null;
-        if (request.SearchType == SearchTypes.ExactSearch)
-        {
-            if (BlockHelper.IsAddress(request.Keyword))
-            {
-                contractInfoDict = await _contractProvider.GetContractListAsync(request.ChainId, new List<string> { request.Keyword });
-            }
-            else
-            {
-                contractNameDict = _globalOptions.CurrentValue.GetContractNameDict(request.ChainId, request.Keyword, true);
-            }
-        }
-        else
-        {
-            if (request.Keyword.Length <= CommonConstant.KeyWordContractNameMinSize)
-            {
-                return;
-            }
-            contractNameDict = _globalOptions.CurrentValue.GetContractNameDict(request.ChainId, request.Keyword);
-            if (request.Keyword.Length > CommonConstant.KeyWordAddressMinSize)
-            {
-                //TODO support FuzzySearch 
-                contractInfoDict = await _contractProvider.GetContractListAsync(request.ChainId, new List<string> { request.Keyword });
-            }
-        }
-        var mergeDict = MergeDict(request.ChainId, contractNameDict, contractInfoDict);
-        searchResponseDto.Contracts = mergeDict.Select(pair => new SearchContract
-        {
-            Address = pair.Key,
-            Name = pair.Value
-        }).ToList();
-    }
+
 
     private async Task AssemblySearchAddressAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
@@ -161,11 +127,30 @@ public class SearchService : ISearchService, ISingletonDependency
             {
                 return;
             }
+
             holderInput = new TokenHolderInput { ChainId = request.ChainId, FuzzySearch = request.Keyword.ToLower() };
         }
+
         holderInput.SetDefaultSort();
         var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
-        searchResponseDto.Accounts = tokenHolderInfos.Items.Select(i => i.Address).Distinct().ToList();
+
+        var list = tokenHolderInfos.Items.Select(i => i.Address).Distinct().ToList();
+
+        foreach (var s in list)
+        {
+            if (await _genesisPluginProvider.IsContractAddressAsync(request.ChainId, s))
+            {
+                searchResponseDto.Contracts.Add(new SearchContract
+                {
+                    Address = s,
+                    Name = BlockHelper.GetContractName(_globalOptions.CurrentValue, request.ChainId, s)
+                });
+            }
+            else
+            {
+                searchResponseDto.Accounts.Add(s);
+            }
+        }
     }
 
     private async Task AssemblySearchTokenAsync(SearchResponseDto searchResponseDto, SearchRequestDto request,
@@ -180,11 +165,13 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             input.FuzzySearch = request.Keyword.ToLower();
         }
+
         var indexerTokenInfoList = await _tokenIndexerProvider.GetTokenListAsync(input);
         if (indexerTokenInfoList.Items.IsNullOrEmpty())
         {
             return;
         }
+
         var priceDict = new Dictionary<string, CommonTokenPriceDto>();
         var symbols = indexerTokenInfoList.Items.Select(i => i.Symbol).Distinct().ToList();
         //batch query nft price
@@ -193,6 +180,7 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             lastSaleInfoDict = await _nftInfoProvider.GetLatestPriceAsync(request.ChainId, symbols);
         }
+
         var elfOfUsdPriceTask = GetTokenOfUsdPriceAsync(priceDict, CurrencyConstant.ElfCurrency);
         foreach (var tokenInfo in indexerTokenInfoList.Items)
         {
@@ -219,26 +207,28 @@ public class SearchService : ISearchService, ISingletonDependency
                 {
                     var elfOfUsdPrice = await elfOfUsdPriceTask;
                     var elfPrice = lastSaleInfoDict.TryGetValue(tokenInfo.Symbol, out var priceDto)
-                        ? priceDto.Price : 0;
+                        ? priceDto.Price
+                        : 0;
                     searchToken.Price = Math.Round(elfPrice * elfOfUsdPrice, CommonConstant.UsdPriceValueDecimals);
                     searchResponseDto.Nfts.Add(searchToken);
                     break;
                 }
                 case SymbolType.Nft_Collection:
-                { 
+                {
                     searchResponseDto.Nfts.Add(searchToken);
                     break;
                 }
             }
         }
     }
-    
+
     private async Task AssemblySearchBlockAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
         if (!BlockHelper.IsBlockHeight(request.Keyword))
         {
             return;
         }
+
         var blockHeight = long.Parse(request.Keyword);
         var blockDtos = await _aelfIndexerProvider.GetLatestBlocksAsync(request.ChainId, blockHeight, blockHeight);
 
@@ -259,7 +249,7 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             return;
         }
-        
+
         var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[request.ChainId]);
 
         var transactionResult = await aElfClient.GetTransactionResultAsync(request.Keyword);
@@ -275,7 +265,8 @@ public class SearchService : ISearchService, ISingletonDependency
         }
     }
 
-    private async Task<decimal> GetTokenOfUsdPriceAsync(Dictionary<string, CommonTokenPriceDto> priceDict, string symbol)
+    private async Task<decimal> GetTokenOfUsdPriceAsync(Dictionary<string, CommonTokenPriceDto> priceDict,
+        string symbol)
     {
         if (priceDict.TryGetValue(symbol, out var priceDto))
         {
@@ -289,7 +280,8 @@ public class SearchService : ISearchService, ISingletonDependency
         return priceDto.Price;
     }
 
-    private Dictionary<string, string> MergeDict(string chainId, Dictionary<string, string>? contractNameDict, Dictionary<string, ContractInfoDto>? contractInfoDict)
+    private Dictionary<string, string> MergeDict(string chainId, Dictionary<string, string>? contractNameDict,
+        Dictionary<string, ContractInfoDto>? contractInfoDict)
     {
         var result = new Dictionary<string, string>();
         if (contractNameDict != null)
@@ -299,6 +291,7 @@ public class SearchService : ISearchService, ISingletonDependency
                 result[kvp.Key] = kvp.Value;
             }
         }
+
         if (contractInfoDict != null)
         {
             foreach (var kvp in contractInfoDict)
@@ -310,6 +303,7 @@ public class SearchService : ISearchService, ISingletonDependency
                 }
             }
         }
+
         return result;
     }
 }

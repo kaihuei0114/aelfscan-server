@@ -142,12 +142,17 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
         return 0;
     }
 
-    public async Task<long> GetTransactionCount(string chainId)
+    public async Task<long> GetTransactionCountPerLastMinute(string chainId)
     {
         try
         {
             await ConnectAsync();
             var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionChartData(chainId));
+            if (redisValue.IsNullOrEmpty)
+            {
+                _logger.LogWarning("Get transaction count per minute is null,chainId:{0}", chainId);
+                return 0;
+            }
 
             var transactionCountPerMinuteDtos =
                 JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);

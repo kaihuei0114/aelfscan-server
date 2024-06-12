@@ -43,7 +43,7 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<ITokenExchangeProvider, TokenExchangeProvider>();
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
         context.Services.AddTransient<IAddressInfoProvider, AddressInfoProvider>();
-        context.Services.AddTransient<IContractProvider, ContractProvider>();
+        context.Services.AddTransient<IGenesisPluginProvider, GenesisPluginProvider>();
         context.Services.AddTransient<ITokenIndexerProvider, TokenIndexerProvider>();
         context.Services.AddTransient<INftCollectionHolderProvider, NftCollectionHolderProvider>();
         context.Services.AddTransient<INftInfoProvider, NftInfoProvider>();

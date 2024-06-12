@@ -110,6 +110,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             foreach (var chainId in chainIds)
             {
+                _logger.LogInformation("start find transaction info:{c}", chainId);
                 var chartDataKey = RedisKeyHelper.TransactionChartData(chainId);
 
                 var nowMilliSeconds = DateTimeHelper.GetNowMilliSeconds();
@@ -130,21 +131,41 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     continue;
                 }
 
+                if (transactionsAsync.Items.IsNullOrEmpty())
+                {
+                    _logger.LogWarning("transaction is null,chainId:{0}", chainId);
+                    continue;
+                }
+
+                _logger.LogInformation("find transaction data chainId:{0},count:{1}", chainId,
+                    transactionsAsync.Items.Count);
 
                 var transactionChartData =
                     await ParseToTransactionChartDataAsync(chartDataKey, transactionsAsync.Items);
+
+
+                if (transactionChartData.IsNullOrEmpty())
+                {
+                    _logger.LogInformation("merge transaction data is null:{0}", chainId);
+                    continue;
+                }
+
+                _logger.LogInformation("transaction chart data:{c},count:{1}", chainId, transactionChartData.Count);
 
                 if (transactionChartData.Count > 180)
                 {
                     transactionChartData = transactionChartData.Skip(transactionChartData.Count - 180).ToList();
                 }
 
+                _logger.LogInformation("sub transaction chart data:{c},count:{1}", chainId, transactionChartData.Count);
 
                 mergeList.Add(transactionChartData);
                 var serializeObject = JsonConvert.SerializeObject(transactionChartData);
 
 
                 await RedisDatabase.StringSetAsync(chartDataKey, serializeObject);
+                _logger.LogInformation("Set transaction count per minute to cache success!!,redis key:{k}",
+                    chartDataKey);
             }
 
 
@@ -161,14 +182,18 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 merge = merge.Skip(merge.Count - 180).ToList();
             }
 
-            _logger.LogError("merge count {c}", merge.Count);
+            _logger.LogInformation("merge count {c}", merge.Count);
 
             var mergeSerializeObject = JsonConvert.SerializeObject(merge);
+            var mergeKey = RedisKeyHelper.TransactionChartData("merge");
             await RedisDatabase.StringSetAsync(RedisKeyHelper.TransactionChartData("merge"), mergeSerializeObject);
+
+            _logger.LogInformation("Set transaction count per minute to cache success!!,redis key:{k}",
+                mergeKey);
         }
         catch (Exception e)
         {
-            _logger.LogError("UpdateTransactionRatePerMinuteAsync error:{e}", e.Message);
+            _logger.LogError("Update transaction count per minute error:{e}", e.Message);
         }
     }
 
@@ -177,7 +202,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         string key, List<IndexerTransactionInfoDto> list)
     {
         var dictionary = new Dictionary<long, TransactionCountPerMinuteDto>();
-
         foreach (var indexerTransactionDto in list)
         {
             var t = indexerTransactionDto.Metadata.Block.BlockTime;
@@ -197,25 +221,42 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
 
         var newList = dictionary.Values.OrderBy(c => c.Start).ToList();
-
-
-        var redisValue = RedisDatabase.StringGet(key);
-        if (redisValue.IsNullOrEmpty)
+        try
         {
-            return newList;
+            await ConnectAsync();
+            var redisValue = RedisDatabase.StringGet(key);
+            if (redisValue.IsNullOrEmpty)
+            {
+                return newList;
+            }
+
+            var oldList = JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);
+
+            var last = oldList.Last();
+            var subOldList = oldList.GetRange(0, oldList.Count - 1);
+
+            var subNewList = newList.Where(c => c.Start >= last.Start).ToList();
+
+            if (!subNewList.IsNullOrEmpty() && subNewList.Count > 0)
+            {
+                subOldList.AddRange(subNewList);
+            }
+
+            if (subOldList.Count == 0)
+            {
+                subOldList = newList;
+            }
+
+            _logger.LogInformation("Merge transaction per minute data chainId:{0},oldList:{1},newList:{2}", key,
+                oldList.Count, newList.Count);
+
+            return subOldList;
+        }
+        catch (Exception e)
+        {
+            _logger.LogInformation("Parse key:{0} data to transaction err:{1}", key, e.Message);
         }
 
-        var oldList = JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);
-
-        var last = oldList.Last();
-        var subOldList = oldList.GetRange(0, oldList.Count - 1);
-
-        var subNewList = newList.Where(c => c.Start >= last.Start).ToList();
-
-        subOldList.AddRange(subNewList);
-        _logger.LogInformation("Merge transaction per minute data chainId:{0},oldList:{1},newList:{2}", key,
-            oldList.Count, newList.Count);
-
-        return subOldList;
+        return newList;
     }
 }
