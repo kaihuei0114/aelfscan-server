@@ -1,6 +1,6 @@
 using Volo.Abp.Threading;
 
-namespace AElfScanServer;
+namespace AElfScanServer.Domain.Shared;
 
 public static class AElfScanServerGlobalFeatureConfigurator
 {

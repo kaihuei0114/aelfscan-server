@@ -1,4 +1,4 @@
-namespace AElfScanServer.Dtos;
+namespace AElfScanServer.Common.Dtos;
 
 public class CommonResponseDto<T>
 {

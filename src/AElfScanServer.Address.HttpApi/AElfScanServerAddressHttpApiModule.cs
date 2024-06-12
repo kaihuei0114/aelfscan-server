@@ -1,10 +1,15 @@
+
+using AElfScanServer.BlockChain;
+using AElfScanServer.Common;
 using AElfScanServer.Address.HttpApi.AppServices;
 using AElfScanServer.Address.HttpApi.Provider;
-using AElfScanServer.BlockChain;
-using AElfScanServer.Options;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Token;
+
 using AElfScanServer.Token;
-using AElfScanServer.TokenDataFunction.Provider;
-using AElfScanServer.TokenDataFunction.Service;
+using AElfScanServer.Token.HttpApi.Provider;
+using AElfScanServer.Token.HttpApi.Service;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AutoMapper;

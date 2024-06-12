@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Transactions;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Indexing.Elasticsearch;
@@ -15,8 +14,7 @@ using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
 using Elasticsearch.Net;
-using AElfScanServer.Dtos;
-using AElfScanServer.Helper;
+using AElfScanServer.Common.Helper;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -25,11 +23,14 @@ using AElf.Contracts.MultiToken;
 using AElf.CSharp.Core;
 using AElf.CSharp.Core.Extension;
 using AElfScanServer.BlockChain.Dtos.Indexer;
+using AElfScanServer.Common.Core;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Enums;
 using Castle.Components.DictionaryAdapter.Xml;
 using AElfScanServer.Common.Helper;
-using AElfScanServer.Core;
-using AElfScanServer.Options;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Token.HttpApi.Provider;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -38,7 +39,6 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Nito.AsyncEx;
 using IndexerTransactionDto = AElfScanServer.BlockChain.Dtos.IndexerTransactionDto;
-using TransactionStatus = AElfScanServer.BlockChain.Dtos.TransactionStatus;
 
 namespace AElfScanServer.BlockChain.HttpApi.Service;
 
@@ -99,12 +99,13 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             return transactionDetailResponseDto;
         }
 
+
         try
         {
             var transactionsAsync =
                 await _aelfIndexerProvider.GetTransactionsAsync(request.ChainId,
                     request.BlockHeight == 0 ? 0 : request.BlockHeight,
-                    request.BlockHeight);
+                    request.BlockHeight, request.TransactionId);
 
             var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[request.ChainId]);
 
@@ -232,7 +233,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         var transactionListTask =
             _aelfIndexerProvider.GetTransactionsAsync(requestDto.ChainId, requestDto.BlockHeight,
-                requestDto.BlockHeight).ContinueWith(task => { transactionList = task.Result; });
+                requestDto.BlockHeight, "").ContinueWith(task => { transactionList = task.Result; });
 
         var blockListTask = _aelfIndexerProvider.GetLatestBlocksAsync(requestDto.ChainId, requestDto.BlockHeight - 1,
             requestDto.BlockHeight + 1).ContinueWith(task => { blockList = task.Result; });
@@ -327,14 +328,18 @@ public class BlockChainService : IBlockChainService, ITransientDependency
     {
         var detailDto = new TransactionDetailDto();
 
+        var transactionDetailAsync =
+            await _blockChainProvider.GetTransactionDetailAsync(transactionDto.ChainId, transactionDto.TransactionId);
 
+
+        ;
         detailDto.TransactionId = transactionDto.TransactionId;
         detailDto.Status = transactionDto.Status;
         detailDto.BlockConfirmations = detailDto.Status == TransactionStatus.Mined ? blockHeight : 0;
         detailDto.BlockHeight = transactionDto.BlockHeight;
         detailDto.Timestamp = DateTimeHelper.GetTotalSeconds(transactionDto.BlockTime);
         detailDto.Method = transactionDto.MethodName;
-        detailDto.TransactionParams = transactionDto.Params;
+        detailDto.TransactionParams = transactionDetailAsync.Transaction.Params;
         detailDto.TransactionSignature = transactionDto.Signature;
         detailDto.Confirmed = transactionDto.Confirmed;
         detailDto.From = ConvertAddress(transactionDto.From, transactionDto.ChainId);
@@ -465,18 +470,6 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
 
                     await SetValueInfoAsync(transactionValues, transferred.Symbol, transferred.Amount);
-                    if (transactionValues.TryGetValue(transferred.Symbol, out var value))
-                    {
-                        value.Amount += transferred.Amount;
-                    }
-                    else
-                    {
-                        transactionValues.Add(transferred.Symbol, new ValueInfoDto()
-                        {
-                            Amount = transferred.Amount,
-                            Symbol = transferred.Symbol,
-                        });
-                    }
 
 
                     if (TokenSymbolHelper.GetSymbolType(transferred.Symbol) == SymbolType.Token)

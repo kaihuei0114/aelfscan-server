@@ -1,6 +1,6 @@
 using System;
 
-namespace AElfScanServer.Options;
+namespace AElfScanServer.Common.Options;
 
 public class AssetsInfoOptions
 {

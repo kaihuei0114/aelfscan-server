@@ -3,6 +3,8 @@
         <TargetFramework>net7.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>AElfScanServer.Token.HttpApi.Host</RootNamespace>
+
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,5 +23,14 @@
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.0" />
         <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.2" />
     </ItemGroup>
+
+    <ItemGroup>
+        <AssetsSourceFiles Include="Plugins/*" />
+    </ItemGroup>
+
+
+    <Target Name="CopyCustomContentOnPublish" AfterTargets="Publish">
+        <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(PublishDir)/Plugins/" />
+    </Target>
     
 </Project>

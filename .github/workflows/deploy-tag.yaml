@@ -14,7 +14,6 @@ jobs:
       matrix:
         servicename:
           [
-            AElfScanServer.BFF,
             AElfScanServer.BlockChain.HttpApi.Host,
             AElfScanServer.Token.HttpApi.Host,
             AElfScanServer.Worker,
@@ -39,7 +38,6 @@ jobs:
       matrix:
         servicename:
           [
-            AElfScanServer.BFF,
             AElfScanServer.BlockChain.HttpApi.Host,
             AElfScanServer.Token.HttpApi.Host,
             AElfScanServer.Worker,

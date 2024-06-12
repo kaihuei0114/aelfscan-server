@@ -1,7 +1,7 @@
 using AElf.Contracts.MultiToken;
 using AElfScanServer.BlockChain.Dtos;
+using AElfScanServer.Common.Dtos;
 using AutoMapper;
-using AElfScanServer.Dtos;
 
 namespace AElfScanServer.Worker.Core;
 
@@ -14,7 +14,5 @@ public class AelfExploreServerAutoMapperProfile : Profile
 
         CreateMap<IndexerTransactionDto, TransactionIndex>()
             ;
-
-        CreateMap<TokenCreated, TokenInfoIndex>();
     }
 }

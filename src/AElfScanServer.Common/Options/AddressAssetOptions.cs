@@ -1,6 +1,7 @@
-using AElfScanServer.Enums;
+using AElfScanServer.Common.Enums;
 
-namespace AElfScanServer.Options;
+
+namespace AElfScanServer.Common.Options;
 
 public class AddressAssetOptions
 {

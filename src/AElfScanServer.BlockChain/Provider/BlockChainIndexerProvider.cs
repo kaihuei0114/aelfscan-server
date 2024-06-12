@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain.Dtos.Indexer;
-using AElfScanServer.Constant;
-using AElfScanServer.GraphQL;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.GraphQL;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
@@ -132,7 +132,7 @@ public class BlockChainIndexerProvider : IBlockChainIndexerProvider, ISingletonD
         }
         catch (Exception e)
         {
-            _logger.LogError("Get transaction count error from blockchain app plugin:{e}", e.Message);
+            _logger.LogError("Get {0}transaction count error from blockchain app plugin:{1}", chainId, e.Message);
         }
 
         return 0;

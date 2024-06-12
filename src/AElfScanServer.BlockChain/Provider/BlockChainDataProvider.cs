@@ -16,10 +16,10 @@ using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.Common.Helper;
-using AElfScanServer.Dtos;
-using AElfScanServer.Helper;
-using AElfScanServer.HttpClient;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.HttpClient;
+using AElfScanServer.Common.Options;
 using Binance.Spot;
 using Binance.Spot.Models;
 using Google.Protobuf;
@@ -398,6 +398,21 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
         var response =
             await _httpProvider.InvokeAsync<BlockDetailDto>(_globalOptions.ChainNodeHosts[chainId],
+                new ApiInfo(HttpMethod.Get, apiPath));
+
+
+        return response;
+    }
+    
+    
+    public async Task<NodeTransactionDto> GetTransactionDetailAsync(string chainId, string transactionId)
+    {
+        var apiPath = string.Format("/api/blockChain/transactionResult?transactionId={0}",
+            transactionId);
+
+
+        var response =
+            await _httpProvider.InvokeAsync<NodeTransactionDto>(_globalOptions.ChainNodeHosts[chainId],
                 new ApiInfo(HttpMethod.Get, apiPath));
 
 

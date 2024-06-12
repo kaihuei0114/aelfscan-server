@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AElfScanServer.Common.Enums;
 
 namespace AElfScanServer.BlockChain.Dtos.Indexer;
 

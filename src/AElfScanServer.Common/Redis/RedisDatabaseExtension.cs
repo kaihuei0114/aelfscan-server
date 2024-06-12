@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.Caching.StackExchangeRedis;
 
-namespace AElfScanServer.Redis;
+namespace AElfScanServer.Common.Redis;
 
 public class RedisCacheExtension : AbpRedisCache
 {

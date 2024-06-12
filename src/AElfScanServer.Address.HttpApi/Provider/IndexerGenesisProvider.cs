@@ -2,21 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.Address.HttpApi.Provider.Entity;
-using AElfScanServer.Constant;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.GraphQL;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.GraphQL;
 using GraphQL;
 using Microsoft.Extensions.Logging;
+using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
 namespace AElfScanServer.Address.HttpApi.Provider;
 
 public interface IIndexerGenesisProvider
 {
-    Task<ContractInfoDto> GetContractAsync(string chainId, string address, int skipCount = 0, int maxResultCount = 10);
-
     Task<IndexerContractListResultDto> GetContractListAsync(string chainId, int skipCount,
-        int maxResultCount, string orderBy, string sort);
+        int maxResultCount, string orderBy, string sort, string address);
 
     Task<List<ContractRecordDto>> GetContractRecordAsync(string chainId, string address, int skipCount = 0,
         int maxResultCount = 10);
@@ -31,15 +30,16 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
     private readonly ILogger<IndexerGenesisProvider> _logger;
     private const string IndexerType = AElfIndexerConstant.GenesisIndexer;
 
+
     public IndexerGenesisProvider(GraphQlFactory graphQlFactory, ILogger<IndexerGenesisProvider> logger)
     {
-        _logger = logger;
         _graphQlFactory = graphQlFactory;
+        _logger = logger;
     }
 
     public async Task<IndexerContractListResultDto> GetContractListAsync(string chainId,
         int skipCount,
-        int maxResultCount, string orderBy = "", string sort = "")
+        int maxResultCount, string orderBy = "", string sort = "", string address = "")
     {
         var indexerContractListResultDto = new IndexerContractListResultDto();
         try
@@ -48,13 +48,14 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                 new GraphQLRequest
                 {
                     Query =
-                        @"query($chainId:String!,$orderBy:String,$sort:String,$skipCount:Int!,$maxResultCount:Int!){
-                            contractList(input: {chainId:$chainId,orderBy:$orderBy,sort:$sort,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        @"query($chainId:String!,$orderBy:String,$sort:String,$skipCount:Int!,$maxResultCount:Int!,$address:String){
+                            contractList(input: {chainId:$chainId,orderBy:$orderBy,sort:$sort,skipCount:$skipCount,maxResultCount:$maxResultCount,address:$address}){
                                totalCount
                                items {
                                  address
                                 contractVersion
                                 version
+                                codeHash
                                 contractType
                                 metadata {
                                   chainId
@@ -71,7 +72,7 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                     Variables = new
                     {
                         chainId = chainId, orderBy = orderBy, sort = sort, skipCount = skipCount,
-                        maxResultCount = maxResultCount
+                        maxResultCount = maxResultCount, address = address
                     }
                 });
             return result;
@@ -83,44 +84,6 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
         }
     }
 
-    public async Task<ContractInfoDto> GetContractAsync(string chainId, string address, int skipCount,
-        int maxResultCount)
-    {
-        try
-        {
-            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerContractListDto>(
-                new GraphQLRequest
-                {
-                    Query =
-                        @"query($chainId:String!,$address:String!,$skipCount:Int!,$maxResultCount:Int!){
-                            contractInfo(input: {chainId:$chainId,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                                address
-                                author
-                                codeHash
-                                contractType
-                                metadata {
-                                  chainId
-                                  block {
-                                    blockHash
-                                    blockTime
-                                    blockHeight
-                                  }
-                                }
-                            }
-                        }",
-                    Variables = new
-                    {
-                        chainId = chainId, address = address, skipCount = skipCount, maxResultCount = maxResultCount
-                    }
-                });
-            return result.Items.Count > 0 ? result.Items[0] : new ContractInfoDto();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Query Contract failed.");
-            return new ContractInfoDto();
-        }
-    }
 
     public async Task<List<ContractRecordDto>> GetContractRecordAsync(string chainId, string address, int skipCount = 0,
         int maxResultCount = 10)

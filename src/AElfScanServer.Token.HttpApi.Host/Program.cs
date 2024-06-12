@@ -2,8 +2,9 @@
 using AElfScanServer.Token.HttpApi.Host.Extension;
 using Serilog;
 using Serilog.Events;
+using Volo.Abp.Modularity.PlugIns;
 
-namespace AElfScanServer.TokenDataFunction;
+namespace AElfScanServer.Token.HttpAp.Host;
 
 public class Program
 {
@@ -36,7 +37,22 @@ public class Program
                 .UseAutofac()
                 .UseApollo()
                 .UseSerilog();
-            await builder.AddApplicationAsync<TokenHttpApiHostModule>();
+
+            var combine = Path.Combine(Directory.GetCurrentDirectory(), "Plugins");
+
+            await builder.AddApplicationAsync<TokenHttpApiHostModule>(options =>
+            {
+                options.PlugInSources.AddFolder(combine);
+            });
+  
+            string[] files = Directory.GetFiles(combine);
+            Log.Information("Plugins path:{0}", combine);
+            foreach (var file in files)
+            {
+                Log.Information("Plugins file name:{0}", file.ToString());
+            }
+
+
             var app = builder.Build();
             await app.InitializeApplicationAsync();
             await app.RunAsync();

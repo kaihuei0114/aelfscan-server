@@ -1,16 +1,13 @@
 using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain;
-using AElfScanServer;
-using AElfScanServer.GraphQL;
-using AElfScanServer.Options;
-using AElfScanServer.ThirdPart.Exchange;
-using AElfScanServer.TokenDataFunction;
-using AElfScanServer.TokenDataFunction.Options;
-using AElfScanServer.TokenDataFunction.Provider;
-using AElfScanServer.TokenDataFunction.Service;
-using AElfScanServer.TokenDataFunction.Worker;
-using Microsoft.AspNetCore.DataProtection;
-using StackExchange.Redis;
+using AElfScanServer.Common;
+using AElfScanServer.Common.GraphQL;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Token.HttpApi.Options;
+using AElfScanServer.Token.HttpApi.Provider;
+using AElfScanServer.Token.HttpApi.Service;
+using AElfScanServer.Token.HttpApi.Worker;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Serilog;
@@ -41,10 +38,8 @@ public class TokenHttpApiHostModule : AbpModule
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "TokenDataFunctionServer:"; });
         context.Services.AddSingleton<ITokenHolderPercentProvider, TokenHolderPercentProvider>();
         context.Services.AddSingleton<ITokenIndexerProvider, TokenIndexerProvider>();
-        context.Services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
         context.Services.AddSingleton<INftCollectionHolderProvider, NftCollectionHolderProvider>();
         context.Services.AddTransient<ITokenService, TokenService>();
-        context.Services.AddTransient<INftService, NftService>();
         ConfigureGraphQl(context, configuration);
         Configure<AbpAspNetCoreMvcOptions>(options =>
         {

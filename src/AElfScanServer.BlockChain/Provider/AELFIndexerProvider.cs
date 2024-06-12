@@ -5,8 +5,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Options;
-using AElfScanServer;
-using AElfScanServer.HttpClient;
+using AElfScanServer.Common;
+using AElfScanServer.Common.HttpClient;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -166,7 +166,7 @@ public class AELFIndexerProvider : ISingletonDependency
 
 
     public async Task<List<IndexerTransactionDto>> GetTransactionsAsync(string chainId, long startBlockHeight,
-        long endBlockHeight)
+        long endBlockHeight, string transactionId)
     {
         var accessTokenAsync = GetAccessTokenAsync();
         var response =
@@ -177,6 +177,7 @@ public class AELFIndexerProvider : ISingletonDependency
                     ["chainId"] = chainId,
                     ["startBlockHeight"] = startBlockHeight,
                     ["endBlockHeight"] = endBlockHeight,
+                    ["transactionId"] = transactionId
                 },
                 new Dictionary<string, string>
                 {

@@ -5,7 +5,7 @@ using AElf.Indexing.Elasticsearch;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Options;
 using Elasticsearch.Net;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;

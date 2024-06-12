@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using AElfScanServer.Token.Dtos;
+using AElfScanServer.Common.Dtos;
 
 namespace AElfScanServer.Address.HttpApi.Dtos;
 

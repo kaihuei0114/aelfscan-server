@@ -315,6 +315,3 @@ tools
 .idea/.idea.AElfScanServer/.idea/vcs.xml
 .idea/.idea.AElfScanServer/.idea/workspace.xml
 .idea/.idea.AElfScanServer/riderModule.iml
-
-*.g.cs
-*.c.cs

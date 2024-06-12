@@ -2,25 +2,24 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElfScanServer.BlockChain;
-using AElfScanServer.Token.Dtos;
-using AElfScanServer.Constant;
-using AElfScanServer.Contract.Provider;
-using AElfScanServer.Core;
-using AElfScanServer.Dtos.Indexer;
-using AElfScanServer.Helper;
-using AElfScanServer.Options;
-using AElfScanServer.Token;
-using AElfScanServer.Token.Provider;
-using AElfScanServer.TokenDataFunction.Dtos.Indexer;
-using AElfScanServer.TokenDataFunction.Dtos.Input;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Common;
+using AElfScanServer.Common.Constant;
+using AElfScanServer.Common.Contract.Provider;
+using AElfScanServer.Common.Core;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Token;
+using AElfScanServer.Common.Token.Provider;
+using AElfScanServer.Token.HttpApi.Provider;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
-using TokenPriceDto = AElfScanServer.Dtos.TokenPriceDto;
 
-namespace AElfScanServer.TokenDataFunction.Service;
+namespace AElfScanServer.Token.HttpApi.Service;
 
 public interface ITokenService
 {
@@ -28,7 +27,7 @@ public interface ITokenService
     public Task<TokenDetailDto> GetTokenDetailAsync(string symbol, string chainId);
     public Task<TokenTransferInfosDto> GetTokenTransferInfosAsync(TokenTransferInput input);
     public Task<ListResponseDto<TokenHolderInfoDto>> GetTokenHolderInfosAsync(TokenHolderInput input);
-    Task<TokenPriceDto> GetTokenPriceInfoAsync(CurrencyDto input);
+    Task<CommonTokenPriceDto> GetTokenPriceInfoAsync(CurrencyDto input);
     Task<IndexerTokenInfoDto> GetTokenBaseInfoAsync(string symbol, string chainId);
 }
 
@@ -42,21 +41,21 @@ public class TokenService : ITokenService, ISingletonDependency
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptions;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
-    private readonly IContractProvider _contractProvider;
+    private readonly IGenesisPluginProvider _genesisPluginProvider;
 
 
     public TokenService(ITokenIndexerProvider tokenIndexerProvider,
         ITokenHolderPercentProvider tokenHolderPercentProvider, IObjectMapper objectMapper,
         IOptionsMonitor<ChainOptions> chainOptions, ITokenPriceService tokenPriceService,
         IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenInfoProvider tokenInfoProvider,
-        IContractProvider contractProvider)
+        IGenesisPluginProvider genesisPluginProvider)
     {
         _objectMapper = objectMapper;
         _chainOptions = chainOptions;
         _tokenPriceService = tokenPriceService;
         _tokenInfoOptions = tokenInfoOptions;
         _tokenInfoProvider = tokenInfoProvider;
-        _contractProvider = contractProvider;
+        _genesisPluginProvider = genesisPluginProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenHolderPercentProvider = tokenHolderPercentProvider;
     }
@@ -143,7 +142,7 @@ public class TokenService : ITokenService, ISingletonDependency
         };
     }
 
-    public async Task<TokenPriceDto> GetTokenPriceInfoAsync(CurrencyDto input)
+    public async Task<CommonTokenPriceDto> GetTokenPriceInfoAsync(CurrencyDto input)
     {
         return await _tokenPriceService.GetTokenPriceAsync(input.BaseCurrency, input.QuoteCurrency);
     }
@@ -175,7 +174,7 @@ public class TokenService : ITokenService, ISingletonDependency
             .Select(value => value.Address).Distinct().ToList();
 
         var priceDtoTask = _tokenPriceService.GetTokenPriceAsync(symbol, CurrencyConstant.UsdCurrency);
-        var contractInfoDictTask = _contractProvider.GetContractListAsync(chainId, addressList);
+        var contractInfoDictTask = _genesisPluginProvider.GetContractListAsync(chainId, addressList);
 
         await Task.WhenAll(priceDtoTask, contractInfoDictTask);
 

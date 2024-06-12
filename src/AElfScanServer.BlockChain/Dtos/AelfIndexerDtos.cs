@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Transactions;
+using AElfScanServer.Common.Enums;
 using Newtonsoft.Json;
 
 namespace AElfScanServer.BlockChain.Dtos;
@@ -42,12 +42,9 @@ public class IndexSummaries
     public string ConfirmedBlockHash { get; set; }
 }
 
-
-
 public class IndexerTransactionCountDto
 {
     public long Count { get; set; }
-    
 }
 
 public class IndexerTransactionDto
@@ -128,10 +125,6 @@ public class Header
     // public string SignerPubkey { get; set; }
 }
 
-
-
-
-
 public class BlockDetailDto
 {
     // public string BlockHash { get; set; }
@@ -139,4 +132,14 @@ public class BlockDetailDto
 
     // public Body Body { get; set; }
     public int BlockSize { get; set; }
+}
+
+public class NodeTransactionDto
+{
+    public NodeTransactionInfo Transaction { get; set; }
+}
+
+public class NodeTransactionInfo
+{
+    public string Params { get; set; }
 }

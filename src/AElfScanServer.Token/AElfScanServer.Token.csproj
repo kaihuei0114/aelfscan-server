@@ -2,14 +2,15 @@
 
     <PropertyGroup>
         <TargetFramework>net7.0</TargetFramework>
+        <RootNamespace>AElfScanServer.Token</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\AElfScanServer.Common\AElfScanServer.Common.csproj" />
+        <ProjectReference Include="..\AElfScanServer.Common\AElfScanServer.Common.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Dtos\Provider" />
+      <Folder Include="Constant\" />
     </ItemGroup>
-    
+
 </Project>

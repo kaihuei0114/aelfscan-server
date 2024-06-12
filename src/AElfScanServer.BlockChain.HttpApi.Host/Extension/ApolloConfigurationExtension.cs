@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
-namespace AElfScanServer.BlockChainDataFunction.Extension;
+namespace AElfScanServer.BlockChain.HttpApi.Host.Extension;
 
 public static class ApolloConfigurationExtension
 {

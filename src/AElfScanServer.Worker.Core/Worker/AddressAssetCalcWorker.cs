@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Token.HttpApi.Provider;
 using AElfScanServer.Worker.Core.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

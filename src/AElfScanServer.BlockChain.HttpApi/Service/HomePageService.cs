@@ -11,12 +11,11 @@ using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
 using AElfScanServer.BlockChain.Provider;
 using AElfScanServer.Common;
+using AElfScanServer.Common.Core;
+using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Helper;
-using AElfScanServer.Core;
-using AElfScanServer.Dtos;
-using AElfScanServer.Helper;
-using AElfScanServer.Options;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
@@ -44,7 +43,6 @@ public interface IHomePageService
         string chainId);
 
     public Task<FilterTypeResponseDto> GetFilterType();
-    // public Task<List<GetLogEventListResultDto>> GetLogEventListAsync(GetLogEventListRequestInput input);
 }
 
 [Ump]
@@ -103,7 +101,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
         var key = RedisKeyHelper.TransactionChartData(chainId);
 
         var dataValue = RedisDatabase.StringGet(key);
-
+        
         var data =
             JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(dataValue);
 
@@ -158,7 +156,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
                     overviewResp.TokenPriceRate24h = task.Result.PriceChangePercent;
                     overviewResp.TokenPriceInUsd = task.Result.LastPrice;
                 }));
-            tasks.Add(_homePageProvider.GetTransactionCount(req.ChainId).ContinueWith(
+            tasks.Add(_homePageProvider.GetTransactionCountPerLastMinute(req.ChainId).ContinueWith(
                 task => { overviewResp.Tps = task.Result; }));
 
             await Task.WhenAll(tasks);

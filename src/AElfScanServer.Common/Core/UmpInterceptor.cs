@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DynamicProxy;
 
-namespace AElfScanServer.Core;
+namespace AElfScanServer.Common.Core;
 
 [Dependency(ServiceLifetime.Singleton)]
 public class UmpInterceptor : AbpInterceptor

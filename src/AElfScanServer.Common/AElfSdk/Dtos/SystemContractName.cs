@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AElfScanServer.AElfSdk.Dtos;
+namespace AElfScanServer.Common.AElfSdk.Dtos;
 
 public static class SystemContractName
 {

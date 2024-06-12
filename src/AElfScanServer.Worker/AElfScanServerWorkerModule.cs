@@ -7,9 +7,10 @@ using AElfScanServer.BlockChain;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
-using AElfScanServer.Options;
-using AElfScanServer.Token;
-using AElfScanServer.TokenDataFunction.Provider;
+using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Token;
+using AElfScanServer.Token.HttpApi.Provider;
 using AElfScanServer.Worker.Core;
 using AElfScanServer.Worker.Core.Options;
 using AElfScanServer.Worker.Core.Service;
@@ -53,7 +54,7 @@ public class AElfScanServerWorkerModule : AbpModule
         context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
         context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
-        
+
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AElfScanWorker:"; });
         Configure<BlockChainProducerInfoSyncWorkerOptions>(configuration.GetSection("BlockChainProducer"));
         Configure<ContractInfoSyncWorkerOptions>(configuration.GetSection("Contract"));
@@ -195,10 +196,10 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        // context.AddBackgroundWorkerAsync<TransactionWorker>();
         context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
         context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
-        // context.AddBackgroundWorkerAsync<BlockChainProducerInfoSyncWorker>();
-        // context.AddBackgroundWorkerAsync<ContractInfoSyncWorker>();
+        context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
+        context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
+        context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
     }
 }

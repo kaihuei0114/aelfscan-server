@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElfScanServer.Helper;
+using AElfScanServer.Common.Helper;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
@@ -10,7 +10,7 @@ using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 
-namespace AElfScanServer.TokenDataFunction.Provider;
+namespace AElfScanServer.Token.HttpApi.Provider;
 
 public interface ITokenHolderPercentProvider
 {

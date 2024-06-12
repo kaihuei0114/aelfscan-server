@@ -6,8 +6,8 @@ using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
-using AElfScanServer.AElfSdk.Dtos;
-using AElfScanServer.Options;
+using AElfScanServer.Common.AElfSdk.Dtos;
+using AElfScanServer.Common.Options;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.AElfSdk;
+namespace AElfScanServer.Common.AElfSdk;
 
 public interface IContractProvider
 {

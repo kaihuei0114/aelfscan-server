@@ -1,8 +1,8 @@
 using AElfScanServer.BlockChain.Dtos;
+using AElfScanServer.Common.Dtos;
 using AutoMapper;
-using AElfScanServer.Dtos;
 
-namespace AElfScanServer.BlockChainDataFunction;
+namespace AElfScanServer.BlockChain.HttpApi;
 
 public class BlockChainAutoMapperProfile : Profile
 {

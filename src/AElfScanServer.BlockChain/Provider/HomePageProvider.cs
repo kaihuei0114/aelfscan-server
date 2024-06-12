@@ -10,7 +10,7 @@ using AElf.Standards.ACS10;
 using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.BlockChain.Helper;
 using AElfScanServer.BlockChain.Options;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Options;
 using Elasticsearch.Net;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -142,12 +142,17 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
         return 0;
     }
 
-    public async Task<long> GetTransactionCount(string chainId)
+    public async Task<long> GetTransactionCountPerLastMinute(string chainId)
     {
         try
         {
             await ConnectAsync();
             var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionChartData(chainId));
+            if (redisValue.IsNullOrEmpty)
+            {
+                _logger.LogWarning("Get transaction count per minute is null,chainId:{0}", chainId);
+                return 0;
+            }
 
             var transactionCountPerMinuteDtos =
                 JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);

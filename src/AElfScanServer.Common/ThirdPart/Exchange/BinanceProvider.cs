@@ -3,20 +3,19 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using AElfScanServer.Dtos;
-using AElfScanServer.Helper;
-using AElfScanServer.HttpClient;
-using AElfScanServer.Options;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.HttpClient;
+using AElfScanServer.Common.Options;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Volo.Abp.Caching;
-using HttpProvider = AElfScanServer.HttpClient.New.HttpProvider;
-using IHttpProvider = AElfScanServer.HttpClient.New.IHttpProvider;
 
-namespace AElfScanServer.ThirdPart.Exchange;
+
+namespace AElfScanServer.Common.ThirdPart.Exchange;
 
 public static class BinanceApi
 {

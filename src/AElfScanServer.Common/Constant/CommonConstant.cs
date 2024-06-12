@@ -1,6 +1,6 @@
 using System;
 
-namespace AElfScanServer.Constant;
+namespace AElfScanServer.Common.Constant;
 
 public static class CommonConstant
 {

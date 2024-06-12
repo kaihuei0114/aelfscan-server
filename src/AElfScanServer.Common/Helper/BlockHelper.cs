@@ -1,6 +1,8 @@
+using System;
 using AElf.Types;
+using AElfScanServer.Common.Options;
 
-namespace AElfScanServer.Helper;
+namespace AElfScanServer.Common.Helper;
 
 public class BlockHelper
 {
@@ -8,7 +10,7 @@ public class BlockHelper
     {
         try
         {
-           Hash.LoadFromHex(transactionId);
+            Hash.LoadFromHex(transactionId);
         }
         catch
         {
@@ -29,6 +31,7 @@ public class BlockHelper
         {
             return false;
         }
+
         return true;
     }
 
@@ -38,6 +41,27 @@ public class BlockHelper
         {
             return true;
         }
+
         return false;
+    }
+
+    public static string GetContractName(GlobalOptions option, string chainId, string address)
+    {
+        try
+        {
+            if (option.ContractNames.TryGetValue(chainId, out var names))
+            {
+                if (names.TryGetValue(address, out var name))
+                {
+                    return name;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+
+        return "";
     }
 }
