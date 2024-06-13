@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
-using AElfScanServer.BlockChain;
-using AElfScanServer.BlockChain.Dtos;
-using AElfScanServer.BlockChain.Helper;
-using AElfScanServer.BlockChain.Options;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
-using AElfScanServer.Token.HttpApi.Provider;
+using AElfScanServer.HttpApi.Dtos;
+using AElfScanServer.HttpApi.Helper;
+using AElfScanServer.HttpApi.Options;
+using AElfScanServer.HttpApi.Provider;
 using AElfScanServer.Worker.Core;
 using AElfScanServer.Worker.Core.Options;
 using AElfScanServer.Worker.Core.Service;
@@ -27,6 +26,7 @@ using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
+using WorkerOptions = AElfScanServer.Worker.Core.Options.WorkerOptions;
 
 namespace AElfScanServer.Worker;
 
@@ -37,7 +37,6 @@ namespace AElfScanServer.Worker;
     typeof(AbpAutofacModule),
     typeof(AbpIdentityHttpApiModule),
     typeof(AbpAspNetCoreSignalRModule),
-    typeof(AElfScanServerBlockChainModule),
     typeof(AElfEntityMappingElasticsearchModule),
     typeof(AElfIndexingElasticsearchModule)
 )]

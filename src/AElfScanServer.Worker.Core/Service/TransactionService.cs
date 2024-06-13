@@ -1,24 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
-using AElf.Contracts.MultiToken;
-using AElf.CSharp.Core.Extension;
 using AElf.EntityMapping.Repositories;
-using AElf.Types;
-using AElfScanServer.BlockChain.Dtos;
-using AElfScanServer.BlockChain.Dtos.Indexer;
-using AElfScanServer.BlockChain.Helper;
-using AElfScanServer.BlockChain.Options;
-using AElfScanServer.BlockChain.Provider;
-using AElfScanServer.Common.Dtos;
-using AElfScanServer.Worker.Core.Dtos;
+
 using AElfScanServer.Worker.Core.Provider;
 using Elasticsearch.Net;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.Options;
+using AElfScanServer.HttpApi.Dtos;
+using AElfScanServer.HttpApi.Dtos.Indexer;
+using AElfScanServer.HttpApi.Helper;
+using AElfScanServer.HttpApi.Options;
+using AElfScanServer.HttpApi.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
@@ -28,8 +23,6 @@ using Newtonsoft.Json;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
-using IndexerTransactionDto = AElfScanServer.BlockChain.Dtos.IndexerTransactionDto;
-using TransactionFeeCharged = AElf.Contracts.MultiToken.TransactionFeeCharged;
 
 namespace AElfScanServer.Worker.Core.Service;
 

@@ -1,9 +1,8 @@
 ﻿using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
-using AElfScanServer.BlockChain;
-using AElfScanServer.BlockChain.HttpApi;
-using AElfScanServer.BlockChain.HttpApi.DataStrategy;
+using AElfScanServer.HttpApi.DataStrategy;
 using AElfScanServer.Common.Options;
+using AElfScanServer.HttpApi;
 using AElfScanServer.Worker.Core.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
@@ -15,8 +14,7 @@ namespace AElfScanServer.Worker.Core;
     typeof(AbpAutoMapperModule),
     typeof(AElfEntityMappingElasticsearchModule),
     typeof(AElfIndexingElasticsearchModule),
-    typeof(BlockChainHttpApiModule),
-    typeof(AElfScanServerBlockChainModule)
+    typeof(HttpApiModule)
 )]
 public class AElfScanServerWorkerCoreModule : AbpModule
 {

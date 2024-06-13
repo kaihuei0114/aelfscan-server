@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
-using AElfScanServer.BlockChain.Dtos;
-using AElfScanServer.BlockChain.HttpApi.DataStrategy;
+using AElfScanServer.HttpApi.DataStrategy;
 using AElfScanServer.Common.Options;
 using AElfScanServer.DataStrategy;
+using AElfScanServer.HttpApi.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
