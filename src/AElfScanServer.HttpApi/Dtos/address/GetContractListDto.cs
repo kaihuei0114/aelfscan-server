@@ -1,0 +1,25 @@
+using System;
+using System.Collections.Generic;
+
+namespace AElfScanServer.HttpApi.Dtos.address;
+
+public class GetContractContracts : GetListInputBasicDto
+{
+}
+
+public class GetContractListResultDto
+{
+    public long Total { get; set; }
+    public List<ContractDto> List { get; set; }
+}
+
+public class ContractDto
+{
+    public string Address { get; set; }
+    public string ContractName { get; set; } = "-";
+    public string Type { get; set; }
+    public decimal Balance { get; set; }
+    public DateTime LastUpdateTime { get; set; }
+    public long Txns { get; set; }
+    public string ContractVersion { get; set; } = "-";
+}
