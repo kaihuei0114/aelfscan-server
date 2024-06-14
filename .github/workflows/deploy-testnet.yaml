@@ -14,10 +14,8 @@ jobs:
       matrix:
         servicename:
           [
-            AElfScanServer.BlockChain.HttpApi.Host,
-            AElfScanServer.Token.HttpApi.Host,
             AElfScanServer.Worker,
-            AElfScanServer.Address.HttpApi.Host,
+            AElfScanServer.HttpApi.Host,
           ]
     steps:
       - uses: actions/checkout@v4
@@ -38,10 +36,8 @@ jobs:
       matrix:
         servicename:
           [
-            AElfScanServer.BlockChain.HttpApi.Host,
-            AElfScanServer.Token.HttpApi.Host,
             AElfScanServer.Worker,
-            AElfScanServer.Address.HttpApi.Host,
+            AElfScanServer.HttpApi.Host,
           ]
     permissions:
       contents: read

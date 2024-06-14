@@ -1,6 +1,5 @@
-using AElf.Contracts.MultiToken;
-using AElfScanServer.BlockChain.Dtos;
 using AElfScanServer.Common.Dtos;
+using AElfScanServer.HttpApi.Dtos;
 using AutoMapper;
 
 namespace AElfScanServer.Worker.Core;
