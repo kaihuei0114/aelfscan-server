@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using AElfScanServer.Common.Dtos;
+using Volo.Abp.Application.Dtos;
 
 namespace AElfScanServer.HttpApi.Dtos.address;
 
-public class GetListInputInput : GetListInputBasicDto
+public class GetListInputInput : PagedResultRequestDto
 {
+    public string ChainId { get; set; }
 }
 
 public class GetAddressListResultDto
