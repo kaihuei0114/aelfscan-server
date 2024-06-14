@@ -1,10 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using Volo.Abp.Application.Dtos;
 
 namespace AElfScanServer.HttpApi.Dtos.address;
 
-public class GetContractContracts : GetListInputBasicDto
+public class GetContractContracts : PagedResultRequestDto
 {
+    [Required] public string ChainId { get; set; }
+
+    public string OrderBy { get; set; } = "";
+
+    public string Sort { get; set; } = "";
 }
 
 public class GetContractListResultDto
