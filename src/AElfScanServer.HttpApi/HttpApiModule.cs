@@ -71,7 +71,7 @@ public class HttpApiModule : AbpModule
         context.Services.AddSingleton<ITokenHolderPercentProvider, TokenHolderPercentProvider>();
         context.Services.AddSingleton<INftCollectionHolderProvider, NftCollectionHolderProvider>();
         context.Services.AddTransient<ITokenService, TokenService>();
-
+        context.Services.AddTransient<IChartDataService, ChartDataService>();
 
         var configuration = context.Services.GetConfiguration();
         Configure<BlockChainOption>(configuration.GetSection("BlockChainServer"));

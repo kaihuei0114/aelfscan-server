@@ -30,6 +30,17 @@ public static class DateTimeHelper
     {
         return (long)dateTime.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds;
     }
+    
+    public static string GetDateTimeString(long milliseconds)
+    {
+        return new DateTime(1970, 1, 1).AddMilliseconds(milliseconds).ToString("yyyy-MM-dd HH:mm:ss");
+    }
+    public static long GetDateTotalMilliseconds(DateTime dateTime)
+    {
+        DateTime currentDate = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day);
+        return (long)currentDate.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds;
+    }
+
 
     public static long GetTotalMinutes(DateTime dateTime)
     {

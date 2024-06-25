@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
 using AElf.EntityMapping.Repositories;
-
+using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Worker.Core.Provider;
 using Elasticsearch.Net;
 using AElfScanServer.Common.Helper;
@@ -20,6 +21,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
+using Nito.AsyncEx;
+using StackExchange.Redis;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -29,6 +32,8 @@ namespace AElfScanServer.Worker.Core.Service;
 public interface ITransactionService
 {
     public Task UpdateTransactionRatePerMinuteAsync();
+
+    public Task UpdateChartDataAsync();
 }
 
 public class TransactionService : AbpRedisCache, ITransactionService, ITransientDependency
@@ -53,6 +58,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private static long batchWriteTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     private static readonly object lockObject = new object();
     private static Timer timer;
+    private static long PullTransactioninterval = 500 - 1;
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
         IOptionsMonitor<AELFIndexerOptions> aelfIndexerOptions,
@@ -89,6 +95,416 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _workerOptions = workerOptions;
     }
 
+    public async Task UpdateChartDataAsync()
+    {
+        var chainId = "AELF";
+        await ConnectAsync();
+        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.ChartDataLastBlockHeight(chainId));
+        var lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
+
+        var batchTransactionList =
+            await GetBatchTransactionList(chainId, lastBlockHeight, lastBlockHeight + PullTransactioninterval);
+
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        await HandlerDailyTransactionsAsync(batchTransactionList, chainId);
+        await HandlerUniqueAddressesAsync(batchTransactionList, chainId);
+        await HandlerDailyActiveAddressesAsync(batchTransactionList, chainId);
+        stopwatch.Stop();
+        _logger.LogInformation("Handler transaction data chainId:{0},count:{1},time:{2}", chainId,
+            batchTransactionList.Count, stopwatch.Elapsed.TotalSeconds);
+
+        RedisDatabase.StringSet(RedisKeyHelper.ChartDataLastBlockHeight(chainId),
+            lastBlockHeight + PullTransactioninterval);
+    }
+
+    public async Task HandlerDailyActiveAddressesAsync(List<IndexerTransactionDto> list, string chainId)
+    {
+        var activeAddressesDic = new Dictionary<long, HashSet<string>>();
+        var sendActiveAddressesDic = new Dictionary<long, HashSet<string>>();
+        var receiveActiveAddressesDic = new Dictionary<long, HashSet<string>>();
+        foreach (var indexerTransactionDto in list)
+        {
+            var date = DateTimeHelper.GetDateTotalMilliseconds(indexerTransactionDto.BlockTime);
+
+            if (activeAddressesDic.TryGetValue(date, out var v))
+            {
+                v.Add(indexerTransactionDto.From);
+                v.Add(indexerTransactionDto.To);
+            }
+            else
+            {
+                activeAddressesDic[date] = new HashSet<string> { indexerTransactionDto.From, indexerTransactionDto.To };
+            }
+
+
+            if (sendActiveAddressesDic.TryGetValue(date, out var sendV))
+            {
+                sendV.Add(indexerTransactionDto.From);
+            }
+            else
+            {
+                sendActiveAddressesDic[date] = new HashSet<string>
+                    { indexerTransactionDto.From };
+            }
+
+
+            if (receiveActiveAddressesDic.TryGetValue(date, out var receiveV))
+            {
+                receiveV.Add(indexerTransactionDto.To);
+            }
+            else
+            {
+                receiveActiveAddressesDic[date] = new HashSet<string>
+                    { indexerTransactionDto.To };
+            }
+        }
+
+        await ConnectAsync();
+        var stringGet = RedisDatabase.StringGet(RedisKeyHelper.DailyActiveAddresses(chainId));
+        if (stringGet.IsNullOrEmpty)
+        {
+            var firstActiveAddresses = activeAddressesDic.Select(c => new DailyActiveAddressCount()
+            {
+                Date = c.Key,
+                AddressCount = c.Value.Count,
+                SendAddressCount = sendActiveAddressesDic[c.Key].Count,
+                ReceiveAddressCount = receiveActiveAddressesDic[c.Key].Count,
+            }).ToList().OrderBy(c => c.Date);
+
+            var data = JsonConvert.SerializeObject(firstActiveAddresses);
+            RedisDatabase.StringSet(RedisKeyHelper.DailyActiveAddresses(chainId), data);
+
+            foreach (var keyValuePair in activeAddressesDic)
+            {
+                RedisDatabase.SetAdd(RedisKeyHelper.DailyActiveAddressesSet(chainId, keyValuePair.Key),
+                    keyValuePair.Value.Select(c => (RedisValue)c).ToArray());
+                RedisDatabase.SetAdd(RedisKeyHelper.DailySendActiveAddressesSet(chainId, keyValuePair.Key),
+                    sendActiveAddressesDic[keyValuePair.Key].Select(c => (RedisValue)c).ToArray());
+
+                RedisDatabase.SetAdd(RedisKeyHelper.DailyReceiveAddressesSet(chainId, keyValuePair.Key),
+                    receiveActiveAddressesDic[keyValuePair.Key].Select(c => (RedisValue)c).ToArray());
+            }
+
+            return;
+        }
+
+        var updateActiveAddresses = JsonConvert.DeserializeObject<List<DailyActiveAddressCount>>(stringGet);
+
+        var updateActiveAddressesDic = updateActiveAddresses.ToDictionary(p => p.Date, p => p);
+
+        foreach (var keyValuePair in activeAddressesDic)
+        {
+            RedisDatabase.SetAdd(RedisKeyHelper.DailyActiveAddressesSet(chainId, keyValuePair.Key),
+                keyValuePair.Value.Select(c => (RedisValue)c).ToArray());
+            RedisDatabase.SetAdd(RedisKeyHelper.DailySendActiveAddressesSet(chainId, keyValuePair.Key),
+                sendActiveAddressesDic[keyValuePair.Key].Select(c => (RedisValue)c).ToArray());
+
+            RedisDatabase.SetAdd(RedisKeyHelper.DailyReceiveAddressesSet(chainId, keyValuePair.Key),
+                receiveActiveAddressesDic[keyValuePair.Key].Select(c => (RedisValue)c).ToArray());
+
+            var newActiveAddressCount =
+                RedisDatabase.SetLength(RedisKeyHelper.DailyActiveAddressesSet(chainId, keyValuePair.Key));
+            var newSendActiveAddressCount =
+                RedisDatabase.SetLength(RedisKeyHelper.DailySendActiveAddressesSet(chainId, keyValuePair.Key));
+            var newReceiveActiveAddressCount =
+                RedisDatabase.SetLength(RedisKeyHelper.DailyReceiveAddressesSet(chainId, keyValuePair.Key));
+
+
+            if (updateActiveAddressesDic.TryGetValue(keyValuePair.Key, out var value))
+            {
+                value.AddressCount = newActiveAddressCount;
+                value.SendAddressCount = newSendActiveAddressCount;
+                value.ReceiveAddressCount = newReceiveActiveAddressCount;
+                _logger.LogInformation(
+                    "Update active address count chainId:{0},date:{1},address count:{2},send address count:{3},receive address count:{4}",
+                    chainId,
+                    DateTimeHelper.GetDateTimeString(keyValuePair.Key), newActiveAddressCount,
+                    newSendActiveAddressCount, newReceiveActiveAddressCount);
+            }
+            else
+            {
+                updateActiveAddressesDic[keyValuePair.Key] = new DailyActiveAddressCount()
+                {
+                    Date = keyValuePair.Key,
+                    AddressCount = newActiveAddressCount,
+                    SendAddressCount = newSendActiveAddressCount,
+                    ReceiveAddressCount = newReceiveActiveAddressCount
+                };
+            }
+        }
+
+        var updateActiveAddressesList = updateActiveAddressesDic.Select(c => c.Value).ToList().OrderBy(c => c.Date);
+        var serializeObject = JsonConvert.SerializeObject(updateActiveAddressesList);
+        RedisDatabase.StringSet(RedisKeyHelper.DailyActiveAddresses(chainId), serializeObject);
+    }
+
+    public async Task HandlerUniqueAddressesAsync(List<IndexerTransactionDto> list, string chainId)
+    {
+        var uniqueAddressesDic = new Dictionary<string, long>();
+        foreach (var indexerTransactionDto in list)
+        {
+            var date = DateTimeHelper.GetDateTotalMilliseconds(indexerTransactionDto.BlockTime);
+
+            if (uniqueAddressesDic.TryGetValue(indexerTransactionDto.From, out var fromDate))
+            {
+                uniqueAddressesDic[indexerTransactionDto.From] = date < fromDate ? date : fromDate;
+            }
+            else
+            {
+                uniqueAddressesDic.Add(indexerTransactionDto.From, date);
+            }
+
+            if (uniqueAddressesDic.TryGetValue(indexerTransactionDto.To, out var toDate))
+            {
+                uniqueAddressesDic[indexerTransactionDto.To] = date < toDate ? date : toDate;
+            }
+            else
+            {
+                uniqueAddressesDic.Add(indexerTransactionDto.To, date);
+            }
+        }
+
+        await ConnectAsync();
+        var stringGet = RedisDatabase.StringGet(RedisKeyHelper.UniqueAddresses(chainId));
+        if (stringGet.IsNullOrEmpty)
+        {
+            var dic = new Dictionary<long, int>();
+            foreach (var keyValuePair in uniqueAddressesDic)
+            {
+                if (dic.TryGetValue(keyValuePair.Value, out var count))
+                {
+                    dic[keyValuePair.Value]++;
+                }
+                else
+                {
+                    dic[keyValuePair.Value] = 1;
+                }
+            }
+
+            var firstUniqueAddressCounts = dic.Select(c => new UniqueAddressCount()
+            {
+                Date = c.Key,
+                AddressCount = c.Value
+            }).ToList().OrderBy(c => c.Date);
+
+            var data = JsonConvert.SerializeObject(firstUniqueAddressCounts);
+            RedisDatabase.StringSet(RedisKeyHelper.UniqueAddresses(chainId), data);
+            return;
+        }
+
+
+        var updateUniqueAddressCounts = JsonConvert.DeserializeObject<List<UniqueAddressCount>>(stringGet);
+
+        var updateAddressCountsDic = updateUniqueAddressCounts.ToDictionary(c => c.Date, c => c);
+
+        var newUniqueAddressCountsDic = new Dictionary<long, int>();
+        var firstTransactionAddresses = new List<string>();
+
+        foreach (var keyValuePair in uniqueAddressesDic)
+        {
+            var redisValue = RedisDatabase.StringGet(RedisKeyHelper.AddressFirstTransaction(chainId, keyValuePair.Key));
+            if (redisValue.IsNullOrEmpty)
+            {
+                if (updateAddressCountsDic.TryGetValue(keyValuePair.Value, out var v))
+                {
+                    v.AddressCount++;
+                    _logger.LogInformation("Update unique address count date:{0},address count:{1}",
+                        DateTimeHelper.GetDateTimeString(keyValuePair.Value), v.AddressCount);
+                }
+                else
+                {
+                    if (newUniqueAddressCountsDic.TryGetValue(keyValuePair.Value, out var count))
+                    {
+                        newUniqueAddressCountsDic[keyValuePair.Value] = count + 1;
+                    }
+                    else
+                    {
+                        newUniqueAddressCountsDic[keyValuePair.Value] = 1;
+                        firstTransactionAddresses.Add(keyValuePair.Key);
+                    }
+                }
+            }
+        }
+
+        if (!newUniqueAddressCountsDic.IsNullOrEmpty())
+        {
+            var updateUniqueAddressCountsList = newUniqueAddressCountsDic.Select(c => new UniqueAddressCount()
+            {
+                Date = c.Key,
+                AddressCount = c.Value
+            }).ToList().OrderBy(c => c.Date);
+            updateUniqueAddressCounts.AddRange(updateUniqueAddressCountsList);
+        }
+
+        foreach (var firstTransactionAddress in firstTransactionAddresses)
+        {
+            RedisDatabase.StringSet(RedisKeyHelper.AddressFirstTransaction(chainId, firstTransactionAddress),
+                "-");
+        }
+
+        var serializeObject = JsonConvert.SerializeObject(updateUniqueAddressCounts);
+        RedisDatabase.StringSet(RedisKeyHelper.UniqueAddresses(chainId), serializeObject);
+    }
+
+    public async Task HandlerDailyTransactionsAsync(List<IndexerTransactionDto> list, string chainId)
+    {
+        var nowDailyTransactionCountDic = new Dictionary<long, int>();
+        var nowDailyBlockCountDic = new Dictionary<long, HashSet<long>>();
+
+        var startScore = DateTimeHelper.GetDateTotalMilliseconds(list[0].BlockTime);
+        var stopScore = DateTimeHelper.GetDateTotalMilliseconds(list[0].BlockTime);
+        foreach (var indexerTransactionDto in list)
+        {
+            var key = DateTimeHelper.GetDateTotalMilliseconds(indexerTransactionDto.BlockTime);
+            startScore = key < startScore ? key : startScore;
+            stopScore = key > stopScore ? key : stopScore;
+
+
+            if (nowDailyTransactionCountDic.ContainsKey(key))
+            {
+                nowDailyTransactionCountDic[key]++;
+            }
+            else
+            {
+                nowDailyTransactionCountDic[key] = 1;
+            }
+
+            if (nowDailyBlockCountDic.ContainsKey(key))
+            {
+                nowDailyBlockCountDic[key].Add(indexerTransactionDto.BlockHeight);
+            }
+            else
+            {
+                nowDailyBlockCountDic[key] = new HashSet<long> { indexerTransactionDto.BlockHeight };
+            }
+        }
+
+
+        //update daily transaction count and block count to redis zset
+
+        var stringGet = RedisDatabase.StringGet(RedisKeyHelper.DailyTransactionCount(chainId));
+        var updateDailyTransactionCounts = new List<DailyTransactionCount> { };
+
+        if (stringGet.IsNullOrEmpty)
+        {
+            foreach (var keyValuePair in nowDailyTransactionCountDic)
+            {
+                var element = new DailyTransactionCount()
+                {
+                    Date = keyValuePair.Key,
+                    TransactionCount = keyValuePair.Value,
+                    BlockCount = nowDailyBlockCountDic[keyValuePair.Key].Count
+                };
+
+                updateDailyTransactionCounts.Add(element);
+            }
+        }
+        else
+        {
+            updateDailyTransactionCounts = JsonConvert.DeserializeObject<List<DailyTransactionCount>>(stringGet);
+
+            var updateTransactionCountsDic = updateDailyTransactionCounts.ToDictionary(p => p.Date, p => p);
+
+            foreach (var date in nowDailyTransactionCountDic.Keys.OrderBy(v => v).ToList())
+            {
+                if (updateTransactionCountsDic.TryGetValue(date, out var v))
+                {
+                    v.TransactionCount += nowDailyTransactionCountDic[date];
+                    v.BlockCount += nowDailyBlockCountDic[date].Count;
+                    _logger.LogInformation(
+                        "Update daily transaction count date:{0},transaction count:{1},block count:{2}",
+                        DateTimeHelper.GetDateTimeString(date), v.TransactionCount, v.BlockCount);
+                }
+                else
+                {
+                    updateDailyTransactionCounts.Add(new DailyTransactionCount()
+                    {
+                        Date = date,
+                        TransactionCount = nowDailyTransactionCountDic[date],
+                        BlockCount = nowDailyBlockCountDic[date].Count
+                    });
+                    _logger.LogInformation("Add daily transaction count date:{0},transaction count:{1},block count:{2}",
+                        DateTimeHelper.GetDateTimeString(date), nowDailyTransactionCountDic[date],
+                        nowDailyBlockCountDic[date].Count);
+                }
+            }
+        }
+
+        var serializeObject = JsonConvert.SerializeObject(updateDailyTransactionCounts);
+
+        RedisDatabase.StringSet(RedisKeyHelper.DailyTransactionCount(chainId), serializeObject);
+    }
+
+
+    // public async Task<List<IndexerTransactionDto>> GetBatchTransactionList(string chainId, long startBlockHeight,
+    //     long endBlockHeight)
+    // {
+    //     object _lock = new object();
+    //     var batchList = new List<IndexerTransactionDto>();
+    //
+    //     Stopwatch stopwatch = Stopwatch.StartNew();
+    //
+    //     var tasks = new List<Task>();
+    //     for (long i = startBlockHeight; i <= endBlockHeight; i += 100)
+    //     {
+    //         var start = i;
+    //         var end = start + 99 > endBlockHeight ? endBlockHeight : start + 99;
+    //         var findTsk = _aelfIndexerProvider.GetTransactionsAsync(chainId, start, end, "")
+    //             .ContinueWith(task =>
+    //             {
+    //                 lock (_lock)
+    //                 {
+    //                     if (task.Result.IsNullOrEmpty())
+    //                     {
+    //                         _logger.LogError("Get batch transaction list is null,chainId:{0},start:{1},end:{2}",
+    //                             chainId, start, end);
+    //                         return;
+    //                     }
+    //
+    //                     batchList.AddRange(task.Result);
+    //                 }
+    //             });
+    //         tasks.Add(findTsk);
+    //     }
+    //
+    //     await tasks.WhenAll();
+    //
+    //     stopwatch.Stop();
+    //     _logger.LogInformation("Get batch transaction list from chainId:{0},start:{1},end:{2},count:{3},time:{4}",
+    //         chainId, startBlockHeight, endBlockHeight, batchList.Count, stopwatch.Elapsed.TotalSeconds);
+    //     return batchList;
+    // }
+
+    public async Task<List<IndexerTransactionDto>> GetBatchTransactionList(string chainId, long startBlockHeight,
+        long endBlockHeight)
+    {
+        var batchList = new List<IndexerTransactionDto>();
+
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
+        var tasks = new List<Task>();
+        for (long i = startBlockHeight; i <= endBlockHeight; i += 100)
+        {
+            var start = i;
+            var end = start + 99 > endBlockHeight ? endBlockHeight : start + 99;
+            var data = await _aelfIndexerProvider.GetTransactionsAsync(chainId, start, end, "");
+            if (data.IsNullOrEmpty())
+            {
+                _logger.LogError("Get batch transaction list is null,chainId:{0},start:{1},end:{2}",
+                    chainId, start, end);
+                continue;
+            }
+
+            batchList.AddRange(data);
+        }
+
+        await tasks.WhenAll();
+
+        stopwatch.Stop();
+        _logger.LogInformation("Get batch transaction list from chainId:{0},start:{1},end:{2},count:{3},time:{4}",
+            chainId, startBlockHeight, endBlockHeight, batchList.Count, stopwatch.Elapsed.TotalSeconds);
+        return batchList;
+    }
 
     public async Task UpdateTransactionRatePerMinuteAsync()
     {
