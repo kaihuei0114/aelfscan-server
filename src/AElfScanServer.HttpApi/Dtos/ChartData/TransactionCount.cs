@@ -5,8 +5,8 @@ namespace AElfScanServer.HttpApi.Dtos.ChartData;
 
 public class ChartDataRequest
 {
-    public string StartDate { get; set; } = "";
-    public string EndDate { get; set; } = "";
+    public long StartDate { get; set; } = 0;
+    public long EndDate { get; set; } = 0;
     public string ChainId { get; set; }
 }
 

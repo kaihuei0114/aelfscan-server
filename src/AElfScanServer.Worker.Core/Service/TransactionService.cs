@@ -4,6 +4,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
+using AElf;
+using AElf.Client.Dto;
+using AElf.Client.Service;
+using AElf.Contracts.Consensus.AEDPoS;
 using AElf.EntityMapping.Repositories;
 using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Worker.Core.Provider;
@@ -16,16 +20,19 @@ using AElfScanServer.HttpApi.Helper;
 using AElfScanServer.HttpApi.Options;
 using AElfScanServer.HttpApi.Provider;
 using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 using StackExchange.Redis;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
+using Math = System.Math;
 
 namespace AElfScanServer.Worker.Core.Service;
 
@@ -34,6 +41,12 @@ public interface ITransactionService
     public Task UpdateTransactionRatePerMinuteAsync();
 
     public Task UpdateChartDataAsync();
+
+
+    public Task UpdateNetwork();
+
+
+    public Task UpdateDailyNetwork();
 }
 
 public class TransactionService : AbpRedisCache, ITransactionService, ITransientDependency
@@ -48,51 +61,291 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IElasticClient _elasticClient;
     private readonly IOptionsMonitor<PullTransactionChainIdsOptions> _workerOptions;
 
-    private readonly IEntityMappingRepository<TransactionIndex, string> _transactionIndexRepository;
-    private readonly IEntityMappingRepository<AddressIndex, string> _addressIndexRepository;
-    private readonly IEntityMappingRepository<LogEventIndex, string> _logEventIndexRepository;
-    private readonly IEntityMappingRepository<TokenInfoIndex, string> _tokenInfoIndexRepository;
-    private readonly IEntityMappingRepository<BlockExtraIndex, string> _blockExtraIndexRepository;
+    private readonly IEntityMappingRepository<RoundIndex, string> _roundIndexRepository;
+    private readonly IEntityMappingRepository<NodeBlockProduceIndex, string> _nodeBlockProduceRepository;
+    private readonly IEntityMappingRepository<DailyBlockProduceCountIndex, string> _blockProduceRepository;
+    private readonly IEntityMappingRepository<DailyBlockProduceDurationIndex, string> _blockProduceDurationRepository;
+    private readonly IEntityMappingRepository<DailyCycleCountIndex, string> _cycleCountRepository;
     private readonly ILogger<TransactionService> _logger;
-    private static List<TransactionIndex> batchTransactions = new List<TransactionIndex>();
-    private static long batchWriteTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-    private static readonly object lockObject = new object();
+    private static bool IsFirstUpdateDailyNetwork = true;
+
     private static Timer timer;
     private static long PullTransactioninterval = 500 - 1;
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
         IOptionsMonitor<AELFIndexerOptions> aelfIndexerOptions,
-        IEntityMappingRepository<TransactionIndex, string> transactionIndexRepository,
         ILogger<TransactionService> logger, IObjectMapper objectMapper,
-        IEntityMappingRepository<AddressIndex, string> addressIndexRepository,
-        IEntityMappingRepository<TokenInfoIndex, string> tokenInfoIndexRepository,
         IOptionsMonitor<GlobalOptions> blockChainOptions,
-        IEntityMappingRepository<BlockExtraIndex, string> blockExtraIndexRepository,
-        HomePageProvider homePageProvider,
-        IEntityMappingRepository<LogEventIndex, string> logEventIndexRepository, IStorageProvider storageProvider,
+        HomePageProvider homePageProvider, IStorageProvider storageProvider,
         IOptionsMonitor<ElasticsearchOptions> options, BlockChainIndexerProvider blockChainIndexerProvider,
-        IOptionsMonitor<PullTransactionChainIdsOptions> workerOptions) :
+        IOptionsMonitor<PullTransactionChainIdsOptions> workerOptions,
+        IEntityMappingRepository<RoundIndex, string> roundIndexRepository,
+        IEntityMappingRepository<NodeBlockProduceIndex, string> nodeBlockProduceRepository,
+        IEntityMappingRepository<DailyBlockProduceCountIndex, string> blockProduceRepository,
+        IEntityMappingRepository<DailyBlockProduceDurationIndex, string> blockProduceDurationRepository,
+        IEntityMappingRepository<DailyCycleCountIndex, string> cycleCountRepository) :
         base(optionsAccessor)
     {
         _aelfIndexerProvider = aelfIndexerProvider;
         _aelfIndexerOptions = aelfIndexerOptions;
-        _transactionIndexRepository = transactionIndexRepository;
         _logger = logger;
         _objectMapper = objectMapper;
-        _addressIndexRepository = addressIndexRepository;
 
-        _tokenInfoIndexRepository = tokenInfoIndexRepository;
-        _blockExtraIndexRepository = blockExtraIndexRepository;
         _globalOptions = blockChainOptions;
         _homePageProvider = homePageProvider;
         _blockChainIndexerProvider = blockChainIndexerProvider;
-        _logEventIndexRepository = logEventIndexRepository;
         _storageProvider = storageProvider;
         var uris = options.CurrentValue.Url.ConvertAll(x => new Uri(x));
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         _elasticClient = new ElasticClient(settings);
         _workerOptions = workerOptions;
+        _roundIndexRepository = roundIndexRepository;
+        _nodeBlockProduceRepository = nodeBlockProduceRepository;
+        _blockProduceRepository = blockProduceRepository;
+        _blockProduceDurationRepository = blockProduceDurationRepository;
+        _cycleCountRepository = cycleCountRepository;
+    }
+
+
+    public async Task UpdateDailyNetwork()
+    {
+        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        {
+            var queryable = await _roundIndexRepository.GetQueryableAsync();
+            var todayTotalSeconds = DateTimeHelper.GetTodayTotalSeconds();
+            var tomorrowTotalSeconds = DateTimeHelper.GetTomorrowTotalSeconds();
+
+            var list = queryable.Where(w => w.StartTime >= todayTotalSeconds)
+                .Where(w => w.StartTime < tomorrowTotalSeconds).Where(c => c.ChainId == chainId).ToList();
+
+            if (list.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            var blockProduceIndex = new DailyBlockProduceCountIndex()
+            {
+                Date = todayTotalSeconds * 1000,
+                ChainId = chainId
+            };
+
+            var dailyCycleCountIndex = new DailyCycleCountIndex()
+            {
+                Date = todayTotalSeconds * 1000,
+                ChainId = chainId
+            };
+
+            var dailyBlockProduceDurationIndex = new DailyBlockProduceDurationIndex()
+            {
+                Date = todayTotalSeconds * 1000,
+                ChainId = chainId
+            };
+
+
+            var totalDuration = 0l;
+            var longestBlockDuration = 0l;
+            var shortestBlockDuration = 0l;
+            foreach (var round in list)
+            {
+                blockProduceIndex.BlockCount += round.Blcoks;
+                blockProduceIndex.MissedBlockCount += round.MissedBlocks;
+
+                dailyCycleCountIndex.CycleCount++;
+                totalDuration += round.DurationSeconds;
+                if (round.Blcoks == 0)
+                {
+                    dailyCycleCountIndex.MissedCycle++;
+                }
+
+                if (round.Blcoks == 0 || round.DurationSeconds == 0)
+                {
+                    _logger.LogWarning("Round duration or blocks is zero,chainId:{0},round number:{1}", chainId,
+                        round.RoundNumber);
+                    continue;
+                }
+
+                var roundDurationSeconds = round.DurationSeconds / round.Blcoks;
+
+                if (longestBlockDuration == 0)
+                {
+                    longestBlockDuration = roundDurationSeconds;
+                }
+                else
+                {
+                    longestBlockDuration =
+                        Math.Max(longestBlockDuration, roundDurationSeconds);
+                }
+
+
+                if (shortestBlockDuration == 0)
+                {
+                    shortestBlockDuration = roundDurationSeconds;
+                }
+                else
+                {
+                    shortestBlockDuration =
+                        Math.Min(shortestBlockDuration, roundDurationSeconds);
+                }
+            }
+
+            dailyCycleCountIndex.MissedBlockCount = blockProduceIndex.MissedBlockCount;
+            dailyBlockProduceDurationIndex.AvgBlockDuration =
+                (totalDuration / (decimal)blockProduceIndex.BlockCount).ToString("F2");
+            dailyBlockProduceDurationIndex.LongestBlockDuration = longestBlockDuration.ToString("F2");
+            dailyBlockProduceDurationIndex.ShortestBlockDuration = shortestBlockDuration.ToString("F2");
+
+            decimal result = blockProduceIndex.BlockCount /
+                             (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount);
+            blockProduceIndex.BlockProductionRate = result.ToString("F2");
+
+            await _blockProduceRepository.AddOrUpdateAsync(blockProduceIndex);
+            await _blockProduceDurationRepository.AddOrUpdateAsync(dailyBlockProduceDurationIndex);
+            await _cycleCountRepository.AddOrUpdateAsync(dailyCycleCountIndex);
+            _logger.LogInformation("Insert daily network statistic count index chainId:{0},date:{1}", chainId,
+                DateTimeHelper.GetDateTimeString(todayTotalSeconds * 1000));
+        }
+    }
+
+    public async Task UpdateNetwork()
+    {
+        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        {
+            var client = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
+            var empty = new Empty();
+            var transaction = await client.GenerateTransactionAsync(
+                client.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
+                _globalOptions.CurrentValue.ContractAddressConsensus,
+                "GetCurrentRoundInformation", empty);
+
+            var signTransaction = client.SignTransaction(GlobalOptions.PrivateKey, transaction);
+
+            var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto()
+            {
+                RawTransaction = HexByteConvertorExtensions.ToHex(signTransaction.ToByteArray())
+            });
+
+            var round = Round.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
+
+            var findRoundNumber = 0l;
+            await ConnectAsync();
+            var redisValue = RedisDatabase.StringGet(RedisKeyHelper.LatestRound(chainId));
+            if (redisValue.IsNullOrEmpty)
+            {
+                findRoundNumber = round.RoundNumber - 1;
+            }
+            else
+            {
+                findRoundNumber = long.Parse(redisValue) + 1;
+                if (findRoundNumber >= round.RoundNumber)
+                {
+                    findRoundNumber = round.RoundNumber - 1;
+                }
+            }
+
+
+            var int64Value = new Int64Value()
+            {
+                Value = findRoundNumber
+            };
+
+            transaction = await client.GenerateTransactionAsync(
+                client.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
+                _globalOptions.CurrentValue.ContractAddressConsensus,
+                "GetRoundInformation", int64Value);
+
+            signTransaction = client.SignTransaction(GlobalOptions.PrivateKey, transaction);
+
+            result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto()
+            {
+                RawTransaction = HexByteConvertorExtensions.ToHex(signTransaction.ToByteArray())
+            });
+
+            round = Round.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
+
+            await StatisticRoundInfo(round, chainId);
+
+            RedisDatabase.StringSet(RedisKeyHelper.LatestRound(chainId), findRoundNumber);
+        }
+    }
+
+
+    internal async Task StatisticRoundInfo(Round round, string chainId)
+    {
+        var roundIndex = new RoundIndex()
+        {
+            ChainId = chainId,
+            RoundNumber = round.RoundNumber,
+            ProduceBlockBpAddresses = new List<string>(),
+            NotProduceBlockBpAddresses = new List<string>()
+        };
+
+        var batch = new List<NodeBlockProduceIndex>();
+        var client = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
+        foreach (var minerInRound in round.RealTimeMinersInformation)
+        {
+            var bpAddress = client.GetAddressFromPubKey(minerInRound.Key);
+            var nodeInfo = new NodeBlockProduceIndex()
+            {
+                ChainId = chainId,
+                RoundNumber = round.RoundNumber,
+                NodeAddress = bpAddress
+            };
+
+            roundIndex.Blcoks += minerInRound.Value.ActualMiningTimes.Count;
+            nodeInfo.Blcoks = minerInRound.Value.ActualMiningTimes.Count;
+
+            var expectBlocks = minerInRound.Value.ActualMiningTimes.Count > 8 ? 15 : 8;
+
+            roundIndex.MissedBlocks += expectBlocks - minerInRound.Value.ActualMiningTimes.Count;
+            nodeInfo.MissedBlocks = expectBlocks - minerInRound.Value.ActualMiningTimes.Count;
+            nodeInfo.IsExtraBlockProducer = minerInRound.Value.IsExtraBlockProducer;
+
+
+            if (minerInRound.Value.ActualMiningTimes.IsNullOrEmpty())
+            {
+                roundIndex.NotProduceBlockBpCount++;
+                roundIndex.NotProduceBlockBpAddresses.Add(bpAddress);
+            }
+            else
+            {
+                roundIndex.ProduceBlockBpCount++;
+                roundIndex.ProduceBlockBpAddresses.Add(bpAddress);
+
+                var min = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Min();
+                var max = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Max();
+
+                nodeInfo.StartTime = min * 1000;
+                nodeInfo.EndTime = max * 1000;
+                if (roundIndex.StartTime == 0)
+                {
+                    roundIndex.StartTime = min;
+                }
+                else
+                {
+                    roundIndex.StartTime = Math.Min(roundIndex.StartTime, min);
+                }
+
+                roundIndex.EndTime = Math.Max(roundIndex.EndTime, max);
+            }
+
+            nodeInfo.DurationSeconds = nodeInfo.EndTime - nodeInfo.StartTime;
+
+
+            batch.Add(nodeInfo);
+        }
+
+        roundIndex.DurationSeconds = roundIndex.EndTime - roundIndex.StartTime;
+        roundIndex.StartTime = roundIndex.StartTime;
+        roundIndex.EndTime = roundIndex.EndTime;
+
+
+        await _roundIndexRepository.AddOrUpdateAsync(roundIndex);
+        _logger.LogInformation("Insert round index chainId:{0},round number:{1},date:{2}", chainId, round.RoundNumber,
+            DateTimeHelper.GetDateTimeString(roundIndex.StartTime * 1000));
+        await _nodeBlockProduceRepository.AddOrUpdateManyAsync(batch);
+        _logger.LogInformation("Insert node block produce index chainId:{0},round number:{1},date:{2}", chainId,
+            round.RoundNumber, DateTimeHelper.GetDateTimeString(roundIndex.StartTime * 1000));
     }
 
     public async Task UpdateChartDataAsync()

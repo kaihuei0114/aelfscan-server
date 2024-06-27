@@ -5,6 +5,7 @@ using AElf.Contracts.MultiToken;
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.Dtos.address;
 using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.Helper;
@@ -16,6 +17,15 @@ public class BlockChainAutoMapperProfile : Profile
 {
     public BlockChainAutoMapperProfile()
     {
+        CreateMap<DailyBlockProduceCountIndex, DailyBlockProduceCount>()
+            .ReverseMap();
+
+        CreateMap<DailyBlockProduceDurationIndex, DailyBlockProduceDuration>()
+            .ReverseMap();
+
+        CreateMap<DailyCycleCountIndex, DailyCycleCount>()
+            .ReverseMap();
+
         CreateMap<AddressIndex, CommonAddressDto>()
             .ReverseMap();
 
@@ -70,9 +80,9 @@ public class BlockChainAutoMapperProfile : Profile
             .ForPath(t => t.To.Address, m => m.MapFrom(u => u.To))
             .ReverseMap()
             ;
-        
-        
-         CreateMap<IndexerTokenInfoDto, TokenCommonDto>()
+
+
+        CreateMap<IndexerTokenInfoDto, TokenCommonDto>()
             .ForPath(t => t.Token.Name, m => m.MapFrom(u => u.TokenName))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Symbol))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Decimals))

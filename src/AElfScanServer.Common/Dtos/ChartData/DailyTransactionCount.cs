@@ -21,3 +21,27 @@ public class DailyActiveAddressCount
     public long SendAddressCount { get; set; }
     public long ReceiveAddressCount { get; set; }
 }
+
+public class DailyBlockProduceCount
+{
+    public long Date { get; set; }
+    public string BlockProductionRate { get; set; }
+    public long BlockCount { get; set; }
+    public long MissedBlockCount { get; set; }
+}
+
+public class DailyBlockProduceDuration
+{
+    public long Date { get; set; }
+    public string AvgBlockDuration { get; set; }
+    public string LongestBlockDuration { get; set; }
+    public string ShortestBlockDuration { get; set; }
+}
+
+public class DailyCycleCount
+{
+    public long Date { get; set; }
+    public long CycleCount { get; set; }
+    public long MissedBlockCount { get; set; }
+    public long MissedCycle { get; set; }
+}

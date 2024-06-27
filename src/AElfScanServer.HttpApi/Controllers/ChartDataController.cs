@@ -25,17 +25,43 @@ public class ChartDataController : AbpController
     {
         return await _chartDataService.GetDailyTransactionCountAsync(request);
     }
-    
+
     [HttpGet("uniqueAddresses")]
     public async Task<UniqueAddressCountResp> GetUniqueAddressesCountAsync(ChartDataRequest request)
     {
         return await _chartDataService.GetUniqueAddressCountAsync(request);
     }
-    
-    
+
+
     [HttpGet("dailyActiveAddresses")]
     public async Task<ActiveAddressCountResp> GetActiveAddressesCountAsync(ChartDataRequest request)
     {
         return await _chartDataService.GetActiveAddressCountAsync(request);
+    }
+
+
+    [HttpGet("blockProduceRate")]
+    public async Task<BlockProduceRateResp> GetBlockProduceRateAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetBlockProduceRateAsync(request);
+    }
+
+    [HttpGet("avgBlockDuration")]
+    public async Task<AvgBlockDurationResp> GetAvgBlockDurationRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetAvgBlockDurationRespAsync(request);
+    }
+
+    [HttpGet("cycleCount")]
+    public async Task<CycleCountResp> GetCycleCountRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetCycleCountRespAsync(request);
+    }
+
+
+    [HttpGet("nodeBlockProduce")]
+    public async Task<NodeBlockProduceResp> GetBlockProduceRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetNodeBlockProduceRespAsync(request);
     }
 }

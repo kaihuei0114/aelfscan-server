@@ -41,6 +41,12 @@ public class RedisKeyHelper
     {
         return $"explore_{chainId}_latest_transaction";
     }
+    
+    
+    public static string LatestRound(string chainId)
+    {
+        return $"explore_{chainId}_latest_round";
+    }
 
     public static string DailyActiveAddresses(string chainId)
     {
