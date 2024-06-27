@@ -144,8 +144,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
 
             var totalDuration = 0l;
-            var longestBlockDuration = 0l;
-            var shortestBlockDuration = 0l;
+            decimal longestBlockDuration = 0;
+            decimal shortestBlockDuration = 0;
             foreach (var round in list)
             {
                 blockProduceIndex.BlockCount += round.Blcoks;
@@ -165,7 +165,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     continue;
                 }
 
-                var roundDurationSeconds = round.DurationSeconds / round.Blcoks;
+                var roundDurationSeconds = round.DurationSeconds / (decimal)round.Blcoks;
 
                 if (longestBlockDuration == 0)
                 {
