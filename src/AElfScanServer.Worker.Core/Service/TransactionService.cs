@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
@@ -33,6 +33,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 using Math = System.Math;
+using Timer = System.Timers.Timer;
 
 namespace AElfScanServer.Worker.Core.Service;
 
@@ -332,7 +333,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
             catch (Exception e)
             {
-                _logger.LogError("Update network round:{r},chainId:{c},error:{e}", findRoundNumber, chainId, e.Message);
+                _logger.LogError("Update network Err round:{r},chainId:{c},error:{e}", findRoundNumber, chainId,
+                    e.Message);
+                Thread.Sleep(1000 * 60);
             }
         }
     }

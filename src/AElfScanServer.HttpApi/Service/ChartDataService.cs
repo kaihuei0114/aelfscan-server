@@ -263,17 +263,17 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             }
         }
 
-        var cycleQueryable = await _cycleCountRepository.GetQueryableAsync();
+        var roundQuery = await _roundIndexRepository.GetQueryableAsync();
         if (request.StartDate > 0 && request.EndDate > 0)
         {
-            cycleQueryable = cycleQueryable.Where(c => c.Date >= request.StartDate && c.Date <= request.EndDate);
+            roundQuery = roundQuery.Where(c => c.StartTime >= request.StartDate && c.StartTime < request.EndDate);
         }
 
-        var cycleCountIndices = cycleQueryable.Where(c => c.ChainId == request.ChainId);
+        var roundIndices = roundQuery.Where(c => c.ChainId == request.ChainId);
 
-        var dailyCycleCountIndices = cycleCountIndices.ToList();
+        var indices = roundIndices.ToList();
 
-        var totalCycle = dailyCycleCountIndices.Select(c => c.CycleCount).Sum();
+        var totalCycle = indices.Count;
 
         var nodeExpectBlocks = totalCycle * 8;
 
@@ -281,7 +281,9 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         foreach (var nodeBlockProduce in blockProduces)
         {
-            nodeBlockProduce.BlocksRate = (nodeBlockProduce.Blocks / (decimal)nodeExpectBlocks).ToString("F2");
+            nodeBlockProduce.BlocksRate =
+                (nodeBlockProduce.Blocks / (decimal)nodeBlockProduce.Blocks + nodeBlockProduce.MissedBlocks)
+                .ToString("F2");
             nodeBlockProduce.CycleRate = (nodeBlockProduce.TotalCycle / (decimal)totalCycle).ToString("F2");
         }
 
