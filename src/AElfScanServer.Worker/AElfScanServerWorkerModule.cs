@@ -180,6 +180,7 @@ public class AElfScanServerWorkerModule : AbpModule
                     throw new Exception($"Failed to index object: {indexResponse.DebugInformation}");
                 }
             }
+            
 
 
             if (!elasticClient.Indices

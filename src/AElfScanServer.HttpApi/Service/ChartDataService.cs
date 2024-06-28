@@ -77,65 +77,55 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
     public async Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request)
     {
-        var queryable = await _roundIndexRepository.GetQueryableAsync();
-        var initRoundResp = new InitRoundResp();
-
-        queryable = queryable.Where(c => c.ChainId == request.ChainId);
-
-        var indices = queryable.Where(c => c.StartTime >= request.StartDate).Where(c => c.StartTime <= request.EndDate).Take(40000)
-            .OrderBy(c => c.RoundNumber).ToList();
-
-        initRoundResp.MinDate = DateTimeHelper.GetDateTimeString(indices.First().StartTime);
-        initRoundResp.MaxDate = DateTimeHelper.GetDateTimeString(indices.Last().StartTime);
-        initRoundResp.MinRound = indices.First().RoundNumber;
-        initRoundResp.MaxRound = indices.Last().RoundNumber;
-        initRoundResp.RoundCount = indices.Count;
-        initRoundResp.UpdateDate = new List<string>();
-
-        
         if (request.SetNumber > 0)
         {
             await ConnectAsync();
             RedisDatabase.StringSet(RedisKeyHelper.LatestRound(request.ChainId), request.SetNumber);
         }
 
+        DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(request.StartDate).DateTime;
+        DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(request.EndDate).DateTime;
+        List<long> dailyTimestamps = new List<long>();
+
+        TimeSpan timeSpan = endTime - startTime;
+
+        for (int i = 0; i <= timeSpan.Days; i++)
+        {
+            DateTime dailyStart = startTime.AddDays(i);
+            long dailyTimestamp = ((DateTimeOffset)dailyStart).ToUnixTimeMilliseconds();
+            dailyTimestamps.Add(dailyTimestamp);
+        }
+
+        var initRoundResp = new InitRoundResp();
+        var queryable = await _roundIndexRepository.GetQueryableAsync();
+        queryable = queryable.Where(c => c.ChainId == request.ChainId);
+        var count = queryable.Where(c => c.StartTime >= request.StartDate).Where(c => c.StartTime <= request.EndDate)
+            .Count();
+        initRoundResp.RoundCount = count;
+
         if (!request.UpdateData)
         {
             return initRoundResp;
         }
 
-        var curDate = DateTimeHelper.GetDateTimeLong(indices[0].StartTime);
-        var list = new List<RoundIndex>();
-        list.Add(indices[0]);
-
-
-        foreach (var roundIndex in indices.GetRange(1, indices.Count - 1))
+        foreach (var dailyTimestamp in dailyTimestamps)
         {
-            var date = DateTimeHelper.GetDateTimeLong(roundIndex.StartTime);
-            if (date != curDate)
-            {
-                await UpdateDailyNetwork(request.ChainId, curDate, list);
-                _logger.LogInformation("handler round index chainId:{0},startDate:{1}", request.ChainId,
-                    DateTimeHelper.GetDateTimeString(curDate));
-                initRoundResp.UpdateDate.Add(DateTimeHelper.GetDateTimeString(curDate));
-                curDate = date;
-                list = new List<RoundIndex>();
-                list.Add(roundIndex);
-            }
-            else
-            {
-                list.Add(roundIndex);
-            }
-        }
+            var end = DateTimeHelper.GetAfterDayTotalSeconds(dailyTimestamp);
 
-        if (!list.IsNullOrEmpty())
-        {
-            await UpdateDailyNetwork(request.ChainId, curDate, list);
-            initRoundResp.UpdateDate.Add(DateTimeHelper.GetDateTimeString(curDate));
+            var indices = queryable.Where(c => c.StartTime >= dailyTimestamp).Where(c => c.StartTime < end)
+                .Take(10000)
+                .OrderBy(c => c.RoundNumber).ToList();
+            if (!indices.IsNullOrEmpty())
+            {
+                await UpdateDailyNetwork(request.ChainId, dailyTimestamp, indices);
+                initRoundResp.UpdateDate.Add(DateTimeHelper.GetDateTimeString(dailyTimestamp) + "_count:" +
+                                             indices.Count);
+            }
         }
 
         return initRoundResp;
     }
+
 
     public async Task UpdateDailyNetwork(string chainId, long todayTotalSeconds, List<RoundIndex> list)
     {
