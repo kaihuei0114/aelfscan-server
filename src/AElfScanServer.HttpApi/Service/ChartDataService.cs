@@ -96,12 +96,19 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             dailyTimestamps.Add(dailyTimestamp);
         }
 
+        var list = new List<string>();
+        foreach (var dailyTimestamp in dailyTimestamps)
+        {
+            list.Add(DateTimeHelper.GetDateTimeString(dailyTimestamp));
+        }
+
         var initRoundResp = new InitRoundResp();
         var queryable = await _roundIndexRepository.GetQueryableAsync();
         queryable = queryable.Where(c => c.ChainId == request.ChainId);
         var count = queryable.Where(c => c.StartTime >= request.StartDate).Where(c => c.StartTime <= request.EndDate)
             .Count();
         initRoundResp.RoundCount = count;
+        initRoundResp.UpdateDate = new List<string>();
 
         if (!request.UpdateData)
         {
@@ -115,6 +122,10 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             var indices = queryable.Where(c => c.StartTime >= dailyTimestamp).Where(c => c.StartTime < end)
                 .Take(10000)
                 .OrderBy(c => c.RoundNumber).ToList();
+
+            _logger.LogInformation("InitDailyNetwork chainId:{c},date:{d},end:{e},endstr:{e}", request.ChainId,
+                DateTimeHelper.GetDateTimeString(dailyTimestamp) + "_count:" + indices.Count, end,
+                DateTimeHelper.GetDateTimeString(end));
             if (!indices.IsNullOrEmpty())
             {
                 await UpdateDailyNetwork(request.ChainId, dailyTimestamp, indices);
@@ -270,39 +281,18 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         foreach (var nodeBlockProduce in blockProduces)
         {
-            nodeBlockProduce.BlocksRate = (nodeBlockProduce.Blocks / nodeExpectBlocks).ToString("F2");
-            nodeBlockProduce.CycleRate = (nodeBlockProduce.TotalCycle / totalCycle).ToString("F2");
+            nodeBlockProduce.BlocksRate = (nodeBlockProduce.Blocks / (decimal)nodeExpectBlocks).ToString("F2");
+            nodeBlockProduce.CycleRate = (nodeBlockProduce.TotalCycle / (decimal)totalCycle).ToString("F2");
         }
 
         nodeBlockProduceResp.List = blockProduces;
         return nodeBlockProduceResp;
-
-        // var roundQueryable = await _roundIndexRepository.GetQueryableAsync();
-        // if (request.StartDate > 0 && request.EndDate > 0)
-        // {
-        //     roundQueryable = roundQueryable.Where(c => c.StartTime >= request.StartDate)
-        //         .Where(c => c.StartTime <= request.EndDate);
-        // }
-        //
-        // var roundIndices = roundQueryable.Where(c => c.ChainId == request.ChainId).ToList();
-        //
-        //
-        // var totalCycle = 0l;
-        //
-        // foreach (var roundIndex in roundIndices)
-        // {
-        //     
-        // }
     }
 
     public async Task<BlockProduceRateResp> GetBlockProduceRateAsync(ChartDataRequest request)
     {
         var queryableAsync = await _blockProduceIndexRepository.GetQueryableAsync();
 
-        if (request.StartDate > 0 && request.EndDate > 0)
-        {
-            // queryableAsync = queryableAsync.Where(c=>)
-        }
 
         var list = queryableAsync.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Skip(0).Take(1000)
             .ToList();
@@ -311,6 +301,12 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var destination = _objectMapper.Map<List<DailyBlockProduceCountIndex>, List<DailyBlockProduceCount>>(list);
 
         var orderList = destination.OrderBy(c => c.BlockProductionRate);
+
+        foreach (var i in destination)
+        {
+            i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
+        }
+
 
         var blockProduceRateResp = new BlockProduceRateResp()
         {
@@ -337,6 +333,11 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var orderList = destination.OrderBy(c => c.AvgBlockDuration);
 
+        foreach (var i in destination)
+        {
+            i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
+        }
+
         var durationResp = new AvgBlockDurationResp()
         {
             List = destination,
@@ -361,6 +362,12 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var orderList = destination.OrderBy(c => c.CycleCount);
 
+        foreach (var i in destination)
+        {
+            i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
+        }
+
+
         var cycleCountResp = new CycleCountResp()
         {
             List = destination,
@@ -384,6 +391,12 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         dailyTransactionCountResp.List
             = JsonConvert.DeserializeObject<List<DailyTransactionCount>>(value);
+
+        foreach (var dailyTransactionCount in dailyTransactionCountResp.List)
+        {
+            dailyTransactionCount.DateStr = DateTimeHelper.GetDateTimeString(dailyTransactionCount.Date);
+        }
+
 
         dailyTransactionCountResp.HighestTransactionCount =
             dailyTransactionCountResp.List.MaxBy(c => c.TransactionCount);
@@ -419,6 +432,13 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
                 uniqueAddressCounts[i].AddressCount + uniqueAddressCounts[i - 1].AddressCount;
         }
 
+
+        foreach (var i in uniqueAddressCounts)
+        {
+            i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
+        }
+
+
         uniqueAddressCountResp.List
             = uniqueAddressCounts;
         uniqueAddressCountResp.HighestIncrease =
@@ -443,6 +463,11 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         activeAddressCountResp.List
             = JsonConvert.DeserializeObject<List<DailyActiveAddressCount>>(value);
+        foreach (var i in activeAddressCountResp.List)
+        {
+            i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
+        }
+
 
         activeAddressCountResp.HighestActiveCount =
             activeAddressCountResp.List.MaxBy(c => c.AddressCount);

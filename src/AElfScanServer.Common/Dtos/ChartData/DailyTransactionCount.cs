@@ -5,6 +5,8 @@ public class DailyTransactionCount
     public long Date { get; set; }
     public int TransactionCount { get; set; }
     public int BlockCount { get; set; }
+
+    public string DateStr { get; set; }
 }
 
 public class UniqueAddressCount
@@ -13,6 +15,8 @@ public class UniqueAddressCount
     public int AddressCount { get; set; }
 
     public int TotalUniqueAddressees { get; set; }
+
+    public string DateStr { get; set; }
 }
 
 public class DailyActiveAddressCount
@@ -22,6 +26,8 @@ public class DailyActiveAddressCount
 
     public long SendAddressCount { get; set; }
     public long ReceiveAddressCount { get; set; }
+
+    public string DateStr { get; set; }
 }
 
 public class DailyBlockProduceCount
@@ -30,6 +36,8 @@ public class DailyBlockProduceCount
     public string BlockProductionRate { get; set; }
     public long BlockCount { get; set; }
     public long MissedBlockCount { get; set; }
+
+    public string DateStr { get; set; }
 }
 
 public class DailyBlockProduceDuration
@@ -38,6 +46,8 @@ public class DailyBlockProduceDuration
     public string AvgBlockDuration { get; set; }
     public string LongestBlockDuration { get; set; }
     public string ShortestBlockDuration { get; set; }
+
+    public string DateStr { get; set; }
 }
 
 public class DailyCycleCount
@@ -46,4 +56,6 @@ public class DailyCycleCount
     public long CycleCount { get; set; }
     public long MissedBlockCount { get; set; }
     public long MissedCycle { get; set; }
+
+    public string DateStr { get; set; }
 }
