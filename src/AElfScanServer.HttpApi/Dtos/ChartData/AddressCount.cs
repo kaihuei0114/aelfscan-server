@@ -58,6 +58,8 @@ public class NodeBlockProduce
 
     public long MissedCycle { get; set; }
 
+    public long ExpectBlocks { get; set; }
+
     public string CycleRate { get; set; }
 
     public string NodeName { get; set; }
