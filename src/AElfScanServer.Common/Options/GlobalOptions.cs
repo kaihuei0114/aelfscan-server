@@ -24,7 +24,7 @@ public class GlobalOptions
     public long TokenUsdPriceExpireDurationSeconds { get; set; }
 
     public string ContractAddressTreasury { get; set; }
-    public string ContractAddressConsensus { get; set; }
+    public Dictionary<string, string> ContractAddressConsensus { get; set; }
 
     public string BNBaseUrl { get; set; }
 
@@ -43,6 +43,7 @@ public class GlobalOptions
 
     public int TransactionListMaxCount { get; set; }
 
+    public bool InitChartData { get; set; }
 
     public Dictionary<string, HashSet<string>> ContractParseLogEvent { get; set; } = new();
 

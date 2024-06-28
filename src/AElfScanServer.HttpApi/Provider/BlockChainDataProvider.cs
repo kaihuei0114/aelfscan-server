@@ -96,9 +96,12 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
             var int64Value = new Int64Value();
             int64Value.Value = blockHeight;
 
-            var address = chainId == "AELF"
-                ? _globalOptions.TreasuryContractAddress
-                : _globalOptions.ContractAddressConsensus;
+            var address = _globalOptions.ContractAddressConsensus[chainId];
+            if (address.IsNullOrEmpty())
+            {
+                return "";
+            }
+
             var transaction =
                 await elfClient.GenerateTransactionAsync(
                     elfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
@@ -143,8 +146,6 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
         return contractAddress;
     }
-
-
 
 
     public async Task<string> TransformTokenToUsdValueAsync(string symbol, long amount)
@@ -396,8 +397,8 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
         return response;
     }
-    
-    
+
+
     public async Task<NodeTransactionDto> GetTransactionDetailAsync(string chainId, string transactionId)
     {
         var apiPath = string.Format("/api/blockChain/transactionResult?transactionId={0}",
