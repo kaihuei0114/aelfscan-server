@@ -7,6 +7,7 @@ using AElf.EntityMapping.Repositories;
 using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.Options;
+using AElfScanServer.Domain.Shared.Common;
 using AElfScanServer.HttpApi.Dtos.ChartData;
 using AElfScanServer.HttpApi.Helper;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -38,12 +39,7 @@ public interface IChartDataService
     public Task<NodeBlockProduceResp> GetNodeBlockProduceRespAsync(ChartDataRequest request);
 
 
-    public Task<string> SetRoundNumberAsync(SetRoundRequest request);
-
-
-    public Task<InitRoundResp> InitDailyNetwork(ChartDataRequest request);
-
-    public Task<long> GetRoundNumberAsync(SetRoundRequest request);
+    public Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request);
 }
 
 public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDependency
@@ -79,38 +75,66 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     }
 
 
-    public async Task<InitRoundResp> InitDailyNetwork(ChartDataRequest request)
+    public async Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request)
     {
         var queryable = await _roundIndexRepository.GetQueryableAsync();
         var initRoundResp = new InitRoundResp();
 
-        var indices = queryable.Where(c => c.ChainId == request.ChainId).ToList();
-        var roundIndices = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.RoundNumber).ToList()
-            .First();
+        queryable = queryable.Where(c => c.ChainId == request.ChainId);
 
-        var start = roundIndices.StartTime;
-        var afterDayTotalSeconds = DateTimeHelper.GetAfterDayTotalSeconds(roundIndices.StartTime);
-        var queryable2 = await _roundIndexRepository.GetQueryableAsync();
+        var indices = queryable.Where(c => c.StartTime >= request.StartDate).Where(c => c.StartTime <= request.EndDate)
+            .OrderBy(c => c.RoundNumber).ToList();
 
-        while (true)
+        initRoundResp.MinDate = DateTimeHelper.GetDateTimeString(indices.First().StartTime);
+        initRoundResp.MaxDate = DateTimeHelper.GetDateTimeString(indices.Last().StartTime);
+        initRoundResp.MinRound = indices.First().RoundNumber;
+        initRoundResp.MaxRound = indices.Last().RoundNumber;
+        initRoundResp.RoundCount = indices.Count;
+        initRoundResp.UpdateDate = new List<string>();
+
+        
+        if (request.SetNumber > 0)
         {
-            var list = queryable.Where(w => w.StartTime >= start)
-                .Where(w => w.StartTime < afterDayTotalSeconds).Where(c => c.ChainId == request.ChainId).ToList();
-
-
-            if (list.IsNullOrEmpty())
-            {
-                initRoundResp.FinishDate = DateTimeHelper.GetDateTimeString(start);
-                return initRoundResp;
-            }
-
-            await UpdateDailyNetwork(request.ChainId, roundIndices.StartTime, list);
-            _logger.LogInformation("handler round index chainId:{0},startDate:{1}", request.ChainId,
-                DateTimeHelper.GetDateTimeString(start));
-
-            start = afterDayTotalSeconds;
-            afterDayTotalSeconds = DateTimeHelper.GetAfterDayTotalSeconds(afterDayTotalSeconds);
+            await ConnectAsync();
+            RedisDatabase.StringSet(RedisKeyHelper.LatestRound(request.ChainId), request.SetNumber);
         }
+
+        if (!request.UpdateData)
+        {
+            return initRoundResp;
+        }
+
+        var curDate = DateTimeHelper.GetDateTimeLong(indices[0].StartTime);
+        var list = new List<RoundIndex>();
+        list.Add(indices[0]);
+
+
+        foreach (var roundIndex in indices.GetRange(1, indices.Count - 1))
+        {
+            var date = DateTimeHelper.GetDateTimeLong(roundIndex.StartTime);
+            if (date != curDate)
+            {
+                await UpdateDailyNetwork(request.ChainId, curDate, list);
+                _logger.LogInformation("handler round index chainId:{0},startDate:{1}", request.ChainId,
+                    DateTimeHelper.GetDateTimeString(curDate));
+                initRoundResp.UpdateDate.Add(DateTimeHelper.GetDateTimeString(curDate));
+                curDate = date;
+                list = new List<RoundIndex>();
+                list.Add(roundIndex);
+            }
+            else
+            {
+                list.Add(roundIndex);
+            }
+        }
+
+        if (!list.IsNullOrEmpty())
+        {
+            await UpdateDailyNetwork(request.ChainId, curDate, list);
+            initRoundResp.UpdateDate.Add(DateTimeHelper.GetDateTimeString(curDate));
+        }
+
+        return initRoundResp;
     }
 
     public async Task UpdateDailyNetwork(string chainId, long todayTotalSeconds, List<RoundIndex> list)
@@ -202,28 +226,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             DateTimeHelper.GetDateTimeString(todayTotalSeconds));
     }
 
-    public async Task<string> SetRoundNumberAsync(SetRoundRequest request)
-    {
-        await ConnectAsync();
-
-        var redisValue = RedisDatabase.StringSet(RedisKeyHelper.LatestRound(request.ChainId), request.RoundNumber);
-        return redisValue.ToString();
-    }
-
-    public async Task<long> GetRoundNumberAsync(SetRoundRequest request)
-    {
-        await ConnectAsync();
-
-        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.LatestRound(request.ChainId));
-
-
-        if (request.SetNumber)
-        {
-            RedisDatabase.StringSet(RedisKeyHelper.LatestRound(request.ChainId), request.RoundNumber);
-        }
-
-        return (long)redisValue;
-    }
 
     public async Task<NodeBlockProduceResp> GetNodeBlockProduceRespAsync(ChartDataRequest request)
     {

@@ -12,16 +12,29 @@ public class ChartDataRequest
 
 public class SetRoundRequest
 {
-    public long RoundNumber { get; set; }
     public string ChainId { get; set; }
 
-    public bool SetNumber { get; set; }
+    public long StartDate { get; set; }
+    public long EndDate { get; set; }
+
+    public int SetNumber { get; set; }
+
+    public bool UpdateData { get; set; }
 }
 
 public class InitRoundResp
 {
-    public long InitTime { get; set; }
+    public long MinRound { get; set; }
 
+    public long MaxRound { get; set; }
+
+    public long RoundCount { get; set; }
+
+    public string MinDate { get; set; }
+
+    public List<string> UpdateDate { get; set; }
+
+    public string MaxDate { get; set; }
     public string FinishDate { get; set; }
 }
 

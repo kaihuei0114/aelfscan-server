@@ -36,6 +36,16 @@ public static class DateTimeHelper
         return new DateTime(1970, 1, 1).AddMilliseconds(milliseconds).ToString("yyyy-MM-dd HH:mm:ss");
     }
 
+    public static long GetDateTimeLong(long milliseconds)
+    {
+        DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds);
+        DateTime dateTime = dateTimeOffset.DateTime;
+
+        var dateTotalMilliseconds = GetDateTotalMilliseconds(dateTime);
+        return dateTotalMilliseconds;
+    }
+
+
     public static long GetDateTotalMilliseconds(DateTime dateTime)
     {
         DateTime currentDate = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day);
@@ -72,26 +82,23 @@ public static class DateTimeHelper
 
     public static long GetAfterDayTotalSeconds(long t)
     {
-        
         DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(t);
 
-        // 将时分秒设置为0，得到只包含年月日的时间
         DateTimeOffset dateOnly = new DateTimeOffset(
             dateTimeOffset.Year,
             dateTimeOffset.Month,
             dateTimeOffset.Day,
-            0, // 小时
-            0, // 分钟
-            0, // 秒
-            dateTimeOffset.Offset // 保留原始的时区偏移量
+            0,
+            0,
+            0,
+            dateTimeOffset.Offset
         );
-        
+
         long dateOnlyTimestamp = dateOnly.ToUnixTimeMilliseconds();
-        
+
         DateTimeOffset day = DateTimeOffset.FromUnixTimeMilliseconds(dateOnlyTimestamp);
         DateTimeOffset oneDayLater = day.AddDays(1);
 
-        // 将增加一天后的DateTimeOffset对象转换回毫秒时间戳
         long oneDayLaterTimestamp = oneDayLater.ToUnixTimeMilliseconds();
         return oneDayLaterTimestamp;
     }
