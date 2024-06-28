@@ -145,13 +145,6 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     }
 
 
-    public async Task GetKlInePrice(long startTime, long endTime, string symbol, string chainId)
-    {
-        var market = new Market(_globalOptions.BNBaseUrl, _globalOptions.BNApiKey,
-            _globalOptions.BNSecretKey);
-
-        var klines = await market.KlineCandlestickData(symbol, Interval.ONE_HOUR, startTime, endTime);
-    }
 
 
     public async Task<string> TransformTokenToUsdValueAsync(string symbol, long amount)
