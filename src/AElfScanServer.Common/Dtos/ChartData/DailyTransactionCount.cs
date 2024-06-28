@@ -11,6 +11,8 @@ public class UniqueAddressCount
 {
     public long Date { get; set; }
     public int AddressCount { get; set; }
+
+    public int TotalUniqueAddressees { get; set; }
 }
 
 public class DailyActiveAddressCount

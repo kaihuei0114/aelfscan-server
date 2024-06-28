@@ -316,8 +316,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 var min = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Min() * 1000;
                 var max = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Max() * 1000;
 
-                nodeInfo.StartTime = min ;
-                nodeInfo.EndTime = max ;
+                nodeInfo.StartTime = min;
+                nodeInfo.EndTime = max;
                 if (roundIndex.StartTime == 0)
                 {
                     roundIndex.StartTime = min;
@@ -341,32 +341,40 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
         await _roundIndexRepository.AddOrUpdateAsync(roundIndex);
         _logger.LogInformation("Insert round index chainId:{0},round number:{1},date:{2}", chainId, round.RoundNumber,
-            DateTimeHelper.GetDateTimeString(roundIndex.StartTime ));
+            DateTimeHelper.GetDateTimeString(roundIndex.StartTime));
         await _nodeBlockProduceRepository.AddOrUpdateManyAsync(batch);
         _logger.LogInformation("Insert node block produce index chainId:{0},round number:{1},date:{2}", chainId,
-            round.RoundNumber, DateTimeHelper.GetDateTimeString(roundIndex.StartTime ));
+            round.RoundNumber, DateTimeHelper.GetDateTimeString(roundIndex.StartTime));
     }
 
     public async Task UpdateChartDataAsync()
     {
-        var chainId = "AELF";
-        await ConnectAsync();
-        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.ChartDataLastBlockHeight(chainId));
-        var lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
+        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        {
+            await ConnectAsync();
+            var redisValue = RedisDatabase.StringGet(RedisKeyHelper.ChartDataLastBlockHeight(chainId));
+            var lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
 
-        var batchTransactionList =
-            await GetBatchTransactionList(chainId, lastBlockHeight, lastBlockHeight + PullTransactioninterval);
+            var batchTransactionList =
+                await GetBatchTransactionList(chainId, lastBlockHeight, lastBlockHeight + PullTransactioninterval);
 
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        await HandlerDailyTransactionsAsync(batchTransactionList, chainId);
-        await HandlerUniqueAddressesAsync(batchTransactionList, chainId);
-        await HandlerDailyActiveAddressesAsync(batchTransactionList, chainId);
-        stopwatch.Stop();
-        _logger.LogInformation("Handler transaction data chainId:{0},count:{1},time:{2}", chainId,
-            batchTransactionList.Count, stopwatch.Elapsed.TotalSeconds);
+            if (batchTransactionList.IsNullOrEmpty())
+            {
+                _logger.LogInformation("batchTransactionList is null: start:{0},end:{1}", lastBlockHeight,
+                    lastBlockHeight + PullTransactioninterval);
+            }
 
-        RedisDatabase.StringSet(RedisKeyHelper.ChartDataLastBlockHeight(chainId),
-            lastBlockHeight + PullTransactioninterval);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            // await HandlerDailyTransactionsAsync(batchTransactionList, chainId);
+            await HandlerUniqueAddressesAsync(batchTransactionList, chainId);
+            // await HandlerDailyActiveAddressesAsync(batchTransactionList, chainId);
+            stopwatch.Stop();
+            _logger.LogInformation("Handler transaction data chainId:{0},count:{1},time:{2}", chainId,
+                batchTransactionList.Count, stopwatch.Elapsed.TotalSeconds);
+
+            RedisDatabase.StringSet(RedisKeyHelper.ChartDataLastBlockHeight(chainId),
+                lastBlockHeight + PullTransactioninterval);
+        }
     }
 
     public async Task HandlerDailyActiveAddressesAsync(List<IndexerTransactionDto> list, string chainId)
@@ -499,7 +507,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             if (uniqueAddressesDic.TryGetValue(indexerTransactionDto.From, out var fromDate))
             {
-                uniqueAddressesDic[indexerTransactionDto.From] = date < fromDate ? date : fromDate;
+                uniqueAddressesDic[indexerTransactionDto.From] = Math.Min(date, fromDate);
             }
             else
             {
@@ -508,13 +516,15 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             if (uniqueAddressesDic.TryGetValue(indexerTransactionDto.To, out var toDate))
             {
-                uniqueAddressesDic[indexerTransactionDto.To] = date < toDate ? date : toDate;
+                uniqueAddressesDic[indexerTransactionDto.To] = Math.Min(date, toDate);
             }
             else
             {
                 uniqueAddressesDic.Add(indexerTransactionDto.To, date);
             }
         }
+
+        var addressSet = uniqueAddressesDic.Keys.Select(c => c).ToList();
 
         await ConnectAsync();
         var stringGet = RedisDatabase.StringGet(RedisKeyHelper.UniqueAddresses(chainId));
@@ -541,6 +551,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             var data = JsonConvert.SerializeObject(firstUniqueAddressCounts);
             RedisDatabase.StringSet(RedisKeyHelper.UniqueAddresses(chainId), data);
+            foreach (var keyPair in uniqueAddressesDic)
+            {
+                RedisDatabase.SetAdd(RedisKeyHelper.UniqueAddressesHashSet(chainId), keyPair.Key);
+            }
+
             return;
         }
 
@@ -549,54 +564,43 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
         var updateAddressCountsDic = updateUniqueAddressCounts.ToDictionary(c => c.Date, c => c);
 
-        var newUniqueAddressCountsDic = new Dictionary<long, int>();
-        var firstTransactionAddresses = new List<string>();
 
         foreach (var keyValuePair in uniqueAddressesDic)
         {
-            var redisValue = RedisDatabase.StringGet(RedisKeyHelper.AddressFirstTransaction(chainId, keyValuePair.Key));
-            if (redisValue.IsNullOrEmpty)
+            await ConnectAsync();
+
+            if (RedisDatabase.SetContains(RedisKeyHelper.UniqueAddressesHashSet(chainId), keyValuePair.Key))
             {
-                if (updateAddressCountsDic.TryGetValue(keyValuePair.Value, out var v))
-                {
-                    v.AddressCount++;
-                    _logger.LogInformation("Update unique address count date:{0},address count:{1}",
-                        DateTimeHelper.GetDateTimeString(keyValuePair.Value), v.AddressCount);
-                }
-                else
-                {
-                    if (newUniqueAddressCountsDic.TryGetValue(keyValuePair.Value, out var count))
-                    {
-                        newUniqueAddressCountsDic[keyValuePair.Value] = count + 1;
-                    }
-                    else
-                    {
-                        newUniqueAddressCountsDic[keyValuePair.Value] = 1;
-                        firstTransactionAddresses.Add(keyValuePair.Key);
-                    }
-                }
+                continue;
             }
-        }
 
-        if (!newUniqueAddressCountsDic.IsNullOrEmpty())
-        {
-            var updateUniqueAddressCountsList = newUniqueAddressCountsDic.Select(c => new UniqueAddressCount()
+
+            if (updateAddressCountsDic.TryGetValue(keyValuePair.Value, out var v))
             {
-                Date = c.Key,
-                AddressCount = c.Value
-            }).ToList().OrderBy(c => c.Date);
-            updateUniqueAddressCounts.AddRange(updateUniqueAddressCountsList);
+                v.AddressCount++;
+                _logger.LogInformation("Update unique address count date:{0},address count:{1}",
+                    DateTimeHelper.GetDateTimeString(keyValuePair.Value), v.AddressCount);
+            }
+            else
+            {
+                updateAddressCountsDic[keyValuePair.Value] = new UniqueAddressCount()
+                {
+                    Date = keyValuePair.Value,
+                    AddressCount = 1
+                };
+            }
+
+            RedisDatabase.SetAdd(RedisKeyHelper.UniqueAddressesHashSet(chainId), keyValuePair.Key);
         }
 
-        foreach (var firstTransactionAddress in firstTransactionAddresses)
-        {
-            RedisDatabase.StringSet(RedisKeyHelper.AddressFirstTransaction(chainId, firstTransactionAddress),
-                "-");
-        }
+
+        updateUniqueAddressCounts = updateAddressCountsDic.Values.Select(c => c).OrderBy(c => c.Date).ToList();
+
 
         var serializeObject = JsonConvert.SerializeObject(updateUniqueAddressCounts);
         RedisDatabase.StringSet(RedisKeyHelper.UniqueAddresses(chainId), serializeObject);
     }
+
 
     public async Task HandlerDailyTransactionsAsync(List<IndexerTransactionDto> list, string chainId)
     {
@@ -608,8 +612,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         foreach (var indexerTransactionDto in list)
         {
             var key = DateTimeHelper.GetDateTotalMilliseconds(indexerTransactionDto.BlockTime);
-            startScore = key < startScore ? key : startScore;
-            stopScore = key > stopScore ? key : stopScore;
+            startScore = Math.Min(key, startScore);
+            stopScore = Math.Max(key, stopScore);
 
 
             if (nowDailyTransactionCountDic.ContainsKey(key))

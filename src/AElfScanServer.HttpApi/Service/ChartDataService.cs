@@ -85,7 +85,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var initRoundResp = new InitRoundResp();
 
         var indices = queryable.Where(c => c.ChainId == request.ChainId).ToList();
-        var roundIndices = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.RoundNumber).ToList().First();
+        var roundIndices = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.RoundNumber).ToList()
+            .First();
 
         var start = roundIndices.StartTime;
         var afterDayTotalSeconds = DateTimeHelper.GetAfterDayTotalSeconds(roundIndices.StartTime);
@@ -198,7 +199,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         await _blockProduceDurationRepository.AddOrUpdateAsync(dailyBlockProduceDurationIndex);
         await _cycleCountRepository.AddOrUpdateAsync(dailyCycleCountIndex);
         _logger.LogInformation("Insert daily network statistic count index chainId:{0},date:{1}", chainId,
-            DateTimeHelper.GetDateTimeString(todayTotalSeconds ));
+            DateTimeHelper.GetDateTimeString(todayTotalSeconds));
     }
 
     public async Task<string> SetRoundNumberAsync(SetRoundRequest request)
@@ -413,9 +414,21 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var key = RedisKeyHelper.UniqueAddresses(request.ChainId);
         var value = RedisDatabase.StringGet(key);
 
-        uniqueAddressCountResp.List
-            = JsonConvert.DeserializeObject<List<UniqueAddressCount>>(value);
+        var uniqueAddressCounts = JsonConvert.DeserializeObject<List<UniqueAddressCount>>(value);
+        for (var i = 0; i < uniqueAddressCounts.Count; i++)
+        {
+            if (i == 0)
+            {
+                uniqueAddressCounts[i].TotalUniqueAddressees = uniqueAddressCounts[i].AddressCount;
+                continue;
+            }
 
+            uniqueAddressCounts[i].TotalUniqueAddressees =
+                uniqueAddressCounts[i].AddressCount + uniqueAddressCounts[i - 1].AddressCount;
+        }
+
+        uniqueAddressCountResp.List
+            = uniqueAddressCounts;
         uniqueAddressCountResp.HighestIncrease =
             uniqueAddressCountResp.List.MaxBy(c => c.AddressCount);
 
