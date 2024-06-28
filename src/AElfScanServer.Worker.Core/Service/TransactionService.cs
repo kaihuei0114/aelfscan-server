@@ -407,6 +407,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         {
             var date = DateTimeHelper.GetDateTotalMilliseconds(indexerTransactionDto.BlockTime);
 
+            if (date == 0 && indexerTransactionDto.BlockHeight == 1)
+            {
+                date = _globalOptions.CurrentValue.OneBlockTime[chainId];
+            }
+
             if (activeAddressesDic.TryGetValue(date, out var v))
             {
                 v.Add(indexerTransactionDto.From);
@@ -526,6 +531,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         foreach (var indexerTransactionDto in list)
         {
             var date = DateTimeHelper.GetDateTotalMilliseconds(indexerTransactionDto.BlockTime);
+            if (date == 0 && indexerTransactionDto.BlockHeight == 1)
+            {
+                date = _globalOptions.CurrentValue.OneBlockTime[chainId];
+            }
+
 
             if (uniqueAddressesDic.TryGetValue(indexerTransactionDto.From, out var fromDate))
             {
@@ -571,29 +581,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }).ToList().OrderBy(c => c.Date);
 
 
-            var insertData = "";
-            var uniqueAddressCounts = firstUniqueAddressCounts.ToList();
-
-            if (uniqueAddressCounts.Count == 2 && uniqueAddressCounts[0].Date == 0)
-            {
-                var addressCount = uniqueAddressCounts[1].AddressCount + uniqueAddressCounts[0].AddressCount;
-
-                var addressCounts = new List<UniqueAddressCount>();
-                var insert = new UniqueAddressCount()
-                {
-                    Date = uniqueAddressCounts[1].Date,
-                    AddressCount = addressCount,
-                    TotalUniqueAddressees = addressCount
-                };
-                addressCounts.Add(insert);
-
-                insertData = JsonConvert.SerializeObject(addressCounts);
-            }
-            else
-            {
-                insertData = JsonConvert.SerializeObject(firstUniqueAddressCounts);
-            }
-
+            var insertData = JsonConvert.SerializeObject(firstUniqueAddressCounts);
 
             RedisDatabase.StringSet(RedisKeyHelper.UniqueAddresses(chainId), insertData);
             foreach (var keyPair in uniqueAddressesDic)
@@ -657,6 +645,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         foreach (var indexerTransactionDto in list)
         {
             var key = DateTimeHelper.GetDateTotalMilliseconds(indexerTransactionDto.BlockTime);
+
+            if (key == 0 && indexerTransactionDto.BlockHeight == 1)
+            {
+                key = _globalOptions.CurrentValue.OneBlockTime[chainId];
+            }
+
             startScore = Math.Min(key, startScore);
             stopScore = Math.Max(key, stopScore);
 
@@ -698,27 +692,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 updateDailyTransactionCounts.Add(element);
             }
 
-            var dailyTransactionCounts = new List<DailyTransactionCount>();
-
-            if (updateDailyTransactionCounts.Count == 2)
-            {
-                var transactionCounts = updateDailyTransactionCounts.OrderBy(c => c.Date).ToList();
-
-                var date0 = transactionCounts[0].Date;
-                DailyTransactionCount idx0 = transactionCounts[0];
-                DailyTransactionCount idx1 = transactionCounts[1];
-                if (date0 == 0)
-                {
-                    var newData = new DailyTransactionCount()
-                    {
-                        Date = idx1.Date,
-                        TransactionCount = idx1.TransactionCount + idx0.TransactionCount,
-                        BlockCount = idx1.BlockCount + idx0.BlockCount
-                    };
-                    dailyTransactionCounts.Add(newData);
-                    updateDailyTransactionCounts = dailyTransactionCounts;
-                }
-            }
 
             var d = JsonConvert.SerializeObject(updateDailyTransactionCounts);
 
