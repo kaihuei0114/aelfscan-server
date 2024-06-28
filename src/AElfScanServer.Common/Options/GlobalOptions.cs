@@ -26,10 +26,10 @@ public class GlobalOptions
     public string ContractAddressTreasury { get; set; }
     public string ContractAddressConsensus { get; set; }
 
-    public string BNApiKey { get; set; }
-    public string BNSecretKey { get; set; }
     public string BNBaseUrl { get; set; }
 
+    public bool NetworkInit { get; set; }
+    public long NetworkInitStart { get; set; }
     public long RewardCacheExpiration { get; set; } = 10;
     public long TransactionPerMinuteCount { get; set; }
 

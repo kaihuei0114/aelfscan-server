@@ -10,6 +10,14 @@ public class ChartDataRequest
     public string ChainId { get; set; }
 }
 
+public class SetRoundRequest
+{
+    public long RoundNumber { get; set; }
+    public string ChainId { get; set; }
+
+    public bool SetNumber { get; set; }
+}
+
 public class DailyTransactionCountResp
 {
     public List<DailyTransactionCount> List { get; set; }

@@ -34,6 +34,11 @@ public interface IChartDataService
     public Task<CycleCountResp> GetCycleCountRespAsync(ChartDataRequest request);
 
     public Task<NodeBlockProduceResp> GetNodeBlockProduceRespAsync(ChartDataRequest request);
+
+
+    public Task<string> SetRoundNumberAsync(SetRoundRequest request);
+
+    public Task<long> GetRoundNumberAsync(SetRoundRequest request);
 }
 
 public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDependency
@@ -65,6 +70,30 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _blockProduceDurationRepository = blockProduceDurationRepository;
         _cycleCountRepository = cycleCountRepository;
         _globalOptions = globalOptions;
+    }
+
+
+    public async Task<string> SetRoundNumberAsync(SetRoundRequest request)
+    {
+        await ConnectAsync();
+
+        var redisValue = RedisDatabase.StringSet(RedisKeyHelper.LatestRound(request.ChainId), request.RoundNumber);
+        return redisValue.ToString();
+    }
+
+    public async Task<long> GetRoundNumberAsync(SetRoundRequest request)
+    {
+        await ConnectAsync();
+
+        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.LatestRound(request.ChainId));
+
+
+        if (request.SetNumber)
+        {
+            RedisDatabase.StringSet(RedisKeyHelper.LatestRound(request.ChainId), request.RoundNumber);
+        }
+
+        return (long)redisValue;
     }
 
     public async Task<NodeBlockProduceResp> GetNodeBlockProduceRespAsync(ChartDataRequest request)
@@ -184,7 +213,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var destination =
             _objectMapper.Map<List<DailyBlockProduceDurationIndex>, List<DailyBlockProduceDuration>>(list);
 
-        
+
         var orderList = destination.OrderBy(c => c.AvgBlockDuration);
 
         var durationResp = new AvgBlockDurationResp()
