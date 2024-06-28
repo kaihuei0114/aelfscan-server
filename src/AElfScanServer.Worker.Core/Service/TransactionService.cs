@@ -207,7 +207,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
     }
 
-    public async Task UpdateNetwork()
+    public async Task UpdateNetworkTmp()
     {
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
@@ -273,6 +273,67 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             await StatisticRoundInfo(round, chainId);
 
             RedisDatabase.StringSet(RedisKeyHelper.LatestRound(chainId), findRoundNumber);
+        }
+    }
+
+
+    public async Task UpdateNetwork()
+    {
+        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        {
+            var findRoundNumber = 0l;
+            try
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                stopwatch.Start();
+                var client = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
+                var currentValueContractAddressConsensu = _globalOptions.CurrentValue.ContractAddressConsensus[chainId];
+                if (currentValueContractAddressConsensu.IsNullOrEmpty())
+                {
+                    return;
+                }
+
+
+                await ConnectAsync();
+                var redisValue = RedisDatabase.StringGet(RedisKeyHelper.LatestRound(chainId));
+                if (redisValue.IsNullOrEmpty)
+                {
+                    return;
+                }
+
+                findRoundNumber = (long)redisValue;
+
+                var int64Value = new Int64Value()
+                {
+                    Value = (long)redisValue
+                };
+
+                _logger.LogInformation("UpdateNetwork round:{r} start:{c}", findRoundNumber, chainId);
+                var transaction = await client.GenerateTransactionAsync(
+                    client.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
+                    _globalOptions.CurrentValue.ContractAddressConsensus[chainId],
+                    "GetRoundInformation", int64Value);
+
+                var signTransaction = client.SignTransaction(GlobalOptions.PrivateKey, transaction);
+
+                var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto()
+                {
+                    RawTransaction = HexByteConvertorExtensions.ToHex(signTransaction.ToByteArray())
+                });
+
+                var round = Round.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
+
+                await StatisticRoundInfo(round, chainId);
+
+                RedisDatabase.StringSet(RedisKeyHelper.LatestRound(chainId), findRoundNumber + 1);
+                stopwatch.Stop();
+                _logger.LogInformation("Cost time Update network statistic chainId:{0},time:{1}", chainId,
+                    stopwatch.Elapsed.TotalSeconds);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("Update network round:{r},chainId:{c},error:{e}", findRoundNumber, chainId, e.Message);
+            }
         }
     }
 
@@ -355,21 +416,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task UpdateChartDataAsync()
     {
-        if (!FinishInitChartData)
-        {
-            await ConnectAsync();
-            foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
-            {
-                RedisDatabase.KeyDelete(RedisKeyHelper.UniqueAddressesHashSet(chainId));
-                RedisDatabase.KeyDelete(RedisKeyHelper.UniqueAddresses(chainId));
-                RedisDatabase.KeyDelete(RedisKeyHelper.DailyActiveAddresses(chainId));
-                RedisDatabase.KeyDelete(RedisKeyHelper.DailyTransactionCount(chainId));
-                RedisDatabase.KeyDelete(RedisKeyHelper.ChartDataLastBlockHeight(chainId));
-            }
-
-            FinishInitChartData = true;
-        }
-
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
             await ConnectAsync();
