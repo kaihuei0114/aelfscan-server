@@ -32,7 +32,6 @@ public class BlockChainIndexNameHelper
 
 public class RedisKeyHelper
 {
-    
     public static string LatestBlocks(string chainId)
     {
         return $"explore_{chainId}_latest_blocks";
@@ -43,16 +42,67 @@ public class RedisKeyHelper
         return $"explore_{chainId}_latest_transaction";
     }
     
+    
+    public static string LatestRound(string chainId)
+    {
+        return $"explore_{chainId}_latest_round";
+    }
+
+    public static string DailyActiveAddresses(string chainId)
+    {
+        return $"explore_statistic_{chainId}_DailyActiveAddresses";
+    }
+    
+    
+    public static string DailyActiveAddressesSet(string chainId,long date)
+    {
+        return $"explore_statistic_{chainId}_{date}_DailyActiveAddressesSet";
+    }
+    
+    public static string DailySendActiveAddressesSet(string chainId,long date)
+    {
+        return $"explore_statistic_{chainId}_{date}_SendDailyActiveAddressesSet";
+    }
+    
+    
+    public static string DailyReceiveAddressesSet(string chainId,long date)
+    {
+        return $"explore_statistic_{chainId}_{date}_ReceiveDailyActiveAddressesSet";
+    }
+
+    public static string DailyTransactionCount(string chainId)
+    {
+        return $"explore_statistic_{chainId}_DailyTransactionCount";
+    }
+
+
+
     public static string HomeOverview(string chainId)
     {
         return $"explore_{chainId}_home_overview";
     }
-    
+
     public static string TransactionChartData(string chainId)
     {
         return $"explore_{chainId}_transaction_chart";
     }
-    
+
+
+    public static string ChartDataLastBlockHeight(string chainId)
+    {
+        return $"explore_statistic_{chainId}_last_blockHeight";
+    }
+
+    public static string AddressFirstTransaction(string chainId, string address)
+    {
+        return $"explore_{chainId}_{address}_address_first_transaction";
+    }
+
+    public static string UniqueAddresses(string chainId)
+    {
+        return $"explore_{chainId}_unique_address_count";
+    }
+
     public static string RewardKey(string chainId)
     {
         return $"explore_{chainId}_rewardKey";

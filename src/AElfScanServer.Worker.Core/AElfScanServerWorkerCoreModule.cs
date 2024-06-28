@@ -13,7 +13,7 @@ namespace AElfScanServer.Worker.Core;
 [DependsOn(
     typeof(AbpAutoMapperModule),
     typeof(AElfEntityMappingElasticsearchModule),
-    typeof(AElfIndexingElasticsearchModule),
+    // typeof(AElfIndexingElasticsearchModule),
     typeof(HttpApiModule)
 )]
 public class AElfScanServerWorkerCoreModule : AbpModule

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
+using AElfScanServer.Common;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
@@ -38,7 +39,8 @@ namespace AElfScanServer.Worker;
     typeof(AbpIdentityHttpApiModule),
     typeof(AbpAspNetCoreSignalRModule),
     typeof(AElfEntityMappingElasticsearchModule),
-    typeof(AElfIndexingElasticsearchModule)
+    typeof(AElfIndexingElasticsearchModule),
+    typeof(AElfScanCommonModule)
 )]
 public class AElfScanServerWorkerModule : AbpModule
 {
@@ -195,10 +197,13 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
-        context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
-        context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
-        context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
-        context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
+        // context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
+        // context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
+        // context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
+        // context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
+        // context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
+        // context.AddBackgroundWorkerAsync<ChartDataWorker>();
+        context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
+        context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
     }
 }
