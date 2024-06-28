@@ -18,6 +18,13 @@ public class SetRoundRequest
     public bool SetNumber { get; set; }
 }
 
+public class InitRoundResp
+{
+    public long InitTime { get; set; }
+
+    public string FinishDate { get; set; }
+}
+
 public class DailyTransactionCountResp
 {
     public List<DailyTransactionCount> List { get; set; }

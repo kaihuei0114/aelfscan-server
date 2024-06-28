@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using AElf.EntityMapping.Repositories;
 using AElfScanServer.Common.Dtos.ChartData;
+using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.Options;
 using AElfScanServer.HttpApi.Dtos.ChartData;
 using AElfScanServer.HttpApi.Helper;
@@ -38,6 +40,9 @@ public interface IChartDataService
 
     public Task<string> SetRoundNumberAsync(SetRoundRequest request);
 
+
+    public Task<InitRoundResp> InitDailyNetwork(ChartDataRequest request);
+
     public Task<long> GetRoundNumberAsync(SetRoundRequest request);
 }
 
@@ -49,6 +54,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IEntityMappingRepository<DailyBlockProduceCountIndex, string> _blockProduceIndexRepository;
     private readonly IEntityMappingRepository<DailyBlockProduceDurationIndex, string> _blockProduceDurationRepository;
     private readonly IEntityMappingRepository<DailyCycleCountIndex, string> _cycleCountRepository;
+
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
 
@@ -72,6 +78,128 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _globalOptions = globalOptions;
     }
 
+
+    public async Task<InitRoundResp> InitDailyNetwork(ChartDataRequest request)
+    {
+        var queryable = await _roundIndexRepository.GetQueryableAsync();
+        var initRoundResp = new InitRoundResp();
+
+        var indices = queryable.Where(c => c.ChainId == request.ChainId).ToList();
+        var roundIndices = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.RoundNumber).ToList().First();
+
+        var start = roundIndices.StartTime;
+        var afterDayTotalSeconds = DateTimeHelper.GetAfterDayTotalSeconds(roundIndices.StartTime);
+        var queryable2 = await _roundIndexRepository.GetQueryableAsync();
+
+        while (true)
+        {
+            var list = queryable.Where(w => w.StartTime >= start)
+                .Where(w => w.StartTime < afterDayTotalSeconds).Where(c => c.ChainId == request.ChainId).ToList();
+
+
+            if (list.IsNullOrEmpty())
+            {
+                initRoundResp.FinishDate = DateTimeHelper.GetDateTimeString(start);
+                return initRoundResp;
+            }
+
+            await UpdateDailyNetwork(request.ChainId, roundIndices.StartTime, list);
+            _logger.LogInformation("handler round index chainId:{0},startDate:{1}", request.ChainId,
+                DateTimeHelper.GetDateTimeString(start));
+
+            start = afterDayTotalSeconds;
+            afterDayTotalSeconds = DateTimeHelper.GetAfterDayTotalSeconds(afterDayTotalSeconds);
+        }
+    }
+
+    public async Task UpdateDailyNetwork(string chainId, long todayTotalSeconds, List<RoundIndex> list)
+    {
+        if (list.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        var blockProduceIndex = new DailyBlockProduceCountIndex()
+        {
+            Date = todayTotalSeconds,
+            ChainId = chainId
+        };
+
+        var dailyCycleCountIndex = new DailyCycleCountIndex()
+        {
+            Date = todayTotalSeconds,
+            ChainId = chainId
+        };
+
+        var dailyBlockProduceDurationIndex = new DailyBlockProduceDurationIndex()
+        {
+            Date = todayTotalSeconds,
+            ChainId = chainId
+        };
+
+
+        var totalDuration = 0l;
+        decimal longestBlockDuration = 0;
+        decimal shortestBlockDuration = 0;
+        foreach (var round in list)
+        {
+            blockProduceIndex.BlockCount += round.Blcoks;
+            blockProduceIndex.MissedBlockCount += round.MissedBlocks;
+
+            dailyCycleCountIndex.CycleCount++;
+            totalDuration += round.DurationSeconds;
+            if (round.Blcoks == 0)
+            {
+                dailyCycleCountIndex.MissedCycle++;
+            }
+
+            if (round.Blcoks == 0 || round.DurationSeconds == 0)
+            {
+                _logger.LogWarning("Round duration or blocks is zero,chainId:{0},round number:{1}", chainId,
+                    round.RoundNumber);
+                continue;
+            }
+
+            var roundDurationSeconds = round.DurationSeconds / (decimal)round.Blcoks;
+
+            if (longestBlockDuration == 0)
+            {
+                longestBlockDuration = roundDurationSeconds;
+            }
+            else
+            {
+                longestBlockDuration =
+                    Math.Max(longestBlockDuration, roundDurationSeconds);
+            }
+
+
+            if (shortestBlockDuration == 0)
+            {
+                shortestBlockDuration = roundDurationSeconds;
+            }
+            else
+            {
+                shortestBlockDuration =
+                    Math.Min(shortestBlockDuration, roundDurationSeconds);
+            }
+        }
+
+        dailyCycleCountIndex.MissedBlockCount = blockProduceIndex.MissedBlockCount;
+        dailyBlockProduceDurationIndex.AvgBlockDuration =
+            (totalDuration / (decimal)blockProduceIndex.BlockCount).ToString("F2");
+        dailyBlockProduceDurationIndex.LongestBlockDuration = longestBlockDuration.ToString("F2");
+        dailyBlockProduceDurationIndex.ShortestBlockDuration = shortestBlockDuration.ToString("F2");
+
+        decimal result = blockProduceIndex.BlockCount /
+                         (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount);
+        blockProduceIndex.BlockProductionRate = result.ToString("F2");
+
+        await _blockProduceIndexRepository.AddOrUpdateAsync(blockProduceIndex);
+        await _blockProduceDurationRepository.AddOrUpdateAsync(dailyBlockProduceDurationIndex);
+        await _cycleCountRepository.AddOrUpdateAsync(dailyCycleCountIndex);
+        _logger.LogInformation("Insert daily network statistic count index chainId:{0},date:{1}", chainId,
+            DateTimeHelper.GetDateTimeString(todayTotalSeconds ));
+    }
 
     public async Task<string> SetRoundNumberAsync(SetRoundRequest request)
     {

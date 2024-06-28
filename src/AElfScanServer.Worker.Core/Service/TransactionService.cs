@@ -225,7 +225,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 RawTransaction = HexByteConvertorExtensions.ToHex(signTransaction.ToByteArray())
             });
 
-         
+
             var round = Round.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
 
             var findRoundNumber = 0l;
@@ -313,11 +313,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 roundIndex.ProduceBlockBpCount++;
                 roundIndex.ProduceBlockBpAddresses.Add(bpAddress);
 
-                var min = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Min();
-                var max = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Max();
+                var min = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Min() * 1000;
+                var max = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Max() * 1000;
 
-                nodeInfo.StartTime = min * 1000;
-                nodeInfo.EndTime = max * 1000;
+                nodeInfo.StartTime = min ;
+                nodeInfo.EndTime = max ;
                 if (roundIndex.StartTime == 0)
                 {
                     roundIndex.StartTime = min;
@@ -337,16 +337,14 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
 
         roundIndex.DurationSeconds = roundIndex.EndTime - roundIndex.StartTime;
-        roundIndex.StartTime = roundIndex.StartTime;
-        roundIndex.EndTime = roundIndex.EndTime;
 
 
         await _roundIndexRepository.AddOrUpdateAsync(roundIndex);
         _logger.LogInformation("Insert round index chainId:{0},round number:{1},date:{2}", chainId, round.RoundNumber,
-            DateTimeHelper.GetDateTimeString(roundIndex.StartTime * 1000));
+            DateTimeHelper.GetDateTimeString(roundIndex.StartTime ));
         await _nodeBlockProduceRepository.AddOrUpdateManyAsync(batch);
         _logger.LogInformation("Insert node block produce index chainId:{0},round number:{1},date:{2}", chainId,
-            round.RoundNumber, DateTimeHelper.GetDateTimeString(roundIndex.StartTime * 1000));
+            round.RoundNumber, DateTimeHelper.GetDateTimeString(roundIndex.StartTime ));
     }
 
     public async Task UpdateChartDataAsync()

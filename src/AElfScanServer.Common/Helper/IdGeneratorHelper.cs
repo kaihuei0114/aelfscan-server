@@ -54,7 +54,7 @@ public static class DateTimeHelper
         DateTime currentDate = new DateTime(now.Year, now.Month, now.Day);
         return GetTotalSeconds(currentDate);
     }
-    
+
     public static long GetTodayTotalMilliSeconds()
     {
         var now = DateTime.Now;
@@ -63,12 +63,37 @@ public static class DateTimeHelper
     }
 
 
-
     public static long GetTomorrowTotalSeconds()
     {
         var now = DateTime.Now;
         DateTime currentDate = new DateTime(now.Year, now.Month, now.Day + 1);
         return GetTotalSeconds(currentDate);
+    }
+
+    public static long GetAfterDayTotalSeconds(long t)
+    {
+        
+        DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(t);
+
+        // 将时分秒设置为0，得到只包含年月日的时间
+        DateTimeOffset dateOnly = new DateTimeOffset(
+            dateTimeOffset.Year,
+            dateTimeOffset.Month,
+            dateTimeOffset.Day,
+            0, // 小时
+            0, // 分钟
+            0, // 秒
+            dateTimeOffset.Offset // 保留原始的时区偏移量
+        );
+        
+        long dateOnlyTimestamp = dateOnly.ToUnixTimeMilliseconds();
+        
+        DateTimeOffset day = DateTimeOffset.FromUnixTimeMilliseconds(dateOnlyTimestamp);
+        DateTimeOffset oneDayLater = day.AddDays(1);
+
+        // 将增加一天后的DateTimeOffset对象转换回毫秒时间戳
+        long oneDayLaterTimestamp = oneDayLater.ToUnixTimeMilliseconds();
+        return oneDayLaterTimestamp;
     }
 
 
