@@ -563,10 +563,51 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         }
 
 
-        foreach (var i in uniqueAddressCounts)
+        var addressCounts = new List<UniqueAddressCount>();
+        if (request.StartDate > 0)
         {
-            i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
+            var dateTimeLong = DateTimeHelper.GetDateTimeLong(request.StartDate);
+
+
+            while (dateTimeLong < uniqueAddressCounts[0].Date)
+            {
+                addressCounts.Add(new UniqueAddressCount()
+                {
+                    Date = dateTimeLong,
+                    AddressCount = 0,
+                    TotalUniqueAddressees = 0,
+                    DateStr = DateTimeHelper.GetDateTimeString(dateTimeLong)
+                });
+                dateTimeLong = DateTimeHelper.GetAfterDayTotalSeconds(dateTimeLong);
+            }
         }
+
+        for (var i = 0; i < uniqueAddressCounts.Count; i++)
+        {
+            var uniqueAddressCount = uniqueAddressCounts[i];
+
+            uniqueAddressCount.DateStr = DateTimeHelper.GetDateTimeString(uniqueAddressCount.Date);
+            addressCounts.Add(uniqueAddressCount);
+            if (i == uniqueAddressCounts.Count() - 1)
+            {
+                break;
+            }
+
+            var afterDay = DateTimeHelper.GetAfterDayTotalSeconds(uniqueAddressCounts[i].Date);
+            while (afterDay < uniqueAddressCounts[i + 1].Date)
+            {
+                addressCounts.Add(new UniqueAddressCount()
+                {
+                    Date = afterDay,
+                    AddressCount = 0,
+                    TotalUniqueAddressees = addressCounts.Last().TotalUniqueAddressees,
+                    DateStr = DateTimeHelper.GetDateTimeString(afterDay)
+                });
+
+                afterDay = DateTimeHelper.GetAfterDayTotalSeconds(afterDay);
+            }
+        }
+
 
         uniqueAddressCountResp.Total = uniqueAddressCountResp.List.Count();
 
@@ -577,6 +618,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         uniqueAddressCountResp.LowestIncrease =
             uniqueAddressCountResp.List.MinBy(c => c.AddressCount);
+
 
         return uniqueAddressCountResp;
     }
