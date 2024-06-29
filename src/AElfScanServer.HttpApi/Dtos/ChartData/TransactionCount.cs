@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using AElfScanServer.Common.Dtos.ChartData;
 
 namespace AElfScanServer.HttpApi.Dtos.ChartData;
@@ -14,8 +15,8 @@ public class SetRoundRequest
 {
     public string ChainId { get; set; }
 
-    public long StartDate { get; set; }
-    public long EndDate { get; set; }
+    public string StartDate { get; set; }
+    public string EndDate { get; set; }
 
     public int SetNumber { get; set; }
 
@@ -34,12 +35,16 @@ public class InitRoundResp
 
     public List<string> UpdateDate { get; set; }
 
+
+    public List<string> UpdateDateNodeBlockProduce { get; set; }
+
     public string MaxDate { get; set; }
     public string FinishDate { get; set; }
 }
 
 public class DailyTransactionCountResp
 {
+    public long Total { get; set; } 
     public List<DailyTransactionCount> List { get; set; }
 
     public DailyTransactionCount HighestTransactionCount { get; set; }

@@ -10,9 +10,12 @@ using AElfScanServer.Common.Options;
 using AElfScanServer.Domain.Shared.Common;
 using AElfScanServer.HttpApi.Dtos.ChartData;
 using AElfScanServer.HttpApi.Helper;
+using AElfScanServer.HttpApi.Options;
+using Elasticsearch.Net;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
@@ -49,7 +52,9 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IEntityMappingRepository<NodeBlockProduceIndex, string> _nodeBlockProduceIndex;
     private readonly IEntityMappingRepository<DailyBlockProduceCountIndex, string> _blockProduceIndexRepository;
     private readonly IEntityMappingRepository<DailyBlockProduceDurationIndex, string> _blockProduceDurationRepository;
+    private readonly IEntityMappingRepository<HourNodeBlockProduceIndex, string> _hourNodeBlockProduceRepository;
     private readonly IEntityMappingRepository<DailyCycleCountIndex, string> _cycleCountRepository;
+    private readonly IElasticClient _elasticClient;
 
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
@@ -61,7 +66,9 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         IObjectMapper objectMapper,
         IEntityMappingRepository<DailyBlockProduceDurationIndex, string> blockProduceDurationRepository,
         IEntityMappingRepository<DailyCycleCountIndex, string> cycleCountRepository,
-        IOptionsMonitor<GlobalOptions> globalOptions) : base(
+        IOptionsMonitor<GlobalOptions> globalOptions,
+        IEntityMappingRepository<HourNodeBlockProduceIndex, string> hourNodeBlockProduceRepository,
+        IOptionsMonitor<ElasticsearchOptions> options) : base(
         optionsAccessor)
     {
         _logger = logger;
@@ -72,71 +79,142 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _blockProduceDurationRepository = blockProduceDurationRepository;
         _cycleCountRepository = cycleCountRepository;
         _globalOptions = globalOptions;
+        _hourNodeBlockProduceRepository = hourNodeBlockProduceRepository;
+        var uris = options.CurrentValue.Url.ConvertAll(x => new Uri(x));
+        var connectionPool = new StaticConnectionPool(uris);
+        var settings = new ConnectionSettings(connectionPool);
+        _elasticClient = new ElasticClient(settings);
     }
 
 
     public async Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request)
     {
+        var startDate = DateTimeHelper.ConvertYYMMDD(request.StartDate);
+
+        var endDate = DateTimeHelper.ConvertYYMMDD(request.EndDate);
         if (request.SetNumber > 0)
         {
             await ConnectAsync();
             RedisDatabase.StringSet(RedisKeyHelper.LatestRound(request.ChainId), request.SetNumber);
         }
 
-        DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(request.StartDate).DateTime;
-        DateTime endTime = DateTimeOffset.FromUnixTimeMilliseconds(request.EndDate).DateTime;
-        List<long> dailyTimestamps = new List<long>();
 
-        TimeSpan timeSpan = endTime - startTime;
-
-        for (int i = 0; i <= timeSpan.Days; i++)
-        {
-            DateTime dailyStart = startTime.AddDays(i);
-            long dailyTimestamp = ((DateTimeOffset)dailyStart).ToUnixTimeMilliseconds();
-            dailyTimestamps.Add(dailyTimestamp);
-        }
-
+        var dailyTimestamps = DateTimeHelper.GetRangeDayList(startDate, endDate);
         var list = new List<string>();
         foreach (var dailyTimestamp in dailyTimestamps)
         {
             list.Add(DateTimeHelper.GetDateTimeString(dailyTimestamp));
         }
 
-        var initRoundResp = new InitRoundResp();
+
         var queryable = await _roundIndexRepository.GetQueryableAsync();
         queryable = queryable.Where(c => c.ChainId == request.ChainId);
-        var count = queryable.Where(c => c.StartTime >= request.StartDate).Where(c => c.StartTime <= request.EndDate)
-            .Count();
-        initRoundResp.RoundCount = count;
-        initRoundResp.UpdateDate = new List<string>();
+        var roundIndices = queryable.Where(c => c.StartTime >= startDate)
+            .Where(c => c.StartTime <= endDate);
+        var count = roundIndices.Count();
+
+
+        var initRoundResp = new InitRoundResp()
+        {
+            RoundCount = count,
+            UpdateDate = new List<string>(),
+            UpdateDateNodeBlockProduce = new List<string>()
+        };
+
 
         if (!request.UpdateData)
         {
             return initRoundResp;
         }
 
-        foreach (var dailyTimestamp in dailyTimestamps)
-        {
-            var end = DateTimeHelper.GetAfterDayTotalSeconds(dailyTimestamp);
+        await UpdateHourNodeBlockProduce(request.ChainId, startDate, endDate);
 
-            var indices = queryable.Where(c => c.StartTime >= dailyTimestamp).Where(c => c.StartTime < end)
+        for (var i = 0; i < dailyTimestamps.Count - 1; i++)
+        {
+            var start = dailyTimestamps[i];
+            var end = dailyTimestamps[i + 1];
+            var indices = queryable.Where(c => c.StartTime >= start).Where(c => c.StartTime < end)
                 .Take(10000)
                 .OrderBy(c => c.RoundNumber).ToList();
 
             _logger.LogInformation("InitDailyNetwork chainId:{c},date:{d},end:{e},endstr:{e}", request.ChainId,
-                DateTimeHelper.GetDateTimeString(dailyTimestamp) + "_count:" + indices.Count, end,
+                DateTimeHelper.GetDateTimeString(start) + "_count:" + indices.Count, end,
                 DateTimeHelper.GetDateTimeString(end));
             if (!indices.IsNullOrEmpty())
             {
-                await UpdateDailyNetwork(request.ChainId, dailyTimestamp, indices);
-                initRoundResp.UpdateDate.Add(DateTimeHelper.GetDateTimeString(dailyTimestamp) + "_count:" +
+                await UpdateDailyNetwork(request.ChainId, start, indices);
+                initRoundResp.UpdateDate.Add(DateTimeHelper.GetDateTimeString(start) + "_count:" +
                                              indices.Count);
             }
         }
 
+
         return initRoundResp;
     }
 
+    public async Task UpdateHourNodeBlockProduce(string chainId, long start, long end)
+    {
+        var rangeDayList = DateTimeHelper.GetRangeDayList(start, end);
+
+
+        var hourNodeBlockProduceIndices = new List<HourNodeBlockProduceIndex>();
+
+        foreach (var dayTotalSeconds in rangeDayList)
+        {
+            var dayHourList = DateTimeHelper.GetDayHourList(dayTotalSeconds);
+
+            var queryable = await _nodeBlockProduceIndex.GetQueryableAsync();
+            queryable = queryable.Where(c => c.ChainId == chainId);
+
+
+            var batch = new List<HourNodeBlockProduceIndex>();
+
+            for (var i = 0; i < dayHourList.Count - 1; i++)
+            {
+                start = dayHourList[i];
+                end = dayHourList[i + 1];
+                var indexList = queryable.Where(c => c.StartTime >= start)
+                    .Where(c => c.EndTime < end).ToList();
+
+                if (indexList.IsNullOrEmpty())
+                {
+                    continue;
+                }
+
+                var dic = new Dictionary<string, HourNodeBlockProduceIndex>();
+
+                foreach (var index in indexList)
+                {
+                    if (dic.TryGetValue(index.NodeAddress, out var value))
+                    {
+                        value.MissedBlocks = index.MissedBlocks;
+                        value.Blocks = index.Blcoks;
+                        value.TotalCycle++;
+                    }
+                    else
+                    {
+                        dic[index.NodeAddress] = new HourNodeBlockProduceIndex()
+                        {
+                            Date = dayHourList[i],
+                            DateStr = DateTimeHelper.GetDateTimeString(dayHourList[i]),
+                            ChainId = chainId,
+                            Hour = i,
+                            TotalCycle = 1,
+                            NodeAddress = index.NodeAddress
+                        };
+                    }
+                }
+
+                batch.AddRange(dic.Values.Select(c => c).ToList());
+            }
+
+            hourNodeBlockProduceIndices.AddRange(batch);
+        }
+
+        await _hourNodeBlockProduceRepository.AddOrUpdateManyAsync(hourNodeBlockProduceIndices);
+        _logger.LogInformation("Insert hour node block produce index chainId:{c},start date:{d1},end date{d2}", chainId,
+            DateTimeHelper.GetDateTimeString(start), DateTimeHelper.GetDateTimeString(end));
+    }
 
     public async Task UpdateDailyNetwork(string chainId, long todayTotalSeconds, List<RoundIndex> list)
     {
@@ -230,25 +308,28 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
     public async Task<NodeBlockProduceResp> GetNodeBlockProduceRespAsync(ChartDataRequest request)
     {
-        var blockQueryable = await _nodeBlockProduceIndex.GetQueryableAsync();
+        var hourProduceQue = await _hourNodeBlockProduceRepository.GetQueryableAsync();
+
         if (request.StartDate > 0 && request.EndDate > 0)
         {
-            blockQueryable = blockQueryable.Where(c => c.StartTime >= request.StartDate)
-                .Where(c => c.StartTime < request.EndDate);
+            hourProduceQue = hourProduceQue.Where(c => c.Date >= request.StartDate)
+                .Where(c => c.Date < request.EndDate);
         }
 
         var nodeBlockProduceResp = new NodeBlockProduceResp();
 
         var nodeBlockProduces = new Dictionary<string, NodeBlockProduce>();
-        var nodeBlockProduceIndices = blockQueryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
-        foreach (var nodeBlockProduceIndex in nodeBlockProduceIndices)
+
+        var nodeBlockProduceIndices = hourProduceQue.ToList();
+        var hourNodeBlockProduceIndices = hourProduceQue.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+        foreach (var hourNodeBlockProduceIndex in hourNodeBlockProduceIndices)
         {
-            var address = nodeBlockProduceIndex.NodeAddress;
+            var address = hourNodeBlockProduceIndex.NodeAddress;
             if (nodeBlockProduces.TryGetValue(address, out var v))
             {
-                v.TotalCycle++;
-                v.Blocks += nodeBlockProduceIndex.Blcoks;
-                v.MissedBlocks += nodeBlockProduceIndex.MissedBlocks;
+                v.TotalCycle += hourNodeBlockProduceIndex.TotalCycle;
+                v.Blocks += hourNodeBlockProduceIndex.Blocks;
+                v.MissedBlocks += hourNodeBlockProduceIndex.MissedBlocks;
             }
             else
             {
@@ -256,9 +337,9 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
                 {
                     NodeAddress = address,
                     NodeName = await GetContractName(request.ChainId, address),
-                    TotalCycle = 1,
-                    Blocks = nodeBlockProduceIndex.Blcoks,
-                    MissedBlocks = nodeBlockProduceIndex.MissedBlocks
+                    TotalCycle = hourNodeBlockProduceIndex.TotalCycle,
+                    Blocks = hourNodeBlockProduceIndex.Blocks,
+                    MissedBlocks = hourNodeBlockProduceIndex.MissedBlocks
                 };
             }
         }
@@ -269,25 +350,69 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             roundQuery = roundQuery.Where(c => c.StartTime >= request.StartDate && c.StartTime < request.EndDate);
         }
 
-        var roundIndices = roundQuery.Where(c => c.ChainId == request.ChainId);
+        var roundIndices = roundQuery.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+
+
+        var ints = new Dictionary<string, int>();
+        foreach (var roundIndex in roundIndices)
+        {
+            var dateTimeString = DateTimeHelper.GetDateTimeString(DateTimeHelper.GetDateTimeLong(roundIndex.StartTime));
+            if (ints.ContainsKey(dateTimeString))
+            {
+                ints[dateTimeString]++;
+            }
+            else
+            {
+                ints[dateTimeString] = 1;
+            }
+        }
+
+        var dictionary = new Dictionary<string, long>();
+
+        foreach (var roundIndex in roundIndices)
+        {
+            foreach (var address in roundIndex.ProduceBlockBpAddresses)
+            {
+                if (dictionary.TryGetValue(address, out var count))
+                {
+                    dictionary[address]++;
+                }
+                else
+                {
+                    dictionary[address] = 1;
+                }
+            }
+        }
 
         var indices = roundIndices.ToList();
 
         var totalCycle = indices.Count;
 
-        var nodeExpectBlocks = totalCycle * 8;
 
         var blockProduces = nodeBlockProduces.Values.Select(c => c).OrderByDescending(c => c.Blocks).ToList();
 
         foreach (var nodeBlockProduce in blockProduces)
         {
             nodeBlockProduce.BlocksRate =
-                (nodeBlockProduce.Blocks / (decimal)nodeBlockProduce.Blocks + nodeBlockProduce.MissedBlocks)
+                ((double)nodeBlockProduce.Blocks / (double)(nodeBlockProduce.Blocks + nodeBlockProduce.MissedBlocks) *
+                 100)
                 .ToString("F2");
-            nodeBlockProduce.CycleRate = (nodeBlockProduce.TotalCycle / (decimal)totalCycle).ToString("F2");
+            nodeBlockProduce.CycleRate =
+                ((double)nodeBlockProduce.TotalCycle / (double)totalCycle * 100).ToString("F2");
+        }
+
+
+        foreach (var nodeBlockProduce in blockProduces)
+        {
+            if (dictionary.TryGetValue(nodeBlockProduce.NodeAddress, out var count))
+            {
+                nodeBlockProduce.InRound = count;
+            }
         }
 
         nodeBlockProduceResp.List = blockProduces;
+        nodeBlockProduceResp.Total = blockProduces.Count;
+        nodeBlockProduceResp.TotalCycle = roundIndices.Count();
         return nodeBlockProduceResp;
     }
 
@@ -314,7 +439,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             List = destination,
             HighestBlockProductionRate = orderList.Last(),
-            lowestBlockProductionRate = orderList.First()
+            lowestBlockProductionRate = orderList.First(),
+            Total = destination.Count()
         };
 
         return blockProduceRateResp;
@@ -344,7 +470,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             List = destination,
             HighestAvgBlockDuration = orderList.Last(),
-            LowestBlockProductionRate = orderList.First()
+            LowestBlockProductionRate = orderList.First(),
+            Total = destination.Count()
         };
 
         return durationResp;
@@ -374,6 +501,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             List = destination,
             HighestMissedCycle = orderList.Last(),
+            Total = destination.Count()
         };
 
         return cycleCountResp;
@@ -399,7 +527,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             dailyTransactionCount.DateStr = DateTimeHelper.GetDateTimeString(dailyTransactionCount.Date);
         }
 
-
+        dailyTransactionCountResp.Total = dailyTransactionCountResp.List.Count();
         dailyTransactionCountResp.HighestTransactionCount =
             dailyTransactionCountResp.List.MaxBy(c => c.TransactionCount);
 
@@ -440,6 +568,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
         }
 
+        uniqueAddressCountResp.Total = uniqueAddressCountResp.List.Count();
 
         uniqueAddressCountResp.List
             = uniqueAddressCounts;
@@ -470,6 +599,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
         }
 
+        activeAddressCountResp.Total = activeAddressCountResp.List.Count();
 
         activeAddressCountResp.HighestActiveCount =
             activeAddressCountResp.List.MaxBy(c => c.AddressCount);

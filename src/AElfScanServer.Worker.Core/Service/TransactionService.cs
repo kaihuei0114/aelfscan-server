@@ -48,6 +48,9 @@ public interface ITransactionService
 
 
     public Task UpdateDailyNetwork();
+
+
+    public Task BatchUpdateNetwork();
 }
 
 public class TransactionService : AbpRedisCache, ITransactionService, ITransientDependency
@@ -69,6 +72,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailyCycleCountIndex, string> _cycleCountRepository;
     private readonly ILogger<TransactionService> _logger;
     private static bool FinishInitChartData = false;
+    private static int BatchPullRoundCount = 2;
 
     private static Timer timer;
     private static long PullTransactioninterval = 1000 - 1;
@@ -277,6 +281,98 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
     }
 
+    public async Task BatchUpdateNetwork()
+    {
+        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            stopwatch.Start();
+            var tasks = new List<Task>();
+
+            await ConnectAsync();
+            var redisValue = RedisDatabase.StringGet(RedisKeyHelper.LatestRound(chainId));
+            if (redisValue.IsNullOrEmpty)
+            {
+                _logger.LogError("BatchUpdateNetwork redisValue is null chainId:{c}", chainId);
+                return;
+            }
+
+            var startRoundNumber = (long)redisValue;
+
+            var rounds = new List<Round>();
+
+            var _lock = new object();
+
+            for (long i = startRoundNumber; i < startRoundNumber + BatchPullRoundCount; i++)
+            {
+                tasks.Add(GetRound(i, chainId).ContinueWith(task =>
+                {
+                    lock (_lock)
+                    {
+                        rounds.Add(task.Result);
+                    }
+                }));
+            }
+
+            await Task.WhenAll(tasks);
+            stopwatch.Stop();
+            var findCost = stopwatch.Elapsed.TotalSeconds;
+            var roundIndices = new List<RoundIndex>();
+            var nodeBlockProduceIndices = new List<NodeBlockProduceIndex>();
+
+
+            foreach (var round in rounds)
+            {
+                var statisticRound = await StatisticRound(round, chainId);
+                roundIndices.Add(statisticRound.r);
+                nodeBlockProduceIndices.AddRange(statisticRound.n);
+            }
+
+            stopwatch = Stopwatch.StartNew();
+
+
+            await _roundIndexRepository.AddOrUpdateManyAsync(roundIndices);
+            await _nodeBlockProduceRepository.AddOrUpdateManyAsync(nodeBlockProduceIndices);
+            _logger.LogInformation("Insert batch round index chainId:{0},round number:{1},date:{2}", chainId,
+                startRoundNumber, DateTimeHelper.GetDateTimeString(roundIndices.First().StartTime));
+            stopwatch.Stop();
+            var insertCost = stopwatch.Elapsed.TotalSeconds;
+            _logger.LogInformation(
+                "BatchUpdateNetwork cost time,round index find cost time:{t},insert cost time:{t2},start:{s1},end:{s2},chainId:{c},,round count:{n},node produce count:{c2}",
+                findCost, insertCost, chainId, startRoundNumber, startRoundNumber + BatchPullRoundCount - 1,
+                roundIndices.Count, nodeBlockProduceIndices.Count);
+
+            RedisDatabase.StringSet(RedisKeyHelper.LatestRound(chainId), startRoundNumber + BatchPullRoundCount);
+        }
+    }
+
+    internal async Task<Round> GetRound(long roundNumber, string chainId)
+    {
+        var client = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
+
+        var param = new Int64Value()
+        {
+            Value = roundNumber
+        };
+
+
+        var transaction = await client.GenerateTransactionAsync(
+            client.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
+            _globalOptions.CurrentValue.ContractAddressConsensus[chainId],
+            "GetRoundInformation", param);
+
+
+        var signTransaction = client.SignTransaction(GlobalOptions.PrivateKey, transaction);
+
+        var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto()
+        {
+            RawTransaction = HexByteConvertorExtensions.ToHex(signTransaction.ToByteArray())
+        });
+
+        var round = Round.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
+        return round;
+    }
+
 
     public async Task UpdateNetwork()
     {
@@ -340,6 +436,76 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
     }
 
+    internal async Task<(RoundIndex r, List<NodeBlockProduceIndex> n)> StatisticRound(Round round, string chainId)
+    {
+        var roundIndex = new RoundIndex()
+        {
+            ChainId = chainId,
+            RoundNumber = round.RoundNumber,
+            ProduceBlockBpAddresses = new List<string>(),
+            NotProduceBlockBpAddresses = new List<string>()
+        };
+
+        var batch = new List<NodeBlockProduceIndex>();
+        var client = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
+        foreach (var minerInRound in round.RealTimeMinersInformation)
+        {
+            var bpAddress = client.GetAddressFromPubKey(minerInRound.Key);
+            var nodeInfo = new NodeBlockProduceIndex()
+            {
+                ChainId = chainId,
+                RoundNumber = round.RoundNumber,
+                NodeAddress = bpAddress
+            };
+
+            roundIndex.Blcoks += minerInRound.Value.ActualMiningTimes.Count;
+            nodeInfo.Blcoks = minerInRound.Value.ActualMiningTimes.Count;
+
+            var expectBlocks = minerInRound.Value.ActualMiningTimes.Count > 8 ? 15 : 8;
+
+            roundIndex.MissedBlocks += expectBlocks - minerInRound.Value.ActualMiningTimes.Count;
+            nodeInfo.MissedBlocks = expectBlocks - minerInRound.Value.ActualMiningTimes.Count;
+            nodeInfo.IsExtraBlockProducer = minerInRound.Value.IsExtraBlockProducer;
+
+
+            if (minerInRound.Value.ActualMiningTimes.IsNullOrEmpty())
+            {
+                roundIndex.NotProduceBlockBpCount++;
+                roundIndex.NotProduceBlockBpAddresses.Add(bpAddress);
+            }
+            else
+            {
+                roundIndex.ProduceBlockBpCount++;
+                roundIndex.ProduceBlockBpAddresses.Add(bpAddress);
+
+                var min = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Min() * 1000;
+                var max = minerInRound.Value.ActualMiningTimes.Select(c => c.Seconds).Max() * 1000;
+
+                nodeInfo.StartTime = min;
+                nodeInfo.EndTime = max;
+                if (roundIndex.StartTime == 0)
+                {
+                    roundIndex.StartTime = min;
+                }
+                else
+                {
+                    roundIndex.StartTime = Math.Min(roundIndex.StartTime, min);
+                }
+
+                roundIndex.EndTime = Math.Max(roundIndex.EndTime, max);
+            }
+
+            nodeInfo.DurationSeconds = nodeInfo.EndTime - nodeInfo.StartTime;
+
+
+            batch.Add(nodeInfo);
+        }
+
+        roundIndex.DurationSeconds = roundIndex.EndTime - roundIndex.StartTime;
+
+
+        return (roundIndex, batch);
+    }
 
     internal async Task StatisticRoundInfo(Round round, string chainId)
     {

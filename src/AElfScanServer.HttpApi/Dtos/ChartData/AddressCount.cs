@@ -5,6 +5,7 @@ namespace AElfScanServer.HttpApi.Dtos.ChartData;
 
 public class UniqueAddressCountResp
 {
+    public long Total { get; set; }
     public List<UniqueAddressCount> List { get; set; }
     public UniqueAddressCount HighestIncrease { get; set; }
     public UniqueAddressCount LowestIncrease { get; set; }
@@ -13,6 +14,7 @@ public class UniqueAddressCountResp
 
 public class ActiveAddressCountResp
 {
+    public long Total { get; set; }
     public List<DailyActiveAddressCount> List { get; set; }
     public DailyActiveAddressCount HighestActiveCount { get; set; }
     public DailyActiveAddressCount LowestActiveCount { get; set; }
@@ -21,6 +23,7 @@ public class ActiveAddressCountResp
 
 public class BlockProduceRateResp
 {
+    public long Total { get; set; }
     public DailyBlockProduceCount HighestBlockProductionRate { get; set; }
     public DailyBlockProduceCount lowestBlockProductionRate { get; set; }
     public List<DailyBlockProduceCount> List { get; set; }
@@ -28,6 +31,7 @@ public class BlockProduceRateResp
 
 public class AvgBlockDurationResp
 {
+    public long Total { get; set; }
     public DailyBlockProduceDuration HighestAvgBlockDuration { get; set; }
     public DailyBlockProduceDuration LowestBlockProductionRate { get; set; }
     public List<DailyBlockProduceDuration> List { get; set; }
@@ -35,17 +39,23 @@ public class AvgBlockDurationResp
 
 public class CycleCountResp
 {
+    public long Total { get; set; }
+
     public DailyCycleCount HighestMissedCycle { get; set; }
     public List<DailyCycleCount> List { get; set; }
 }
 
 public class NodeBlockProduceResp
 {
+    public long Total { get; set; }
     public List<NodeBlockProduce> List { get; set; }
+    public int TotalCycle { get; set; }
 }
 
 public class NodeBlockProduce
 {
+    public int Total { get; set; }
+
     public long TotalCycle { get; set; }
 
     public long DurationSeconds { get; set; }
@@ -56,9 +66,8 @@ public class NodeBlockProduce
 
     public string BlocksRate { get; set; }
 
-    public long MissedCycle { get; set; }
 
-    public long ExpectBlocks { get; set; }
+    public long InRound { get; set; }
 
     public string CycleRate { get; set; }
 
