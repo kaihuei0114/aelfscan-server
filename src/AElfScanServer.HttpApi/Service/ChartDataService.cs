@@ -393,22 +393,19 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         foreach (var nodeBlockProduce in blockProduces)
         {
+            if (dictionary.TryGetValue(nodeBlockProduce.NodeAddress, out var count))
+            {
+                nodeBlockProduce.InRound = count;
+            }
+
             nodeBlockProduce.BlocksRate =
                 ((double)nodeBlockProduce.Blocks / (double)(nodeBlockProduce.Blocks + nodeBlockProduce.MissedBlocks) *
                  100)
                 .ToString("F2");
             nodeBlockProduce.CycleRate =
-                ((double)nodeBlockProduce.TotalCycle / (double)totalCycle * 100).ToString("F2");
+                ((double)nodeBlockProduce.InRound / (double)totalCycle * 100).ToString("F2");
         }
 
-
-        foreach (var nodeBlockProduce in blockProduces)
-        {
-            if (dictionary.TryGetValue(nodeBlockProduce.NodeAddress, out var count))
-            {
-                nodeBlockProduce.InRound = count;
-            }
-        }
 
         nodeBlockProduceResp.List = blockProduces;
         nodeBlockProduceResp.Total = blockProduces.Count;
@@ -550,43 +547,20 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var value = RedisDatabase.StringGet(key);
 
         var uniqueAddressCounts = JsonConvert.DeserializeObject<List<UniqueAddressCount>>(value);
-        for (var i = 0; i < uniqueAddressCounts.Count; i++)
-        {
-            if (i == 0)
-            {
-                uniqueAddressCounts[i].TotalUniqueAddressees = uniqueAddressCounts[i].AddressCount;
-                continue;
-            }
-
-            uniqueAddressCounts[i].TotalUniqueAddressees =
-                uniqueAddressCounts[i].AddressCount + uniqueAddressCounts[i - 1].AddressCount;
-        }
 
 
         var addressCounts = new List<UniqueAddressCount>();
-        if (request.StartDate > 0)
-        {
-            var dateTimeLong = DateTimeHelper.GetDateTimeLong(request.StartDate);
 
-
-            while (dateTimeLong < uniqueAddressCounts[0].Date)
-            {
-                addressCounts.Add(new UniqueAddressCount()
-                {
-                    Date = dateTimeLong,
-                    AddressCount = 0,
-                    TotalUniqueAddressees = 0,
-                    DateStr = DateTimeHelper.GetDateTimeString(dateTimeLong)
-                });
-                dateTimeLong = DateTimeHelper.GetAfterDayTotalSeconds(dateTimeLong);
-            }
-        }
-
+        var previousElement = new UniqueAddressCount();
         for (var i = 0; i < uniqueAddressCounts.Count; i++)
         {
             var uniqueAddressCount = uniqueAddressCounts[i];
 
             uniqueAddressCount.DateStr = DateTimeHelper.GetDateTimeString(uniqueAddressCount.Date);
+            uniqueAddressCount.TotalUniqueAddressees =
+                uniqueAddressCount.AddressCount + previousElement.TotalUniqueAddressees;
+            previousElement = uniqueAddressCount;
+
             addressCounts.Add(uniqueAddressCount);
             if (i == uniqueAddressCounts.Count() - 1)
             {
@@ -609,10 +583,10 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         }
 
 
-        uniqueAddressCountResp.Total = uniqueAddressCountResp.List.Count();
+        uniqueAddressCountResp.Total = addressCounts.Count();
 
         uniqueAddressCountResp.List
-            = uniqueAddressCounts;
+            = addressCounts;
         uniqueAddressCountResp.HighestIncrease =
             uniqueAddressCountResp.List.MaxBy(c => c.AddressCount);
 

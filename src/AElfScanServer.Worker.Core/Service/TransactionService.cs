@@ -927,7 +927,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 v.TransactionCount += nowDailyTransactionCountDic[date];
                 v.BlockCount += nowDailyBlockCountDic[date].Count;
                 _logger.LogInformation(
-                    "Update daily transaction count date:{0},transaction count:{1},block count:{2}",
+                    "Update daily transaction count date:{d},transaction count:{c1},block count:{c2}",
                     DateTimeHelper.GetDateTimeString(date), v.TransactionCount, v.BlockCount);
             }
             else
@@ -937,7 +937,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     TransactionCount = nowDailyTransactionCountDic[date],
                     BlockCount = nowDailyBlockCountDic[date].Count
                 };
-                _logger.LogInformation("Add daily transaction count date:{0},transaction count:{1},block count:{2}",
+                _logger.LogInformation("Add daily transaction count date:{d},transaction count:{c1},block count:{c2}",
                     DateTimeHelper.GetDateTimeString(keyValuePair.Key), nowDailyTransactionCountDic[date],
                     nowDailyBlockCountDic[date].Count);
             }

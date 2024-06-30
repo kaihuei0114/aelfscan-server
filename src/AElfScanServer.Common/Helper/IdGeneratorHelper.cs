@@ -76,8 +76,7 @@ public static class DateTimeHelper
 
         return dailyTimestamps;
     }
-    
-    
+
 
     public static List<long> GetDayHourList(long milliseconds)
     {
@@ -146,25 +145,9 @@ public static class DateTimeHelper
 
     public static long GetAfterDayTotalSeconds(long t)
     {
-        DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(t);
-
-        DateTimeOffset dateOnly = new DateTimeOffset(
-            dateTimeOffset.Year,
-            dateTimeOffset.Month,
-            dateTimeOffset.Day,
-            0,
-            0,
-            0,
-            dateTimeOffset.Offset
-        );
-
-        long dateOnlyTimestamp = dateOnly.ToUnixTimeMilliseconds();
-
-        DateTimeOffset day = DateTimeOffset.FromUnixTimeMilliseconds(dateOnlyTimestamp);
-        DateTimeOffset oneDayLater = day.AddDays(1);
-
-        long oneDayLaterTimestamp = oneDayLater.ToUnixTimeMilliseconds();
-        return oneDayLaterTimestamp;
+        DateTime currentDate = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(t);
+        DateTime nextDate = currentDate.AddDays(1);
+        return (long)(nextDate - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
     }
 
 
