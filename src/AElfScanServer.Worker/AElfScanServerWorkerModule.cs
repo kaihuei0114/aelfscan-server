@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
+using AElfScanServer.Common;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
@@ -38,7 +39,8 @@ namespace AElfScanServer.Worker;
     typeof(AbpIdentityHttpApiModule),
     typeof(AbpAspNetCoreSignalRModule),
     typeof(AElfEntityMappingElasticsearchModule),
-    typeof(AElfIndexingElasticsearchModule)
+    typeof(AElfIndexingElasticsearchModule),
+    typeof(AElfScanCommonModule)
 )]
 public class AElfScanServerWorkerModule : AbpModule
 {
@@ -72,6 +74,8 @@ public class AElfScanServerWorkerModule : AbpModule
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         var elasticClient = new ElasticClient(settings);
+
+
         foreach (var indexerOptionsChainId in indexerOptions.ChainIds)
         {
             if (blockChainOptions.ContractNames.TryGetValue(indexerOptionsChainId, out var value))
@@ -176,6 +180,7 @@ public class AElfScanServerWorkerModule : AbpModule
                     throw new Exception($"Failed to index object: {indexResponse.DebugInformation}");
                 }
             }
+            
 
 
             if (!elasticClient.Indices
@@ -200,5 +205,8 @@ public class AElfScanServerWorkerModule : AbpModule
         context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
         context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
         context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
+        context.AddBackgroundWorkerAsync<ChartDataWorker>();
+        context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
+        context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
     }
 }

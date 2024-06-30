@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -24,14 +25,9 @@ public class ExploreHub : AbpHub
     private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
     private readonly DataStrategyContext<string, TransactionsResponseDto> _latestTransactionsDataStrategy;
     private readonly DataStrategyContext<string, BlocksResponseDto> _latestBlocksDataStrategy;
-    private static readonly object _lockTransactionsObject = new object();
-    private static readonly object _lockBlocksObject = new object();
-    private static readonly object _lockBlockOverviewObject = new object();
-    private static readonly object _lockTransactionCountPerMinuteObject = new object();
-    private static bool _isPushTransactionsRunning = false;
-    private static bool _isPushBlocksRunning = false;
-    private static bool _isPushBlockOverviewRunning = false;
-    private static bool _isPushTransactionCountPerMinuteRunning = false;
+    private static readonly object _lock = new object();
+    private static readonly HashSet<string> _isPushRunning = new HashSet<string>();
+
 
     public ExploreHub(IHomePageService homePageService, ILogger<ExploreHub> logger,
         IBlockChainService blockChainService, IHubContext<ExploreHub> hubContext,
@@ -65,14 +61,15 @@ public class ExploreHub : AbpHub
 
     public async Task PushLatestTransactionsAsync(string chainId)
     {
-        lock (_lockTransactionsObject)
+        lock (_lock)
         {
-            if (_isPushTransactionsRunning)
+            var key = "transaction" + chainId;
+            if (_isPushRunning.Contains(key))
             {
                 return;
             }
 
-            _isPushTransactionsRunning = true;
+            _isPushRunning.Add(key);
         }
 
         while (true)
@@ -118,19 +115,15 @@ public class ExploreHub : AbpHub
 
     public async Task PushBlockOverViewAsync(string chainId)
     {
-        if (_isPushBlocksRunning)
+        lock (_lock)
         {
-            return;
-        }
-
-        lock (_lockBlockOverviewObject)
-        {
-            if (_isPushBlockOverviewRunning)
+            var key = "overview" + chainId;
+            if (_isPushRunning.Contains(key))
             {
                 return;
             }
 
-            _isPushBlockOverviewRunning = true;
+            _isPushRunning.Add(key);
         }
 
 
@@ -170,19 +163,15 @@ public class ExploreHub : AbpHub
 
     public async Task PushLatestBlocksAsync(string chainId)
     {
-        if (_isPushBlocksRunning)
+        lock (_lock)
         {
-            return;
-        }
-
-        lock (_lockBlocksObject)
-        {
-            if (_isPushBlocksRunning)
+            var key = "block" + chainId;
+            if (_isPushRunning.Contains(key))
             {
                 return;
             }
 
-            _isPushBlocksRunning = true;
+            _isPushRunning.Add(key);
         }
 
         while (true)
@@ -224,20 +213,17 @@ public class ExploreHub : AbpHub
 
     public async Task PushTransactionCountPerMinuteAsync(string chainId)
     {
-        if (_isPushTransactionCountPerMinuteRunning)
+        lock (_lock)
         {
-            return;
-        }
-
-        lock (_lockTransactionCountPerMinuteObject)
-        {
-            if (_isPushTransactionCountPerMinuteRunning)
+            var key = "transactionCountPerMinute" + chainId;
+            if (_isPushRunning.Contains(key))
             {
                 return;
             }
 
-            _isPushTransactionCountPerMinuteRunning = true;
+            _isPushRunning.Add(key);
         }
+
 
         while (true)
         {

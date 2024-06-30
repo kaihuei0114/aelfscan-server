@@ -60,7 +60,6 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         var list = new List<BlockBurnFeeDto>();
 
         var graphQlHelper = GetGraphQlHelper();
-
         var result = await graphQlHelper.QueryAsync<BlockBurnFeeResultDto>(
             new GraphQLRequest
             {
@@ -68,13 +67,12 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                     @"query($chainId:String!,$beginBlockHeight:Long!,$endBlockHeight:Long!){
                         blockBurnFeeInfo(input: {chainId:$chainId,beginBlockHeight:$beginBlockHeight,endBlockHeight:$endBlockHeight}){
                           items {
-                              address
-                              token {
+                             
                                 symbol
                                 amount
                                 blockHeight
                                 
-                              }
+                              
                            }
                         }
                     }",
@@ -91,6 +89,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
 
         return result.BlockBurnFeeInfo.Items;
     }
+
 
     public async Task<int> GetAccountCountAsync(string chainId)
     {

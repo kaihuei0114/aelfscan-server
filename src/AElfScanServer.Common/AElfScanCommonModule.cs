@@ -1,6 +1,8 @@
+using AElf.EntityMapping.Options;
 using AElfScanServer.Common.Address.Provider;
 using AElfScanServer.Common.Contract.Provider;
 using AElfScanServer.Common.Core;
+using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.HttpClient;
 using AElfScanServer.Common.IndexerPluginProvider;
@@ -49,6 +51,13 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<INftInfoProvider, NftInfoProvider>();
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
 
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(NodeBlockProduceIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(RoundIndex)); });
+
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockProduceCountIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockProduceDurationIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyCycleCountIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(HourNodeBlockProduceIndex)); });
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();
