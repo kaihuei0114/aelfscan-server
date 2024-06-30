@@ -290,12 +290,12 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         dailyCycleCountIndex.MissedBlockCount = blockProduceIndex.MissedBlockCount;
         dailyBlockProduceDurationIndex.AvgBlockDuration =
-            (totalDuration / (decimal)blockProduceIndex.BlockCount).ToString("F2");
-        dailyBlockProduceDurationIndex.LongestBlockDuration = longestBlockDuration.ToString("F2");
-        dailyBlockProduceDurationIndex.ShortestBlockDuration = shortestBlockDuration.ToString("F2");
+            (totalDuration / 1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
+        dailyBlockProduceDurationIndex.LongestBlockDuration = (longestBlockDuration / 1000).ToString("F2");
+        dailyBlockProduceDurationIndex.ShortestBlockDuration = (shortestBlockDuration / 1000).ToString("F2");
 
         decimal result = blockProduceIndex.BlockCount /
-                         (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount);
+            (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount) * 100;
         blockProduceIndex.BlockProductionRate = result.ToString("F2");
 
         await _blockProduceIndexRepository.AddOrUpdateAsync(blockProduceIndex);
@@ -459,12 +459,12 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             _objectMapper.Map<List<DailyBlockProduceDurationIndex>, List<DailyBlockProduceDuration>>(list);
 
 
-        var orderList = destination.OrderBy(c => c.AvgBlockDuration);
-
         foreach (var i in destination)
         {
             i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
         }
+
+        var orderList = destination.OrderBy(c => c.AvgBlockDuration);
 
         var durationResp = new AvgBlockDurationResp()
         {
