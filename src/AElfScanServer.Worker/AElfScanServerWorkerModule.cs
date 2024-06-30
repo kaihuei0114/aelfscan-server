@@ -74,6 +74,8 @@ public class AElfScanServerWorkerModule : AbpModule
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         var elasticClient = new ElasticClient(settings);
+
+
         foreach (var indexerOptionsChainId in indexerOptions.ChainIds)
         {
             if (blockChainOptions.ContractNames.TryGetValue(indexerOptionsChainId, out var value))
@@ -178,6 +180,7 @@ public class AElfScanServerWorkerModule : AbpModule
                     throw new Exception($"Failed to index object: {indexResponse.DebugInformation}");
                 }
             }
+            
 
 
             if (!elasticClient.Indices
@@ -197,12 +200,12 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        // context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
-        // context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
-        // context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
-        // context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
-        // context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
-        // context.AddBackgroundWorkerAsync<ChartDataWorker>();
+        context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
+        context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
+        context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
+        context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
+        context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
+        context.AddBackgroundWorkerAsync<ChartDataWorker>();
         context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
         context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
     }

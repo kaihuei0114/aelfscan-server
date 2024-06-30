@@ -14,6 +14,8 @@ public class GlobalOptions
 
     public List<string> ChainIds { get; set; }
 
+    public Dictionary<string, long> OneBlockTime { get; set; }
+
     public Dictionary<string, string> TokenImageUrls { get; set; }
     public Dictionary<string, string> ChainNodeHosts { get; set; }
 
@@ -24,12 +26,12 @@ public class GlobalOptions
     public long TokenUsdPriceExpireDurationSeconds { get; set; }
 
     public string ContractAddressTreasury { get; set; }
-    public string ContractAddressConsensus { get; set; }
+    public Dictionary<string, string> ContractAddressConsensus { get; set; }
 
-    public string BNApiKey { get; set; }
-    public string BNSecretKey { get; set; }
     public string BNBaseUrl { get; set; }
 
+    public bool NetworkInit { get; set; }
+    public long NetworkInitStart { get; set; }
     public long RewardCacheExpiration { get; set; } = 10;
     public long TransactionPerMinuteCount { get; set; }
 
@@ -43,6 +45,7 @@ public class GlobalOptions
 
     public int TransactionListMaxCount { get; set; }
 
+    public bool InitChartData { get; set; }
 
     public Dictionary<string, HashSet<string>> ContractParseLogEvent { get; set; } = new();
 

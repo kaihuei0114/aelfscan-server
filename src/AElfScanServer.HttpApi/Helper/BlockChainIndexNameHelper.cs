@@ -102,6 +102,13 @@ public class RedisKeyHelper
     {
         return $"explore_{chainId}_unique_address_count";
     }
+    
+    
+    public static string UniqueAddressesHashSet(string chainId)
+    {
+        return $"explore_{chainId}_unique_address_set";
+    }
+
 
     public static string RewardKey(string chainId)
     {

@@ -46,6 +46,8 @@ public class RoundIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 
     public long DurationSeconds { get; set; }
 
+    [Keyword] public string DateStr { get; set; }
+
     public int ProduceBlockBpCount { get; set; }
 
     public int NotProduceBlockBpCount { get; set; }
@@ -61,6 +63,29 @@ public class RoundIndex : AElfIndexerEntity<string>, IEntityMappingEntity
     public long StartTime { get; set; }
 
     public long EndTime { get; set; }
+}
+
+public class HourNodeBlockProduceIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId + "_" + NodeAddress; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string ChainId { get; set; }
+    [Keyword] public string DateStr { get; set; }
+    public long TotalCycle { get; set; }
+
+    public int Hour { get; set; }
+
+    public long Blocks { get; set; }
+
+    public long MissedBlocks { get; set; }
+
+
+    [Keyword] public string NodeAddress { get; set; }
 }
 
 public class DailyBlockProduceCountIndex : AElfIndexerEntity<string>, IEntityMappingEntity

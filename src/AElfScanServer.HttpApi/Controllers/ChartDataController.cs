@@ -64,4 +64,17 @@ public class ChartDataController : AbpController
     {
         return await _chartDataService.GetNodeBlockProduceRespAsync(request);
     }
+
+    // [HttpPost("setRound")]
+    // public async Task<string> SetRoundAsync(SetRoundRequest request)
+    // {
+    //     return await _chartDataService.SetRoundNumberAsync(request);
+    // }
+
+
+    [HttpGet("initRound")]
+    public async Task<InitRoundResp> SetRoundAsync(SetRoundRequest request)
+    {
+        return await _chartDataService.InitDailyNetwork(request);
+    }
 }

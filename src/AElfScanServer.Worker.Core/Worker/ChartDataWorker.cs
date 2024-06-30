@@ -18,7 +18,7 @@ public class ChartDataWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<ChartDataWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 1000 * 2;
+        timer.Period = 1000 * 1;
         _logger = logger;
         _transactionService = transactionService;
     }
