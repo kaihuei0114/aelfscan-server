@@ -486,7 +486,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var destination =
             _objectMapper.Map<List<DailyCycleCountIndex>, List<DailyCycleCount>>(list);
 
-        var orderList = destination.OrderBy(c => c.CycleCount);
+        var orderList = destination.OrderBy(c => c.CycleCount).ToList();
 
         foreach (var i in destination)
         {
@@ -516,15 +516,23 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var key = RedisKeyHelper.DailyTransactionCount(request.ChainId);
         var value = RedisDatabase.StringGet(key);
 
-        dailyTransactionCountResp.List
+        var list
             = JsonConvert.DeserializeObject<List<DailyTransactionCount>>(value);
 
-        foreach (var dailyTransactionCount in dailyTransactionCountResp.List)
+        var newList = new List<DailyTransactionCount>();
+        foreach (var dailyTransactionCount in list)
         {
+            if (dailyTransactionCount.Date <= 0)
+            {
+                continue;
+            }
+
             dailyTransactionCount.DateStr = DateTimeHelper.GetDateTimeString(dailyTransactionCount.Date);
+            newList.Add(dailyTransactionCount);
         }
 
-        dailyTransactionCountResp.Total = dailyTransactionCountResp.List.Count();
+        dailyTransactionCountResp.List = newList;
+        dailyTransactionCountResp.Total = newList.Count();
         dailyTransactionCountResp.HighestTransactionCount =
             dailyTransactionCountResp.List.MaxBy(c => c.TransactionCount);
 

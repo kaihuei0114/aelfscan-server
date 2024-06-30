@@ -115,6 +115,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task UpdateDailyNetwork()
     {
+
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
             var queryable = await _roundIndexRepository.GetQueryableAsync();
@@ -590,9 +591,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             await ConnectAsync();
             var redisValue = RedisDatabase.StringGet(RedisKeyHelper.ChartDataLastBlockHeight(chainId));
             var lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
+
             var batchTransactionList =
                 await GetBatchTransactionList(chainId, lastBlockHeight, lastBlockHeight + PullTransactioninterval);
-
 
             if (batchTransactionList.IsNullOrEmpty())
             {
@@ -907,8 +908,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 updateDailyTransactionCounts.Add(element);
             }
 
+            var dailyTransactionCounts = updateDailyTransactionCounts.OrderBy(c => c.Date).ToList();
 
-            var d = JsonConvert.SerializeObject(updateDailyTransactionCounts);
+            var d = JsonConvert.SerializeObject(dailyTransactionCounts);
 
             RedisDatabase.StringSet(RedisKeyHelper.DailyTransactionCount(chainId), d);
             return;
@@ -927,24 +929,30 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 v.TransactionCount += nowDailyTransactionCountDic[date];
                 v.BlockCount += nowDailyBlockCountDic[date].Count;
                 _logger.LogInformation(
-                    "Update daily transaction count date:{d},transaction count:{c1},block count:{c2}",
-                    DateTimeHelper.GetDateTimeString(date), v.TransactionCount, v.BlockCount);
+                    "Update daily transaction count date:{d},transaction count:{c1},block count:{c2},start:{s1},end:{s2}",
+                    DateTimeHelper.GetDateTimeString(date), v.TransactionCount, v.BlockCount, list[0].BlockHeight,
+                    list.Last().BlockHeight);
             }
             else
             {
                 updateTransactionCountsDic[date] = new DailyTransactionCount()
                 {
                     TransactionCount = nowDailyTransactionCountDic[date],
-                    BlockCount = nowDailyBlockCountDic[date].Count
+                    BlockCount = nowDailyBlockCountDic[date].Count,
+                    Date = date,
+                    DateStr = DateTimeHelper.GetDateTimeString(date)
                 };
-                _logger.LogInformation("Add daily transaction count date:{d},transaction count:{c1},block count:{c2}",
+                _logger.LogInformation(
+                    "Add daily transaction count date:{d},transaction count:{c1},block count:{c2},start:{s1},end:{s2}",
                     DateTimeHelper.GetDateTimeString(keyValuePair.Key), nowDailyTransactionCountDic[date],
-                    nowDailyBlockCountDic[date].Count);
+                    nowDailyBlockCountDic[date].Count, list[0].BlockHeight,
+                    list.Last().BlockHeight);
             }
         }
 
+        var transactionCounts = updateTransactionCountsDic.Values.Where(c => c.Date > 0).OrderBy(c => c.Date).ToList();
 
-        var serializeObject = JsonConvert.SerializeObject(updateDailyTransactionCounts);
+        var serializeObject = JsonConvert.SerializeObject(transactionCounts);
 
         RedisDatabase.StringSet(RedisKeyHelper.DailyTransactionCount(chainId), serializeObject);
     }
