@@ -86,6 +86,13 @@ public class RedisKeyHelper
     {
         return $"explore_{chainId}_transaction_chart";
     }
+    
+    
+    public static string TransactionLastBlockHeight(string chainId)
+    {
+        return $"explore_{chainId}_transaction_last_blockheight";
+    }
+
 
 
     public static string ChartDataLastBlockHeight(string chainId)

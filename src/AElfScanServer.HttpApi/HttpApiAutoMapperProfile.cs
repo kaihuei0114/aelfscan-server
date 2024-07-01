@@ -29,8 +29,7 @@ public class BlockChainAutoMapperProfile : Profile
         CreateMap<AddressIndex, CommonAddressDto>()
             .ReverseMap();
 
-        CreateMap<IndexerTransactionDto, TransactionDetailDto>();
-        CreateMap<IndexerTransactionDto, TransactionIndex>();
+        CreateMap<TransactionIndex, TransactionDetailDto>();
         CreateMap<TokenCreated, TokenInfoIndex>()
             .ForMember(d => d.ExternalInfo,
                 opt => opt.MapFrom(s => s.ExternalInfo.Value.ToDictionary(o => o.Key, o => o.Value)))

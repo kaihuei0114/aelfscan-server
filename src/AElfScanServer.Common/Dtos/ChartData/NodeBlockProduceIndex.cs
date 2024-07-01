@@ -138,3 +138,96 @@ public class DailyCycleCountIndex : AElfIndexerEntity<string>, IEntityMappingEnt
     public long MissedBlockCount { get; set; }
     public long MissedCycle { get; set; }
 }
+
+public class DailyAvgTransactionFeeIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+
+    [Keyword] public string AvgFeeUsdt { get; set; }
+
+    [Keyword] public string AvgFeeElf { get; set; }
+
+    [Keyword] public string DateStr { get; set; }
+}
+
+public class DailyAvgBlockSizeIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+
+    [Keyword] public string AvgSize { get; set; }
+
+
+    [Keyword] public string DateStr { get; set; }
+}
+
+public class DailyBlockRewardIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+
+    [Keyword] public string BlockReward { get; set; }
+
+
+    [Keyword] public string DateStr { get; set; }
+    public long TotalBlockCount { get; set; }
+}
+
+public class DailyTotalBurntIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+
+    [Keyword] public string Burnt { get; set; }
+
+
+    [Keyword] public string DateStr { get; set; }
+}
+
+
+public class DailyDeployContractBurntIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+
+    [Keyword] public string Burnt { get; set; }
+
+
+    [Keyword] public string DateStr { get; set; }
+}

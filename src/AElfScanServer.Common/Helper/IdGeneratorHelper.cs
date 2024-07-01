@@ -59,6 +59,12 @@ public static class DateTimeHelper
     }
 
 
+    public static string GetDateStr(DateTime dateTime)
+    {
+        return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day).ToString("yyyy-MM-dd");
+    }
+
+
     public static List<long> GetRangeDayList(long start, long end)
     {
         DateTime startTime = DateTimeOffset.FromUnixTimeMilliseconds(start).UtcDateTime;
