@@ -28,6 +28,10 @@ public class GlobalOptions
     public string ContractAddressTreasury { get; set; }
     public Dictionary<string, string> ContractAddressConsensus { get; set; }
 
+    public long NextTermDate { get; set; } = 1725724800000;
+
+    public decimal NextTermReward { get; set; }
+
     public string BNBaseUrl { get; set; }
 
     public bool NetworkInit { get; set; }
