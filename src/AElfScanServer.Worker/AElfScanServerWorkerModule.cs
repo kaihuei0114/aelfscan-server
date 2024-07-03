@@ -143,7 +143,7 @@ public class AElfScanServerWorkerModule : AbpModule
             var indexResponse = elasticClient.Indices.Create(
                 "transactionindex", c => c
                     .Settings(s => s
-                        .Setting("max_result_window", 100000)
+                        .Setting("max_result_window", 200000)
                     )
                     .Map<TransactionIndex>(m => m.AutoMap()));
 
@@ -216,13 +216,14 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        // context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
-        // context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
-        // context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
-        // context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
-        // context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
-        context.AddBackgroundWorkerAsync<ChartDataWorker>();
-        // context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
-        // context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
+        context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
+        context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
+        context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
+        context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
+        context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
+        context.AddBackgroundWorkerAsync<BnElfUsdtPriceWorker>();
+        context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
+        context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
+        context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
     }
 }

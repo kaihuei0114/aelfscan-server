@@ -7,24 +7,26 @@ using Volo.Abp.Threading;
 
 namespace AElfScanServer.Worker.Core.Worker;
 
-public class TransactionIndexWorker : AsyncPeriodicBackgroundWorkerBase
+
+
+public class BnElfUsdtPriceWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly ITransactionService _transactionService;
 
-    private readonly ILogger<TransactionIndexWorker> _logger;
+    private readonly ILogger<BnElfUsdtPriceWorker> _logger;
 
 
-    public TransactionIndexWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        ILogger<TransactionIndexWorker> logger, ITransactionService transactionService) : base(timer,
+    public BnElfUsdtPriceWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
+        ILogger<BnElfUsdtPriceWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 1000 * 1;
+        timer.Period = 500;
         _logger = logger;
         _transactionService = transactionService;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        await _transactionService.BatchPullTransactionTask();
+        await _transactionService.UpdateElfPrice();
     }
 }

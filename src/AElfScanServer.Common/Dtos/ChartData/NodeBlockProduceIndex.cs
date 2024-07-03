@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using AElf.EntityMapping.Entities;
 using AElfScanServer.Domain.Common.Entities;
@@ -155,6 +156,9 @@ public class DailyAvgTransactionFeeIndex : AElfIndexerEntity<string>, IEntityMap
 
     [Keyword] public string AvgFeeElf { get; set; }
 
+    public string TotalFeeElf { get; set; }
+    public int TransactionCount { get; set; }
+
     [Keyword] public string DateStr { get; set; }
 }
 
@@ -209,12 +213,11 @@ public class DailyTotalBurntIndex : AElfIndexerEntity<string>, IEntityMappingEnt
 
     [Keyword] public string Burnt { get; set; }
 
-
+    public int HasBurntBlockCount { get; set; }
     [Keyword] public string DateStr { get; set; }
 }
 
-
-public class DailyDeployContractBurntIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+public class DailyDeployContractIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
     [Keyword]
     public override string Id
@@ -226,8 +229,89 @@ public class DailyDeployContractBurntIndex : AElfIndexerEntity<string>, IEntityM
 
     [Keyword] public string ChainId { get; set; }
 
-    [Keyword] public string Burnt { get; set; }
+    public int Count { get; set; }
 
 
     [Keyword] public string DateStr { get; set; }
 }
+
+public class ElfPriceIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr; }
+    }
+
+    public long OpenTime { get; set; }
+    [Keyword] public string DateStr { get; set; }
+    [Keyword] public string Open { get; set; }
+    [Keyword] public string High { get; set; }
+    [Keyword] public string Low { get; set; }
+
+    [Keyword] public string Close { get; set; }
+    // public string Volume { get; set; }
+    // public long CloseTime { get; set; }
+    // public string QuoteAssetVolume { get; set; }
+    // public int NumberOfTrades { get; set; }
+    // public string TakerBuyBaseAssetVolume { get; set; }
+    // public string TakerBuyQuoteAssetVolume { get; set; }
+    // public string Ignore { get; set; }
+}
+
+public class DailyTransactionCountIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+    public int TransactionCount { get; set; }
+    public int BlockCount { get; set; }
+
+
+    [Keyword] public string DateStr { get; set; }
+}
+
+public class DailyUniqueAddressCountIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+    public int AddressCount { get; set; }
+
+    public int TotalUniqueAddressees { get; set; }
+
+
+    [Keyword] public string DateStr { get; set; }
+}
+
+public class DailyActiveAddressCountIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+    public long AddressCount { get; set; }
+
+    public long SendAddressCount { get; set; }
+    public long ReceiveAddressCount { get; set; }
+
+    [Keyword] public string DateStr { get; set; }
+}
+

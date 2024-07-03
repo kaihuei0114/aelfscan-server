@@ -8,9 +8,9 @@ namespace AElfScanServer.Common.EsIndex;
 
 public class EsIndex
 {
-    public static ElasticClient esClient;
+    public static IElasticClient esClient;
 
-    public static void SetElasticClient(ElasticClient client)
+    public static void SetElasticClient(IElasticClient client)
     {
         esClient = client;
     }
@@ -51,7 +51,7 @@ public class EsIndex
     {
         var searchResponse = await esClient.SearchAsync<TransactionIndex>(s => s
             .Index("transactionindex")
-            .Size(20000)
+            .Size(200000)
             .Query(q => q
                 .Bool(b => b
                     .Must(m => m

@@ -9,6 +9,12 @@ namespace AElfScanServer.Common.Dtos.Indexer;
 
 public class TransactionIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
+    [Keyword]
+    public override string Id
+    {
+        get { return TransactionId + "_" + ChainId; }
+    }
+
     [Keyword] public string TransactionId { get; set; }
 
     [Keyword] public string ChainId { get; set; }
@@ -24,7 +30,7 @@ public class TransactionIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 
     // public string PreviousBlockHash { get; set; }
 
-    [Keyword] public DateTime BlockTime { get; set; }
+    public DateTime BlockTime { get; set; }
 
     [Keyword] public string MethodName { get; set; }
 

@@ -9,7 +9,7 @@ public class DailyTransactionCount
     public string DateStr { get; set; }
 }
 
-public class UniqueAddressCount
+public class DailyUniqueAddressCount
 {
     public long Date { get; set; }
     public int AddressCount { get; set; }
@@ -59,3 +59,5 @@ public class DailyCycleCount
 
     public string DateStr { get; set; }
 }
+
+
