@@ -64,12 +64,41 @@ public class ChartDataController : AbpController
     {
         return await _chartDataService.GetNodeBlockProduceRespAsync(request);
     }
+    
+    
+    [HttpGet("dailyAvgTransactionFee")]
+    public async Task<DailyAvgTransactionFeeResp> GetDailyAvgTransactionFeeRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetDailyAvgTransactionFeeRespAsync(request);
+    }
 
-    // [HttpPost("setRound")]
-    // public async Task<string> SetRoundAsync(SetRoundRequest request)
-    // {
-    //     return await _chartDataService.SetRoundNumberAsync(request);
-    // }
+    
+    [HttpGet("dailyTotalBurnt")]
+    public async Task<DailyTotalBurntResp> GetDailyTotalBurntRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetDailyTotalBurntRespAsync(request);
+    }
+
+    
+    [HttpGet("dailyElfPrice")]
+    public async Task<ElfPriceIndexResp> GetElfPriceIndexRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetElfPriceIndexRespAsync(request);
+    }
+
+    
+    [HttpGet("dailyDeployContract")]
+    public async Task<DailyDeployContractResp> GetDailyDeployContractRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetDailyDeployContractRespAsync(request);
+    }
+
+    
+    [HttpGet("dailyBlockReward")]
+    public async Task<DailyBlockRewardResp> GetDailyBlockRewardRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetDailyBlockRewardRespAsync(request);
+    }
 
 
     [HttpGet("initRound")]

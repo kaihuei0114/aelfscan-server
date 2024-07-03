@@ -25,6 +25,6 @@ public class NetworkStatisticWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        await _transactionService.BatchUpdateNetwork();
+        await _transactionService.BatchUpdateNodeNetworkTask();
     }
 }

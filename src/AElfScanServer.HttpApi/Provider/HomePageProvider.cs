@@ -26,7 +26,6 @@ namespace AElfScanServer.HttpApi.Provider;
 
 public class HomePageProvider : AbpRedisCache, ISingletonDependency
 {
-    private readonly INESTRepository<TransactionIndex, string> _transactionIndexRepository;
     private readonly INESTRepository<BlockExtraIndex, string> _blockExtraIndexRepository;
     private readonly INESTRepository<AddressIndex, string> _addressIndexRepository;
     private readonly INESTRepository<TokenInfoIndex, string> _tokenInfoIndexRepository;
@@ -39,7 +38,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
 
     private readonly ILogger<HomePageProvider> _logger;
 
-    public HomePageProvider(INESTRepository<TransactionIndex, string> transactionIndexRepository,
+    public HomePageProvider(
         ILogger<HomePageProvider> logger, IOptionsMonitor<GlobalOptions> blockChainOptions,
         IOptions<ElasticsearchOptions> options,
         INESTRepository<BlockExtraIndex, string> blockExtraIndexRepository,
@@ -47,7 +46,6 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
         INESTRepository<TokenInfoIndex, string> tokenInfoIndexRepository,
         IOptions<RedisCacheOptions> optionsAccessor) : base(optionsAccessor)
     {
-        _transactionIndexRepository = transactionIndexRepository;
         _logger = logger;
         _globalOptions = blockChainOptions;
         var uris = options.Value.Url.ConvertAll(x => new Uri(x));

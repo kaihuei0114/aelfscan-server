@@ -4,6 +4,7 @@ using System.Linq;
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
 using AElfScanServer.Common;
+using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
@@ -136,6 +137,22 @@ public class AElfScanServerWorkerModule : AbpModule
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         var elasticClient = new ElasticClient(settings);
+        if (!elasticClient.Indices.Exists("transactionindex")
+                .Exists)
+        {
+            var indexResponse = elasticClient.Indices.Create(
+                "transactionindex", c => c
+                    .Settings(s => s
+                        .Setting("max_result_window", 200000)
+                    )
+                    .Map<TransactionIndex>(m => m.AutoMap()));
+
+            if (!indexResponse.IsValid)
+            {
+                throw new Exception($"Failed to index object: {indexResponse.DebugInformation}");
+            }
+        }
+
 
         foreach (var indexerOptionsChainId in indexerOptions.ChainIds)
         {
@@ -180,7 +197,6 @@ public class AElfScanServerWorkerModule : AbpModule
                     throw new Exception($"Failed to index object: {indexResponse.DebugInformation}");
                 }
             }
-            
 
 
             if (!elasticClient.Indices
@@ -205,7 +221,8 @@ public class AElfScanServerWorkerModule : AbpModule
         context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
         context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
         context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
-        context.AddBackgroundWorkerAsync<ChartDataWorker>();
+        context.AddBackgroundWorkerAsync<BnElfUsdtPriceWorker>();
+        context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
         context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
         context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
     }

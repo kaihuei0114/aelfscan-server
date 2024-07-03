@@ -34,7 +34,7 @@ public static class DateTimeHelper
 
     public static string GetDateTimeString(long milliseconds)
     {
-        return new DateTime(1970, 1, 1).AddMilliseconds(milliseconds).ToUtc8String("yyyy-MM-dd HH:mm:ss");
+        return new DateTime(1970, 1, 1).AddMilliseconds(milliseconds).ToUtc8String("yyyy-MM-dd");
     }
 
     public static long ConvertYYMMDD(string dateString)
@@ -56,6 +56,12 @@ public static class DateTimeHelper
         }
 
         return 0;
+    }
+
+
+    public static string GetDateStr(DateTime dateTime)
+    {
+        return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day).ToString("yyyy-MM-dd");
     }
 
 

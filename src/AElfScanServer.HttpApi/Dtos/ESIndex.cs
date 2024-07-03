@@ -8,36 +8,6 @@ using Nest;
 
 namespace AElfScanServer.HttpApi.Dtos;
 
-public class TransactionIndex : AElfIndexerEntity<string>, IEntityMappingEntity
-{
-    [Keyword]
-    public override string Id
-    {
-        get { return BlockHash + "_" + TransactionId; }
-    }
-
-    [Keyword] public string TransactionId { get; set; }
-
-
-    [Keyword] public string From { get; set; }
-
-    [Keyword] public string To { get; set; }
-
-    [Keyword] public string BlockHash { get; set; }
-
-    public long BlockHeight { get; set; }
-
-    public DateTime BlockTime { get; set; }
-
-    [Keyword] public string MethodName { get; set; }
-
-    [Keyword] public string Value { get; set; }
-
-    [Keyword] public string TxnFee { get; set; }
-
-    public TransactionStatus Status { get; set; }
-}
-
 public class AddressIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
     [Keyword] public override string Id { get; set; }

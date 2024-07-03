@@ -47,6 +47,22 @@ public class RedisKeyHelper
     {
         return $"explore_{chainId}_latest_round";
     }
+    
+    public static string AddressSet(string chainId)
+    {
+        return $"explore_{chainId}_AdressSet";
+    }
+    
+    public static string TransactionDateList(string chainId)
+    {
+        return $"explore_{chainId}_TransactionDateList";
+    }
+    
+    
+    public static string LastTransactionDate(string chainId)
+    {
+        return $"explore_{chainId}_LastTransactionDate";
+    }
 
     public static string DailyActiveAddresses(string chainId)
     {
@@ -86,6 +102,13 @@ public class RedisKeyHelper
     {
         return $"explore_{chainId}_transaction_chart";
     }
+    
+    
+    public static string TransactionLastBlockHeight(string chainId)
+    {
+        return $"explore_{chainId}_transaction_last_blockheight";
+    }
+
 
 
     public static string ChartDataLastBlockHeight(string chainId)

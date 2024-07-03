@@ -25,7 +25,7 @@ public class TransactionRatePerMinuteWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        await _transactionService.UpdateTransactionRatePerMinuteAsync();
+        await _transactionService.UpdateTransactionRatePerMinuteTaskAsync();
         
     }
 }

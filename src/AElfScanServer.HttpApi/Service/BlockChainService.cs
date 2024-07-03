@@ -25,6 +25,7 @@ using AElf.CSharp.Core.Extension;
 using AElfScanServer.HttpApi.Dtos.Indexer;
 using AElfScanServer.Common.Core;
 using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Enums;
 using Castle.Components.DictionaryAdapter.Xml;
 using AElfScanServer.Common.Helper;
@@ -37,7 +38,6 @@ using StackExchange.Redis;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Nito.AsyncEx;
-using IndexerTransactionDto = AElfScanServer.HttpApi.Dtos.IndexerTransactionDto;
 
 namespace AElfScanServer.HttpApi.Service;
 
@@ -219,7 +219,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         var blockDto = new BlockDetailDto();
 
-        var transactionList = new List<IndexerTransactionDto>();
+        var transactionList = new List<TransactionIndex>();
 
         var blockList = new List<IndexerBlockDto>();
 
@@ -323,39 +323,39 @@ public class BlockChainService : IBlockChainService, ITransientDependency
     }
 
 
-    public async Task<TransactionDetailDto> AnalysisTransaction(IndexerTransactionDto transactionDto, long blockHeight)
+    public async Task<TransactionDetailDto> AnalysisTransaction(TransactionIndex transactionIndex, long blockHeight)
     {
         var detailDto = new TransactionDetailDto();
 
         var transactionDetailAsync =
-            await _blockChainProvider.GetTransactionDetailAsync(transactionDto.ChainId, transactionDto.TransactionId);
+            await _blockChainProvider.GetTransactionDetailAsync(transactionIndex.ChainId, transactionIndex.TransactionId);
 
 
         ;
-        detailDto.TransactionId = transactionDto.TransactionId;
-        detailDto.Status = transactionDto.Status;
+        detailDto.TransactionId = transactionIndex.TransactionId;
+        detailDto.Status = transactionIndex.Status;
         detailDto.BlockConfirmations = detailDto.Status == TransactionStatus.Mined ? blockHeight : 0;
-        detailDto.BlockHeight = transactionDto.BlockHeight;
-        detailDto.Timestamp = DateTimeHelper.GetTotalSeconds(transactionDto.BlockTime);
-        detailDto.Method = transactionDto.MethodName;
+        detailDto.BlockHeight = transactionIndex.BlockHeight;
+        detailDto.Timestamp = DateTimeHelper.GetTotalSeconds(transactionIndex.BlockTime);
+        detailDto.Method = transactionIndex.MethodName;
         detailDto.TransactionParams = transactionDetailAsync.Transaction.Params;
-        detailDto.TransactionSignature = transactionDto.Signature;
-        detailDto.Confirmed = transactionDto.Confirmed;
-        detailDto.From = ConvertAddress(transactionDto.From, transactionDto.ChainId);
-        detailDto.To = ConvertAddress(transactionDto.To, transactionDto.ChainId);
+        detailDto.TransactionSignature = transactionIndex.Signature;
+        detailDto.Confirmed = transactionIndex.Confirmed;
+        detailDto.From = ConvertAddress(transactionIndex.From, transactionIndex.ChainId);
+        detailDto.To = ConvertAddress(transactionIndex.To, transactionIndex.ChainId);
 
 
-        await AnalysisExtraPropertiesAsync(detailDto, transactionDto);
-        await AnalysisTransferredAsync(detailDto, transactionDto);
-        await AnalysisLogEventAsync(detailDto, transactionDto);
+        await AnalysisExtraPropertiesAsync(detailDto, transactionIndex);
+        await AnalysisTransferredAsync(detailDto, transactionIndex);
+        await AnalysisLogEventAsync(detailDto, transactionIndex);
 
         return detailDto;
     }
 
 
-    public async Task AnalysisLogEventAsync(TransactionDetailDto detailDto, IndexerTransactionDto transactionDto)
+    public async Task AnalysisLogEventAsync(TransactionDetailDto detailDto, TransactionIndex transactionIndex)
     {
-        foreach (var transactionDtoLogEvent in transactionDto.LogEvents)
+        foreach (var transactionDtoLogEvent in transactionIndex.LogEvents)
         {
             transactionDtoLogEvent.ExtraProperties.TryGetValue("Indexed", out var indexed);
             transactionDtoLogEvent.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
@@ -364,7 +364,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                 Indexed = indexed,
                 NonIndexed = nonIndexed,
                 EventName = transactionDtoLogEvent.EventName,
-                ContractInfo = ConvertAddress(transactionDtoLogEvent.ContractAddress, transactionDto.ChainId)
+                ContractInfo = ConvertAddress(transactionDtoLogEvent.ContractAddress, transactionIndex.ChainId)
             };
             detailDto.LogEvents.Add(logEventInfoDto);
             //add parse log event logic
@@ -378,52 +378,52 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         }
     }
 
-    public async Task AnalysisExtraPropertiesAsync(TransactionDetailDto detailDto, IndexerTransactionDto transactionDto)
+    public async Task AnalysisExtraPropertiesAsync(TransactionDetailDto detailDto, TransactionIndex transactionIndex)
     {
-        if (!transactionDto.ExtraProperties.IsNullOrEmpty())
+        if (!transactionIndex.ExtraProperties.IsNullOrEmpty())
         {
-            if (transactionDto.ExtraProperties.TryGetValue("Version", out var version))
+            if (transactionIndex.ExtraProperties.TryGetValue("Version", out var version))
             {
                 detailDto.Version = version;
             }
 
 
-            if (transactionDto.ExtraProperties.TryGetValue("RefBlockNumber", out var refBlockNumber))
+            if (transactionIndex.ExtraProperties.TryGetValue("RefBlockNumber", out var refBlockNumber))
             {
                 detailDto.TransactionRefBlockNumber = refBlockNumber;
             }
 
-            if (transactionDto.ExtraProperties.TryGetValue("RefBlockPrefix", out var refBlockPrefix))
+            if (transactionIndex.ExtraProperties.TryGetValue("RefBlockPrefix", out var refBlockPrefix))
             {
                 detailDto.TransactionRefBlockPrefix = refBlockPrefix;
             }
 
 
-            if (transactionDto.ExtraProperties.TryGetValue("Bloom", out var bloom))
+            if (transactionIndex.ExtraProperties.TryGetValue("Bloom", out var bloom))
             {
                 detailDto.Bloom = bloom;
             }
 
 
-            if (transactionDto.ExtraProperties.TryGetValue("ReturnValue", out var returnValue))
+            if (transactionIndex.ExtraProperties.TryGetValue("ReturnValue", out var returnValue))
             {
                 detailDto.ReturnValue = returnValue;
             }
 
 
-            if (transactionDto.ExtraProperties.TryGetValue("Error", out var error))
+            if (transactionIndex.ExtraProperties.TryGetValue("Error", out var error))
             {
                 detailDto.Error = error;
             }
 
 
-            if (transactionDto.ExtraProperties.TryGetValue("TransactionSize", out var transactionSize))
+            if (transactionIndex.ExtraProperties.TryGetValue("TransactionSize", out var transactionSize))
             {
                 detailDto.TransactionSize = transactionSize;
             }
 
 
-            if (transactionDto.ExtraProperties.TryGetValue("ResourceFee", out var resourceFee))
+            if (transactionIndex.ExtraProperties.TryGetValue("ResourceFee", out var resourceFee))
             {
                 detailDto.ResourceFee = resourceFee;
             }
@@ -432,7 +432,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
 
     public async Task AnalysisTransferredAsync(TransactionDetailDto detailDto,
-        IndexerTransactionDto indexerTransactionDto)
+        TransactionIndex transactionIndex)
     {
         var transactionValues = new Dictionary<string, ValueInfoDto>();
 
@@ -442,7 +442,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         var burntFees = new Dictionary<string, ValueInfoDto>();
 
 
-        foreach (var txnLogEvent in indexerTransactionDto.LogEvents)
+        foreach (var txnLogEvent in transactionIndex.LogEvents)
         {
             txnLogEvent.ExtraProperties.TryGetValue("Indexed", out var indexed);
             txnLogEvent.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
@@ -481,8 +481,8 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                             Amount = transferred.Amount,
                             AmountString =
                                 await _blockChainProvider.GetDecimalAmountAsync(transferred.Symbol, transferred.Amount),
-                            From = ConvertAddress(transferred.From.ToBase58(), indexerTransactionDto.ChainId),
-                            To = ConvertAddress(transferred.To.ToBase58(), indexerTransactionDto.ChainId),
+                            From = ConvertAddress(transferred.From.ToBase58(), transactionIndex.ChainId),
+                            To = ConvertAddress(transferred.To.ToBase58(), transactionIndex.ChainId),
                             ImageBase64 = await _blockChainProvider.GetTokenImageBase64Async(transferred.Symbol),
                             NowPrice = await _blockChainProvider.TransformTokenToUsdValueAsync(transferred.Symbol,
                                 transferred.Amount)
@@ -496,8 +496,8 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                             Symbol = transferred.Symbol,
                             Amount = transferred.Amount,
                             Name = transferred.Symbol,
-                            From = ConvertAddress(transferred.From.ToBase58(), indexerTransactionDto.ChainId),
-                            To = ConvertAddress(transferred.To.ToBase58(), indexerTransactionDto.ChainId),
+                            From = ConvertAddress(transferred.From.ToBase58(), transactionIndex.ChainId),
+                            To = ConvertAddress(transferred.To.ToBase58(), transactionIndex.ChainId),
                             IsCollection = TokenSymbolHelper.IsCollection(transferred.Symbol),
                             ImageBase64 = await _blockChainProvider.GetTokenImageBase64Async(transferred.Symbol),
                         };
@@ -521,7 +521,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                         break;
                     }
 
-                    if (_globalOptions.CurrentValue.BurntFeeContractAddresses.TryGetValue(indexerTransactionDto.ChainId,
+                    if (_globalOptions.CurrentValue.BurntFeeContractAddresses.TryGetValue(transactionIndex.ChainId,
                             out var addressList)
                         && addressList.Contains(burned.Burner.ToBase58()))
                     {
@@ -779,7 +779,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
     }
 
 
-    public async Task<TransactionsResponseDto> ParseIndexerTransactionListAsync(List<IndexerTransactionDto> list)
+    public async Task<TransactionsResponseDto> ParseIndexerTransactionListAsync(List<TransactionIndex> list)
     {
         var transactionsResponseDto = new TransactionsResponseDto();
         foreach (var indexerTransactionDto in list)
@@ -806,12 +806,12 @@ public class BlockChainService : IBlockChainService, ITransientDependency
     }
 
 
-    public async Task<(string, string)> ParseIndexerTransactionValueInfoAsync(IndexerTransactionDto transactionDto)
+    public async Task<(string, string)> ParseIndexerTransactionValueInfoAsync(TransactionIndex transactionIndex)
     {
         double value = 0;
         double fee = 0;
 
-        foreach (var indexerLogEventDto in transactionDto.LogEvents)
+        foreach (var indexerLogEventDto in transactionIndex.LogEvents)
         {
             indexerLogEventDto.ExtraProperties.TryGetValue("Indexed", out var indexed);
             indexerLogEventDto.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
@@ -852,12 +852,12 @@ public class BlockChainService : IBlockChainService, ITransientDependency
     }
 
     public async Task SetTransactionInfoAsync(TransactionResponseDto transaction,
-        IndexerTransactionDto indexerTransactionDto)
+        TransactionIndex transactionIndex)
     {
         var transactionValue = 0d;
         var fee = 0d;
 
-        foreach (var txnLogEvent in indexerTransactionDto.LogEvents)
+        foreach (var txnLogEvent in transactionIndex.LogEvents)
         {
             txnLogEvent.ExtraProperties.TryGetValue("Indexed", out var indexed);
             txnLogEvent.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
