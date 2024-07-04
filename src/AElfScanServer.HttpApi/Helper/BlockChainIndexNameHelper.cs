@@ -50,7 +50,7 @@ public class RedisKeyHelper
     
     public static string AddressSet(string chainId)
     {
-        return $"explore_{chainId}_AdressSet";
+        return $"explore_{chainId}_addressSet";
     }
     
     public static string TransactionDateList(string chainId)

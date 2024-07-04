@@ -315,3 +315,19 @@ public class DailyActiveAddressCountIndex : AElfIndexerEntity<string>, IEntityMa
     [Keyword] public string DateStr { get; set; }
 }
 
+public class DailyJobExecuteIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    [Keyword] public string ChainId { get; set; }
+    [Keyword] public string DateStr { get; set; }
+    public bool IsStatistic { get; set; }
+    public DateTime StatisticStartTime { get; set; }
+    public double CostTime { get; set; }
+
+    public DateTime DataWriteFinishTime { get; set; }
+}

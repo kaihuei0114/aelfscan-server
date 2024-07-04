@@ -157,7 +157,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyAvgTransactionFeeResp()
         {
-            List = datList,
+            List = datList.OrderBy(c => c.DateStr).ToList(),
             Total = datList.Count,
             Highest = datList.MaxBy(c => c.AvgFeeElf),
             Lowest = datList.MinBy(c => c.AvgFeeElf),
@@ -175,7 +175,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyTotalBurntResp()
         {
-            List = datList,
+            List = datList.OrderBy(c => c.DateStr).ToList(),
             Total = datList.Count,
             Highest = datList.MaxBy(c => c.Burnt),
             Lowest = datList.MinBy(c => c.Burnt),
@@ -190,6 +190,16 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
 
         var datList = _objectMapper.Map<List<DailyDeployContractIndex>, List<DailyDeployContract>>(indexList);
+
+        datList = datList.OrderBy(c => c.DateStr).ToList();
+
+
+        for (int i = 1; i < datList.Count; i++)
+        {
+            var count1 = int.Parse(datList[i - 1].Count);
+            var count2 = int.Parse(datList[i].Count);
+            datList[i].Count = (count1 + count2).ToString();
+        }
 
         var resp = new DailyDeployContractResp()
         {
@@ -211,7 +221,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new ElfPriceIndexResp()
         {
-            List = datList,
+            List = datList.OrderBy(c => c.DateStr).ToList(),
             Total = datList.Count,
             Highest = datList.MaxBy(c => c.Price),
             Lowest = datList.MinBy(c => c.Price),
@@ -229,7 +239,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyBlockRewardResp()
         {
-            List = datList,
+            List = datList.OrderBy(c => c.DateStr).ToList(),
             Total = datList.Count,
             Highest = datList.MaxBy(c => c.BlockReward),
             Lowest = datList.MinBy(c => c.BlockReward),
@@ -661,7 +671,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var dailyTransactionCountResp = new DailyTransactionCountResp()
         {
-            ChainId = request.ChainId,
             List = new List<DailyTransactionCount>()
         };
         var key = RedisKeyHelper.DailyTransactionCount(request.ChainId);

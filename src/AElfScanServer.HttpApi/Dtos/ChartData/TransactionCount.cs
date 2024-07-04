@@ -49,7 +49,6 @@ public class DailyTransactionCountResp
 
     public DailyTransactionCount HighestTransactionCount { get; set; }
     public DailyTransactionCount LowesTransactionCount { get; set; }
-    public string ChainId { get; set; }
 }
 
 public class DailyAvgTransactionFeeResp
@@ -59,7 +58,6 @@ public class DailyAvgTransactionFeeResp
 
     public DailyAvgTransactionFee Highest { get; set; }
     public DailyAvgTransactionFee Lowest { get; set; }
-    public string ChainId { get; set; }
 }
 
 public class DailyAvgTransactionFee
@@ -83,7 +81,6 @@ public class DailyBlockRewardResp
 
     public DailyBlockReward Highest { get; set; }
     public DailyBlockReward Lowest { get; set; }
-    public string ChainId { get; set; }
 }
 
 public class DailyBlockReward
@@ -102,7 +99,6 @@ public class DailyTotalBurntResp
 
     public DailyTotalBurnt Highest { get; set; }
     public DailyTotalBurnt Lowest { get; set; }
-    public string ChainId { get; set; }
 }
 
 public class DailyTotalBurnt
@@ -122,7 +118,6 @@ public class DailyDeployContractResp
 
     public DailyDeployContract Highest { get; set; }
     public DailyDeployContract Lowest { get; set; }
-    public string ChainId { get; set; }
 }
 
 public class DailyDeployContract
@@ -131,7 +126,6 @@ public class DailyDeployContract
 
     public string Count { get; set; }
 
-    public int HasBurntBlockCount { get; set; }
     public string DateStr { get; set; }
 }
 
@@ -142,7 +136,6 @@ public class ElfPriceIndexResp
 
     public ElfPrice Highest { get; set; }
     public ElfPrice Lowest { get; set; }
-    public string ChainId { get; set; }
 }
 
 public class ElfPrice
