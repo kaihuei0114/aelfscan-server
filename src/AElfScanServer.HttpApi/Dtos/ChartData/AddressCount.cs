@@ -6,10 +6,9 @@ namespace AElfScanServer.HttpApi.Dtos.ChartData;
 public class UniqueAddressCountResp
 {
     public long Total { get; set; }
-    public List<UniqueAddressCount> List { get; set; }
-    public UniqueAddressCount HighestIncrease { get; set; }
-    public UniqueAddressCount LowestIncrease { get; set; }
-    public string ChainId { get; set; }
+    public List<DailyUniqueAddressCount> List { get; set; }
+    public DailyUniqueAddressCount HighestIncrease { get; set; }
+    public DailyUniqueAddressCount LowestIncrease { get; set; }
 }
 
 public class ActiveAddressCountResp

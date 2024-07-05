@@ -9,6 +9,7 @@ using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.Helper;
+using AElfScanServer.HttpApi.Dtos.ChartData;
 using AutoMapper;
 
 namespace AElfScanServer.HttpApi;
@@ -17,6 +18,48 @@ public class BlockChainAutoMapperProfile : Profile
 {
     public BlockChainAutoMapperProfile()
     {
+        CreateMap<DailyActiveAddressCountIndex, DailyActiveAddressCount>()
+            .ReverseMap();
+
+        CreateMap<DailyTransactionCountIndex, DailyTransactionCount>()
+            .ReverseMap();
+
+
+        CreateMap<DailyUniqueAddressCountIndex, DailyUniqueAddressCount>()
+            .ReverseMap();
+
+        CreateMap<DailyAvgBlockSizeIndex, DailyAvgBlockSize>()
+            .ReverseMap();
+
+
+        CreateMap<DailyTransactionCountIndex, DailyTransactionCount>()
+            .ReverseMap();
+
+        CreateMap<DailyUniqueAddressCountIndex, DailyUniqueAddressCount>()
+            .ReverseMap();
+
+        CreateMap<DailyActiveAddressCountIndex, DailyActiveAddressCount>()
+            .ReverseMap();
+
+
+        CreateMap<DailyAvgTransactionFeeIndex, DailyAvgTransactionFee>()
+            .ReverseMap();
+
+        CreateMap<DailyBlockRewardIndex, DailyBlockReward>()
+            .ReverseMap();
+
+        CreateMap<DailyTotalBurntIndex, DailyTotalBurnt>()
+            .ReverseMap();
+
+        CreateMap<DailyDeployContractIndex, DailyDeployContract>()
+            .ReverseMap();
+
+
+        CreateMap<ElfPriceIndex, ElfPrice>()
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Close))
+            .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.OpenTime))
+            .ReverseMap();
+
         CreateMap<DailyBlockProduceCountIndex, DailyBlockProduceCount>()
             .ReverseMap();
 
@@ -29,8 +72,7 @@ public class BlockChainAutoMapperProfile : Profile
         CreateMap<AddressIndex, CommonAddressDto>()
             .ReverseMap();
 
-        CreateMap<IndexerTransactionDto, TransactionDetailDto>();
-        CreateMap<IndexerTransactionDto, TransactionIndex>();
+        CreateMap<TransactionIndex, TransactionDetailDto>();
         CreateMap<TokenCreated, TokenInfoIndex>()
             .ForMember(d => d.ExternalInfo,
                 opt => opt.MapFrom(s => s.ExternalInfo.Value.ToDictionary(o => o.Key, o => o.Value)))

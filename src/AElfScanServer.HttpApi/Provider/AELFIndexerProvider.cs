@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.Options;
 using AElfScanServer.Common;
+using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.HttpClient;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -165,14 +166,14 @@ public class AELFIndexerProvider : ISingletonDependency
     }
 
 
-    public async Task<List<IndexerTransactionDto>> GetTransactionsAsync(string chainId, long startBlockHeight,
+    public async Task<List<TransactionIndex>> GetTransactionsAsync(string chainId, long startBlockHeight,
         long endBlockHeight, string transactionId)
     {
         try
         {
             var accessTokenAsync = GetAccessTokenAsync();
             var response =
-                await _httpProvider.PostAsync<List<IndexerTransactionDto>>(
+                await _httpProvider.PostAsync<List<TransactionIndex>>(
                     _aelfIndexerOptions.AELFIndexerHost + AELFIndexerApi.GetTransaction.Path,
                     RequestMediaType.Json, new Dictionary<string, object>
                     {
@@ -189,18 +190,14 @@ public class AELFIndexerProvider : ISingletonDependency
                     });
 
 
-            // _logger.LogInformation(
-            //     "get transaction list from AELFIndexer success,total:{total},chainId:{chainId},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
-            //     response.Count, chainId, startBlockHeight,
-            //     endBlockHeight);
             return response;
         }
         catch (Exception e)
         {
             _logger.LogError(
-                "get transaction list from AELFIndexer error:{error},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
-                e.Message, startBlockHeight, endBlockHeight);
-            return new List<IndexerTransactionDto>();
+                "get transaction list from AELFIndexer error:{c}:{error},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
+                chainId, e.Message, startBlockHeight, endBlockHeight);
+            return new List<TransactionIndex>();
         }
     }
 

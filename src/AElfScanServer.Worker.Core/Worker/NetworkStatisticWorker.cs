@@ -18,13 +18,13 @@ public class NetworkStatisticWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<NetworkStatisticWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 500;
+        timer.Period = 1000*4;
         _logger = logger;
         _transactionService = transactionService;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        await _transactionService.BatchUpdateNetwork();
+        await _transactionService.BatchUpdateNodeNetworkTask();
     }
 }

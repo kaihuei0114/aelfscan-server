@@ -10,8 +10,6 @@ public class AelfExploreServerAutoMapperProfile : Profile
     {
         CreateMap<AddressIndex, CommonAddressDto>()
             .ReverseMap();
-
-        CreateMap<IndexerTransactionDto, TransactionIndex>()
-            ;
+        ;
     }
 }

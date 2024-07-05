@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using AElf.EntityMapping.Entities;
 using AElfScanServer.Common.Enums;
+using AElfScanServer.Domain.Common.Entities;
+using Nest;
 using Newtonsoft.Json;
 
 namespace AElfScanServer.HttpApi.Dtos;
@@ -47,68 +50,7 @@ public class IndexerTransactionCountDto
     public long Count { get; set; }
 }
 
-public class IndexerTransactionDto
-{
-    public string TransactionId { get; set; }
 
-    public string ChainId { get; set; }
-
-    public string From { get; set; }
-
-    public string To { get; set; }
-
-    // public string BlockHash { get; set; }
-
-    public long BlockHeight { get; set; }
-
-    // public string PreviousBlockHash { get; set; }
-
-    public DateTime BlockTime { get; set; }
-
-    public string MethodName { get; set; }
-
-    public string Params { get; set; }
-
-    public string Signature { get; set; }
-
-    /// <summary>
-    /// The ranking position of transactions within a block
-    /// </summary>
-    // public int Index { get; set; }
-
-    public TransactionStatus Status { get; set; }
-
-    public bool Confirmed { get; set; }
-
-    public Dictionary<string, string> ExtraProperties { get; set; }
-
-    public List<IndexerLogEventDto> LogEvents { get; set; }
-}
-
-public class IndexerLogEventDto
-{
-    // public string ChainId { get; set; }
-    public string BlockHash { get; set; }
-
-
-    public long BlockHeight { get; set; }
-
-    // public string PreviousBlockHash { get; set; }
-
-    public string TransactionId { get; set; }
-
-    // public DateTime BlockTime { get; set; }
-
-    public string ContractAddress { get; set; }
-
-    public string EventName { get; set; }
-
-    public int Index { get; set; }
-
-    // public bool Confirmed { get; set; }
-
-    public Dictionary<string, string> ExtraProperties { get; set; }
-}
 
 public class Header
 {

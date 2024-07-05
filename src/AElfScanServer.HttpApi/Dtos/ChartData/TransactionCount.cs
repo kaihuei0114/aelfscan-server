@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElfScanServer.Common.Dtos.ChartData;
@@ -23,6 +24,18 @@ public class SetRoundRequest
     public bool UpdateData { get; set; }
 }
 
+public class SetJob
+{
+    public string ChainId { get; set; }
+
+    public long SetBlockHeight { get; set; }
+
+    public long SetSizBlockHeight { get; set; }
+
+
+    public long SetLastRound { get; set; }
+}
+
 public class InitRoundResp
 {
     public long MinRound { get; set; }
@@ -42,12 +55,143 @@ public class InitRoundResp
     public string FinishDate { get; set; }
 }
 
+public class JonInfoResp
+{
+    public long RedisLastBlockHeight { get; set; }
+
+    public long EsLastBlockHeight { get; set; }
+
+    public long RedisLastRound { get; set; }
+    public long EsLastRound { get; set; }
+    public string EsLastRoundDate { get; set; }
+    public string EsTransactionLastDate { get; set; }
+
+
+    public long BlockSizeBlockHeight { get; set; }
+}
+
 public class DailyTransactionCountResp
 {
-    public long Total { get; set; } 
+    public long Total { get; set; }
     public List<DailyTransactionCount> List { get; set; }
 
     public DailyTransactionCount HighestTransactionCount { get; set; }
     public DailyTransactionCount LowesTransactionCount { get; set; }
-    public string ChainId { get; set; }
+}
+
+public class DailyAvgTransactionFeeResp
+{
+    public long Total { get; set; }
+    public List<DailyAvgTransactionFee> List { get; set; }
+
+    public DailyAvgTransactionFee Highest { get; set; }
+    public DailyAvgTransactionFee Lowest { get; set; }
+}
+
+public class DailyAvgTransactionFee
+{
+    public long Date { get; set; }
+
+    public string AvgFeeUsdt { get; set; }
+
+    public string AvgFeeElf { get; set; }
+
+    public string TotalFeeElf { get; set; }
+    public int TransactionCount { get; set; }
+
+    public string DateStr { get; set; }
+}
+
+public class DailyBlockRewardResp
+{
+    public long Total { get; set; }
+    public List<DailyBlockReward> List { get; set; }
+
+    public DailyBlockReward Highest { get; set; }
+    public DailyBlockReward Lowest { get; set; }
+}
+
+public class DailyAvgBlockSizeResp
+{
+    public long Total { get; set; }
+    public List<DailyAvgBlockSize> List { get; set; }
+
+    public DailyAvgBlockSize Highest { get; set; }
+    public DailyAvgBlockSize Lowest { get; set; }
+}
+
+public class DailyAvgBlockSize
+{
+    public long Date { get; set; }
+    public string DateStr { get; set; }
+    public string AvgBlockSize { get; set; }
+    public long TotalSize { get; set; }
+    public int BlockCount { get; set; }
+}
+
+public class DailyBlockReward
+{
+    public long Date { get; set; }
+    public string BlockReward { get; set; }
+    public string DateStr { get; set; }
+    public long TotalBlockCount { get; set; }
+}
+
+public class DailyTotalBurntResp
+{
+    public long Total { get; set; }
+    public List<DailyTotalBurnt> List { get; set; }
+
+    public DailyTotalBurnt Highest { get; set; }
+    public DailyTotalBurnt Lowest { get; set; }
+}
+
+public class DailyTotalBurnt
+{
+    public long Date { get; set; }
+
+    public string Burnt { get; set; }
+
+    public int HasBurntBlockCount { get; set; }
+    public string DateStr { get; set; }
+}
+
+public class DailyDeployContractResp
+{
+    public long Total { get; set; }
+    public List<DailyDeployContract> List { get; set; }
+
+    public DailyDeployContract Highest { get; set; }
+    public DailyDeployContract Lowest { get; set; }
+}
+
+public class DailyDeployContract
+{
+    public long Date { get; set; }
+
+    public string Count { get; set; }
+
+    public string TotalCount { get; set; }
+
+    public string DateStr { get; set; }
+}
+
+public class ElfPriceIndexResp
+{
+    public long Total { get; set; }
+    public List<ElfPrice> List { get; set; }
+
+    public ElfPrice Highest { get; set; }
+    public ElfPrice Lowest { get; set; }
+}
+
+public class ElfPrice
+{
+    public long Date { get; set; }
+
+    public string DateStr { get; set; }
+    public string Open { get; set; }
+    public string High { get; set; }
+    public string Low { get; set; }
+    public string Price { get; set; }
 }

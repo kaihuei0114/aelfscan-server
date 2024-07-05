@@ -4,7 +4,9 @@ using System.Linq;
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
 using AElfScanServer.Common;
+using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.NodeProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
 using AElfScanServer.HttpApi.Dtos;
@@ -55,6 +57,7 @@ public class AElfScanServerWorkerModule : AbpModule
         context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
         context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
+        context.Services.AddSingleton<NodeProvider, NodeProvider>();
 
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AElfScanWorker:"; });
         Configure<BlockChainProducerInfoSyncWorkerOptions>(configuration.GetSection("BlockChainProducer"));
@@ -136,6 +139,22 @@ public class AElfScanServerWorkerModule : AbpModule
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         var elasticClient = new ElasticClient(settings);
+        if (!elasticClient.Indices.Exists("transactionindex")
+                .Exists)
+        {
+            var indexResponse = elasticClient.Indices.Create(
+                "transactionindex", c => c
+                    .Settings(s => s
+                        .Setting("max_result_window", 200000)
+                    )
+                    .Map<TransactionIndex>(m => m.AutoMap()));
+
+            if (!indexResponse.IsValid)
+            {
+                throw new Exception($"Failed to index object: {indexResponse.DebugInformation}");
+            }
+        }
+
 
         foreach (var indexerOptionsChainId in indexerOptions.ChainIds)
         {
@@ -180,7 +199,6 @@ public class AElfScanServerWorkerModule : AbpModule
                     throw new Exception($"Failed to index object: {indexResponse.DebugInformation}");
                 }
             }
-            
 
 
             if (!elasticClient.Indices
@@ -206,7 +224,10 @@ public class AElfScanServerWorkerModule : AbpModule
         context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
         context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
         context.AddBackgroundWorkerAsync<ChartDataWorker>();
+        context.AddBackgroundWorkerAsync<BnElfUsdtPriceWorker>();
+        context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
         context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
         context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
+        context.AddBackgroundWorkerAsync<BlockSizeWorker>();
     }
 }

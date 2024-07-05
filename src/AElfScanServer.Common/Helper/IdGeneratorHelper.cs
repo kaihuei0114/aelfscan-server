@@ -29,12 +29,33 @@ public static class DateTimeHelper
 
     public static long GetTotalMilliseconds(DateTime dateTime)
     {
-        return (long)dateTime.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds;
+        return (long)dateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
     }
 
     public static string GetDateTimeString(long milliseconds)
     {
-        return new DateTime(1970, 1, 1).AddMilliseconds(milliseconds).ToUtc8String("yyyy-MM-dd HH:mm:ss");
+        return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(milliseconds)
+            .ToUtc8String("yyyy-MM-dd");
+    }
+
+
+    public static string FormatDateStr(string date)
+    {
+        DateTime dateTime = DateTime.Parse(date, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+
+        string formattedDateTime = dateTime.ToString("yyyy-MM-dd");
+        return formattedDateTime;
+    }
+
+
+    public static DateTime GetDateTimeFromYYMMDD(string dateString)
+    {
+        string dateFormat = "yyyy-MM-dd";
+        DateTime dateTime;
+        DateTime.TryParseExact(dateString, dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None,
+            out dateTime);
+        return dateTime;
     }
 
     public static long ConvertYYMMDD(string dateString)
@@ -56,6 +77,13 @@ public static class DateTimeHelper
         }
 
         return 0;
+    }
+
+
+    public static string GetDateStr(DateTime dateTime)
+    {
+        return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, DateTimeKind.Utc).ToString(
+            "yyyy-MM-dd");
     }
 
 
@@ -98,6 +126,48 @@ public static class DateTimeHelper
 
         return hourTimestamps;
     }
+
+    public static List<long> GetDayHourList(string dateStr)
+    {
+        var dateTime = DateTimeOffset.FromUnixTimeMilliseconds(ConvertYYMMDD(dateStr)).DateTime;
+
+
+        List<long> hourTimestamps = new List<long>();
+
+        for (int hour = 0; hour < 24; hour++)
+        {
+            DateTime hourDateTime = dateTime.AddHours(hour);
+
+            TimeSpan timeSpan = hourDateTime - new DateTime(1970, 1, 1);
+
+            long timestamp = (long)timeSpan.TotalMilliseconds;
+
+            hourTimestamps.Add(timestamp);
+        }
+
+        return hourTimestamps;
+    }
+
+    public static List<DateTime> GetDateTimeHourList(string dateStr)
+    {
+        DateTimeStyles style = DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal;
+        DateTime dateTime = DateTime.ParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, style);
+
+        DateTime dateTimeUtc = dateTime.ToUniversalTime();
+
+
+        List<DateTime> hourTimestamps = new List<DateTime>();
+
+        for (int hour = 0; hour <= 24; hour++)
+        {
+            DateTime hourDateTime = dateTimeUtc.AddHours(hour);
+
+            hourTimestamps.Add(hourDateTime);
+        }
+
+        return hourTimestamps;
+    }
+
 
     public static long GetDateTimeLong(long milliseconds)
     {

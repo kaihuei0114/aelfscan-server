@@ -18,13 +18,14 @@ public class ChartDataWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<ChartDataWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 1000 * 1;
+        timer.Period = 1000 * 5;
         _logger = logger;
         _transactionService = transactionService;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        await _transactionService.UpdateChartDataAsync();
+        
+        await _transactionService.UpdateTransactionRelatedDataTaskAsync();
     }
 }

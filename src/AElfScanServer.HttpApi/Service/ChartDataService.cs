@@ -5,6 +5,8 @@ using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using AElf.EntityMapping.Repositories;
 using AElfScanServer.Common.Dtos.ChartData;
+using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.EsIndex;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Domain.Shared.Common;
@@ -41,8 +43,22 @@ public interface IChartDataService
 
     public Task<NodeBlockProduceResp> GetNodeBlockProduceRespAsync(ChartDataRequest request);
 
+    public Task<DailyAvgTransactionFeeResp> GetDailyAvgTransactionFeeRespAsync(ChartDataRequest request);
 
+
+    public Task<DailyTotalBurntResp> GetDailyTotalBurntRespAsync(ChartDataRequest request);
+
+    public Task<DailyDeployContractResp> GetDailyDeployContractRespAsync(ChartDataRequest request);
+
+    public Task<ElfPriceIndexResp> GetElfPriceIndexRespAsync(ChartDataRequest request);
+
+
+    public Task<DailyBlockRewardResp> GetDailyBlockRewardRespAsync(ChartDataRequest request);
+
+    public Task<DailyAvgBlockSizeResp> GetDailyAvgBlockSizeRespRespAsync(ChartDataRequest request);
     public Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request);
+
+    public Task<JonInfoResp> GetJobInfo(SetJob request);
 }
 
 public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDependency
@@ -54,10 +70,22 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IEntityMappingRepository<DailyBlockProduceDurationIndex, string> _blockProduceDurationRepository;
     private readonly IEntityMappingRepository<HourNodeBlockProduceIndex, string> _hourNodeBlockProduceRepository;
     private readonly IEntityMappingRepository<DailyCycleCountIndex, string> _cycleCountRepository;
+    private readonly IEntityMappingRepository<DailyAvgTransactionFeeIndex, string> _avgTransactionFeeRepository;
+    private readonly IEntityMappingRepository<ElfPriceIndex, string> _elfPriceRepository;
+    private readonly IEntityMappingRepository<DailyBlockRewardIndex, string> _blockRewardRepository;
+    private readonly IEntityMappingRepository<DailyTotalBurntIndex, string> _totalBurntRepository;
+    private readonly IEntityMappingRepository<DailyDeployContractIndex, string> _deployContractRepository;
+    private readonly IEntityMappingRepository<DailyAvgBlockSizeIndex, string> _blockSizeRepository;
+    private readonly IEntityMappingRepository<TransactionIndex, string> _transactionsRepository;
     private readonly IElasticClient _elasticClient;
+
+    private readonly IEntityMappingRepository<DailyTransactionCountIndex, string> _transactionCountRepository;
+    private readonly IEntityMappingRepository<DailyUniqueAddressCountIndex, string> _uniqueAddressRepository;
+    private readonly IEntityMappingRepository<DailyActiveAddressCountIndex, string> _activeAddressRepository;
 
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
+
 
     public ChartDataService(IOptions<RedisCacheOptions> optionsAccessor, ILogger<ChartDataService> logger,
         IEntityMappingRepository<RoundIndex, string> roundIndexRepository,
@@ -68,6 +96,16 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         IEntityMappingRepository<DailyCycleCountIndex, string> cycleCountRepository,
         IOptionsMonitor<GlobalOptions> globalOptions,
         IEntityMappingRepository<HourNodeBlockProduceIndex, string> hourNodeBlockProduceRepository,
+        IEntityMappingRepository<DailyAvgTransactionFeeIndex, string> avgTransactionFeeRepository,
+        IEntityMappingRepository<ElfPriceIndex, string> elfPriceRepository,
+        IEntityMappingRepository<DailyBlockRewardIndex, string> blockRewardRepository,
+        IEntityMappingRepository<DailyTotalBurntIndex, string> totalBurntRepository,
+        IEntityMappingRepository<DailyDeployContractIndex, string> deployContractRepository,
+        IEntityMappingRepository<DailyAvgBlockSizeIndex, string> blockSizeRepository,
+        IEntityMappingRepository<DailyTransactionCountIndex, string> transactionCountRepository,
+        IEntityMappingRepository<DailyUniqueAddressCountIndex, string> uniqueAddressRepository,
+        IEntityMappingRepository<DailyActiveAddressCountIndex, string> activeAddressRepository,
+        IEntityMappingRepository<TransactionIndex, string> transactionsRepository,
         IOptionsMonitor<ElasticsearchOptions> options) : base(
         optionsAccessor)
     {
@@ -84,8 +122,214 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var connectionPool = new StaticConnectionPool(uris);
         var settings = new ConnectionSettings(connectionPool);
         _elasticClient = new ElasticClient(settings);
+        _avgTransactionFeeRepository = avgTransactionFeeRepository;
+        _elfPriceRepository = elfPriceRepository;
+        _blockRewardRepository = blockRewardRepository;
+        _totalBurntRepository = totalBurntRepository;
+        _deployContractRepository = deployContractRepository;
+        EsIndex.SetElasticClient(_elasticClient);
+        _blockSizeRepository = blockSizeRepository;
+        _transactionCountRepository = transactionCountRepository;
+        _uniqueAddressRepository = uniqueAddressRepository;
+        _activeAddressRepository = activeAddressRepository;
+        _transactionsRepository = transactionsRepository;
     }
 
+
+    public async Task<JonInfoResp> GetJobInfo(SetJob request)
+    {
+        await ConnectAsync();
+        var jonInfoResp = new JonInfoResp() { };
+
+        var v1 = RedisDatabase.StringGet(RedisKeyHelper.TransactionLastBlockHeight(request.ChainId));
+        var v2 = RedisDatabase.StringGet(RedisKeyHelper.BlockSizeLastBlockHeight(request.ChainId));
+        var v3 = RedisDatabase.StringGet(RedisKeyHelper.LatestRound(request.ChainId));
+        var queryable = await _transactionsRepository.GetQueryableAsync();
+        var transactionIndices = queryable.Where(c => c.ChainId == request.ChainId)
+            .OrderByDescending(c => c.BlockHeight).Take(1).ToList();
+
+
+        var queryable1 = await _roundIndexRepository.GetQueryableAsync();
+        var roundIndices = queryable1.Where(c => c.ChainId == request.ChainId)
+            .OrderByDescending(c => c.RoundNumber).Take(1).ToList();
+
+
+        jonInfoResp.RedisLastBlockHeight = long.Parse(v1);
+        jonInfoResp.BlockSizeBlockHeight = long.Parse(v2);
+        jonInfoResp.RedisLastRound = long.Parse(v3);
+
+        jonInfoResp.EsTransactionLastDate = transactionIndices[0].DateStr;
+        jonInfoResp.EsLastBlockHeight = transactionIndices[0].BlockHeight;
+
+
+        jonInfoResp.EsLastRound = roundIndices[0].RoundNumber;
+        jonInfoResp.EsLastRoundDate = roundIndices[0].DateStr;
+
+        if (request.SetBlockHeight > 0)
+        {
+            RedisDatabase.StringSet(RedisKeyHelper.TransactionLastBlockHeight(request.ChainId), request.SetBlockHeight);
+        }
+
+        if (request.SetSizBlockHeight > 0)
+        {
+            RedisDatabase.StringSet(RedisKeyHelper.BlockSizeLastBlockHeight(request.ChainId),
+                request.SetSizBlockHeight);
+        }
+
+        if (request.SetLastRound > 0)
+        {
+            RedisDatabase.StringSet(RedisKeyHelper.LatestRound(request.ChainId),
+                request.SetLastRound);
+        }
+
+        return jonInfoResp;
+    }
+
+    public async Task<DailyAvgBlockSizeResp> GetDailyAvgBlockSizeRespRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _blockSizeRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+
+        var datList = _objectMapper.Map<List<DailyAvgBlockSizeIndex>, List<DailyAvgBlockSize>>(indexList);
+
+        var resp = new DailyAvgBlockSizeResp()
+        {
+            List = datList.OrderBy(c => c.DateStr).ToList(),
+            Total = datList.Count,
+            Highest = datList.MaxBy(c => c.AvgBlockSize),
+            Lowest = datList.MinBy(c => c.AvgBlockSize),
+        };
+
+        return resp;
+    }
+
+    public async Task<DailyAvgTransactionFeeResp> GetDailyAvgTransactionFeeRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _avgTransactionFeeRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+
+        var datList = _objectMapper.Map<List<DailyAvgTransactionFeeIndex>, List<DailyAvgTransactionFee>>(indexList);
+
+
+        foreach (var dailyAvgTransactionFee in datList)
+        {
+            dailyAvgTransactionFee.AvgFeeElf = double.Parse(dailyAvgTransactionFee.AvgFeeElf).ToString("F6");
+            dailyAvgTransactionFee.TotalFeeElf = double.Parse(dailyAvgTransactionFee.TotalFeeElf).ToString("F6");
+            dailyAvgTransactionFee.AvgFeeUsdt = double.Parse(dailyAvgTransactionFee.AvgFeeUsdt).ToString("F6");
+        }
+
+        var resp = new DailyAvgTransactionFeeResp()
+        {
+            List = datList.OrderBy(c => c.DateStr).ToList(),
+            Total = datList.Count,
+            Highest = datList.MaxBy(c => c.AvgFeeElf),
+            Lowest = datList.MinBy(c => c.AvgFeeElf),
+        };
+
+        return resp;
+    }
+
+    public async Task<DailyTotalBurntResp> GetDailyTotalBurntRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _totalBurntRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+
+        var datList = _objectMapper.Map<List<DailyTotalBurntIndex>, List<DailyTotalBurnt>>(indexList);
+
+        foreach (var data in datList)
+        {
+            data.Burnt = double.Parse(data.Burnt).ToString("F6");
+        }
+
+
+        var resp = new DailyTotalBurntResp()
+        {
+            List = datList.OrderBy(c => c.DateStr).ToList(),
+            Total = datList.Count,
+            Highest = datList.MaxBy(c => c.Burnt),
+            Lowest = datList.MinBy(c => c.Burnt),
+        };
+
+        return resp;
+    }
+
+    public async Task<DailyDeployContractResp> GetDailyDeployContractRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _deployContractRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+
+        var dataList = _objectMapper.Map<List<DailyDeployContractIndex>, List<DailyDeployContract>>(indexList);
+
+        dataList = dataList.OrderBy(c => c.DateStr).ToList();
+
+
+        dataList[0].TotalCount = dataList[0].Count;
+
+        for (int i = 1; i < dataList.Count; i++)
+        {
+            var count1 = int.Parse(dataList[i - 1].TotalCount);
+            var count2 = dataList[i].TotalCount.IsNullOrEmpty() ? 0 : int.Parse(dataList[i].TotalCount);
+            dataList[i].TotalCount = (count1 + count2).ToString();
+        }
+
+
+        var resp = new DailyDeployContractResp()
+        {
+            List = dataList,
+            Total = dataList.Count,
+            Highest = dataList.MaxBy(c => c.Count),
+            Lowest = dataList.MinBy(c => c.Count),
+        };
+
+        return resp;
+    }
+
+    public async Task<ElfPriceIndexResp> GetElfPriceIndexRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _elfPriceRepository.GetQueryableAsync();
+        var indexList = queryable.Take(10000).ToList();
+
+        var datList = _objectMapper.Map<List<ElfPriceIndex>, List<ElfPrice>>(indexList);
+
+        foreach (var data in datList)
+        {
+            data.Price = double.Parse(data.Price).ToString("F6");
+        }
+
+
+        var resp = new ElfPriceIndexResp()
+        {
+            List = datList.OrderBy(c => c.DateStr).ToList(),
+            Total = datList.Count,
+            Highest = datList.MaxBy(c => c.Price),
+            Lowest = datList.MinBy(c => c.Price),
+        };
+
+        return resp;
+    }
+
+    public async Task<DailyBlockRewardResp> GetDailyBlockRewardRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _blockRewardRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+
+        var datList = _objectMapper.Map<List<DailyBlockRewardIndex>, List<DailyBlockReward>>(indexList);
+
+        foreach (var data in datList)
+        {
+            data.BlockReward = double.Parse(data.BlockReward).ToString("F6");
+        }
+        
+        var resp = new DailyBlockRewardResp()
+        {
+            List = datList.OrderBy(c => c.DateStr).ToList(),
+            Total = datList.Count,
+            Highest = datList.MaxBy(c => c.BlockReward),
+            Lowest = datList.MinBy(c => c.BlockReward),
+        };
+
+        return resp;
+    }
 
     public async Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request)
     {
@@ -336,7 +580,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
                 nodeBlockProduces[address] = new NodeBlockProduce()
                 {
                     NodeAddress = address,
-                    NodeName = await GetContractName(request.ChainId, address),
+                    NodeName = await GetBpName(request.ChainId, address),
                     TotalCycle = hourNodeBlockProduceIndex.TotalCycle,
                     Blocks = hourNodeBlockProduceIndex.Blocks,
                     MissedBlocks = hourNodeBlockProduceIndex.MissedBlocks
@@ -506,138 +750,62 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
     public async Task<DailyTransactionCountResp> GetDailyTransactionCountAsync(ChartDataRequest request)
     {
-        await ConnectAsync();
+        var queryable = await _transactionCountRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
 
-        var dailyTransactionCountResp = new DailyTransactionCountResp()
+        var datList = _objectMapper.Map<List<DailyTransactionCountIndex>, List<DailyTransactionCount>>(indexList);
+
+        var resp = new DailyTransactionCountResp()
         {
-            ChainId = request.ChainId,
-            List = new List<DailyTransactionCount>()
+            List = datList.OrderBy(c => c.DateStr).ToList(),
+            Total = datList.Count,
+            HighestTransactionCount = datList.MaxBy(c => c.TransactionCount),
+            LowesTransactionCount = datList.MinBy(c => c.TransactionCount),
         };
-        var key = RedisKeyHelper.DailyTransactionCount(request.ChainId);
-        var value = RedisDatabase.StringGet(key);
 
-        var list
-            = JsonConvert.DeserializeObject<List<DailyTransactionCount>>(value);
-
-        var newList = new List<DailyTransactionCount>();
-        foreach (var dailyTransactionCount in list)
-        {
-            if (dailyTransactionCount.Date <= 0)
-            {
-                continue;
-            }
-
-            dailyTransactionCount.DateStr = DateTimeHelper.GetDateTimeString(dailyTransactionCount.Date);
-            newList.Add(dailyTransactionCount);
-        }
-
-        dailyTransactionCountResp.List = newList;
-        dailyTransactionCountResp.Total = newList.Count();
-        dailyTransactionCountResp.HighestTransactionCount =
-            dailyTransactionCountResp.List.MaxBy(c => c.TransactionCount);
-
-        dailyTransactionCountResp.LowesTransactionCount =
-            dailyTransactionCountResp.List.MinBy(c => c.TransactionCount);
-
-        return dailyTransactionCountResp;
+        return resp;
     }
 
     public async Task<UniqueAddressCountResp> GetUniqueAddressCountAsync(ChartDataRequest request)
     {
-        await ConnectAsync();
+        var queryable = await _uniqueAddressRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
 
-        var uniqueAddressCountResp = new UniqueAddressCountResp()
+        var datList = _objectMapper.Map<List<DailyUniqueAddressCountIndex>, List<DailyUniqueAddressCount>>(indexList);
+
+        var resp = new UniqueAddressCountResp()
         {
-            ChainId = request.ChainId,
-            List = new List<UniqueAddressCount>()
+            List = datList.OrderBy(c => c.DateStr).ToList(),
+            Total = datList.Count,
+            HighestIncrease = datList.MaxBy(c => c.AddressCount),
+            LowestIncrease = datList.MinBy(c => c.AddressCount),
         };
-        var key = RedisKeyHelper.UniqueAddresses(request.ChainId);
-        var value = RedisDatabase.StringGet(key);
 
-        var uniqueAddressCounts = JsonConvert.DeserializeObject<List<UniqueAddressCount>>(value);
-
-
-        var addressCounts = new List<UniqueAddressCount>();
-
-        var previousElement = new UniqueAddressCount();
-        for (var i = 0; i < uniqueAddressCounts.Count; i++)
-        {
-            var uniqueAddressCount = uniqueAddressCounts[i];
-
-            uniqueAddressCount.DateStr = DateTimeHelper.GetDateTimeString(uniqueAddressCount.Date);
-            uniqueAddressCount.TotalUniqueAddressees =
-                uniqueAddressCount.AddressCount + previousElement.TotalUniqueAddressees;
-            previousElement = uniqueAddressCount;
-
-            addressCounts.Add(uniqueAddressCount);
-            if (i == uniqueAddressCounts.Count() - 1)
-            {
-                break;
-            }
-
-            var afterDay = DateTimeHelper.GetAfterDayTotalSeconds(uniqueAddressCounts[i].Date);
-            while (afterDay < uniqueAddressCounts[i + 1].Date)
-            {
-                addressCounts.Add(new UniqueAddressCount()
-                {
-                    Date = afterDay,
-                    AddressCount = 0,
-                    TotalUniqueAddressees = addressCounts.Last().TotalUniqueAddressees,
-                    DateStr = DateTimeHelper.GetDateTimeString(afterDay)
-                });
-
-                afterDay = DateTimeHelper.GetAfterDayTotalSeconds(afterDay);
-            }
-        }
-
-
-        uniqueAddressCountResp.Total = addressCounts.Count();
-
-        uniqueAddressCountResp.List
-            = addressCounts;
-        uniqueAddressCountResp.HighestIncrease =
-            uniqueAddressCountResp.List.MaxBy(c => c.AddressCount);
-
-        uniqueAddressCountResp.LowestIncrease =
-            uniqueAddressCountResp.List.MinBy(c => c.AddressCount);
-
-
-        return uniqueAddressCountResp;
+        return resp;
     }
 
     public async Task<ActiveAddressCountResp> GetActiveAddressCountAsync(ChartDataRequest request)
     {
-        await ConnectAsync();
+        var queryable = await _activeAddressRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
 
-        var activeAddressCountResp = new ActiveAddressCountResp()
+        var datList = _objectMapper.Map<List<DailyActiveAddressCountIndex>, List<DailyActiveAddressCount>>(indexList);
+
+        var resp = new ActiveAddressCountResp()
         {
-            ChainId = request.ChainId,
-            List = new List<DailyActiveAddressCount>()
+            List = datList.OrderBy(c => c.DateStr).ToList(),
+            Total = datList.Count,
+            HighestActiveCount = datList.MaxBy(c => c.AddressCount),
+            LowestActiveCount = datList.MinBy(c => c.AddressCount),
         };
-        var value = RedisDatabase.StringGet(RedisKeyHelper.DailyActiveAddresses(request.ChainId));
 
-        activeAddressCountResp.List
-            = JsonConvert.DeserializeObject<List<DailyActiveAddressCount>>(value);
-        foreach (var i in activeAddressCountResp.List)
-        {
-            i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
-        }
-
-        activeAddressCountResp.Total = activeAddressCountResp.List.Count();
-
-        activeAddressCountResp.HighestActiveCount =
-            activeAddressCountResp.List.MaxBy(c => c.AddressCount);
-
-        activeAddressCountResp.LowestActiveCount =
-            activeAddressCountResp.List.MinBy(c => c.AddressCount);
-
-        return activeAddressCountResp;
+        return resp;
     }
 
 
-    public async Task<string> GetContractName(string chainId, string address)
+    public async Task<string> GetBpName(string chainId, string address)
     {
-        _globalOptions.CurrentValue.ContractNames.TryGetValue(chainId, out var contractNames);
+        _globalOptions.CurrentValue.BPNames.TryGetValue(chainId, out var contractNames);
         if (contractNames == null)
         {
             return "";

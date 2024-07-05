@@ -14,7 +14,7 @@ public class GlobalOptions
 
     public List<string> ChainIds { get; set; }
 
-    public Dictionary<string, long> OneBlockTime { get; set; }
+    public Dictionary<string, string> OneBlockTime { get; set; }
 
     public Dictionary<string, string> TokenImageUrls { get; set; }
     public Dictionary<string, string> ChainNodeHosts { get; set; }
@@ -27,6 +27,10 @@ public class GlobalOptions
 
     public string ContractAddressTreasury { get; set; }
     public Dictionary<string, string> ContractAddressConsensus { get; set; }
+
+    public long NextTermDate { get; set; } = 1725724800000;
+
+    public decimal NextTermReward { get; set; }
 
     public string BNBaseUrl { get; set; }
 
