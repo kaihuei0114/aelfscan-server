@@ -39,6 +39,16 @@ public static class DateTimeHelper
     }
 
 
+    public static string FormatDateStr(string date)
+    {
+        DateTime dateTime = DateTime.Parse(date, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+
+        string formattedDateTime = dateTime.ToString("yyyy-MM-dd");
+        return formattedDateTime;
+    }
+
+
     public static DateTime GetDateTimeFromYYMMDD(string dateString)
     {
         string dateFormat = "yyyy-MM-dd";

@@ -162,24 +162,6 @@ public class DailyAvgTransactionFeeIndex : AElfIndexerEntity<string>, IEntityMap
     [Keyword] public string DateStr { get; set; }
 }
 
-public class DailyAvgBlockSizeIndex : AElfIndexerEntity<string>, IEntityMappingEntity
-{
-    [Keyword]
-    public override string Id
-    {
-        get { return Date + "_" + ChainId; }
-    }
-
-    public long Date { get; set; }
-
-    [Keyword] public string ChainId { get; set; }
-
-    [Keyword] public string AvgSize { get; set; }
-
-
-    [Keyword] public string DateStr { get; set; }
-}
-
 public class DailyBlockRewardIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
     [Keyword]
@@ -313,6 +295,46 @@ public class DailyActiveAddressCountIndex : AElfIndexerEntity<string>, IEntityMa
     public long ReceiveAddressCount { get; set; }
 
     [Keyword] public string DateStr { get; set; }
+}
+
+public class DailyAvgBlockSizeIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string ChainId { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    [Keyword] public string AvgBlockSize { get; set; }
+
+    public long TotalSize { get; set; }
+
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+    public long StartBlockHeight { get; set; }
+    public long EndBlockHeight { get; set; }
+
+    public int BlockCount { get; set; }
+}
+
+public class BlockSizeErrInfoIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return BlockHeight + "_" + ChainId; }
+    }
+
+    public DateTime Date { get; set; }
+    [Keyword] public string ChainId { get; set; }
+
+    [Keyword] public string ErrMsg { get; set; }
+
+    public long BlockHeight { get; set; }
 }
 
 public class DailyJobExecuteIndex : AElfIndexerEntity<string>, IEntityMappingEntity

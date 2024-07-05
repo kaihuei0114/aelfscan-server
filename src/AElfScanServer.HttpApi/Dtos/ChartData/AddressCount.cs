@@ -9,7 +9,6 @@ public class UniqueAddressCountResp
     public List<DailyUniqueAddressCount> List { get; set; }
     public DailyUniqueAddressCount HighestIncrease { get; set; }
     public DailyUniqueAddressCount LowestIncrease { get; set; }
-    public string ChainId { get; set; }
 }
 
 public class ActiveAddressCountResp

@@ -14,12 +14,14 @@ using AElf.CSharp.Core.Extension;
 using AElf.EntityMapping.Repositories;
 using AElf.Standards.ACS0;
 using AElf.Types;
+using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.EsIndex;
 using AElfScanServer.Worker.Core.Provider;
 using Elasticsearch.Net;
 using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.NodeProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.Dtos.Indexer;
@@ -61,6 +63,9 @@ public interface ITransactionService
     public Task UpdateElfPrice();
 
     public Task BatchPullTransactionTask();
+
+
+    public Task BlockSizeTask();
 }
 
 public class TransactionService : AbpRedisCache, ITransactionService, ITransientDependency
@@ -94,14 +99,18 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailyTransactionCountIndex, string> _transactionCountRepository;
     private readonly IEntityMappingRepository<DailyUniqueAddressCountIndex, string> _uniqueAddressRepository;
     private readonly IEntityMappingRepository<DailyActiveAddressCountIndex, string> _activeAddressRepository;
-    private readonly IEntityMappingRepository<DailyJobExecuteIndex, string> _JobExecuteIndexRepository;
+    private readonly IEntityMappingRepository<DailyAvgBlockSizeIndex, string> _blockSizeRepository;
+    private readonly IEntityMappingRepository<DailyJobExecuteIndex, string> _jobExecuteIndexRepository;
+    private readonly NodeProvider _nodeProvider;
+
     private readonly ILogger<TransactionService> _logger;
     private static bool FinishInitChartData = false;
     private static int BatchPullRoundCount = 1;
+    private static int BlockSizeInterval = 25;
     private static object _lock = new object();
 
     private static Timer timer;
-    private static long PullTransactioninterval = 5000 - 1;
+    private static long PullTransactioninterval = 2000 - 1;
 
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
@@ -126,7 +135,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyTransactionCountIndex, string> transactionCountRepository,
         IEntityMappingRepository<DailyUniqueAddressCountIndex, string> uniqueAddressRepository,
         IEntityMappingRepository<DailyActiveAddressCountIndex, string> activeAddressRepository,
-        IEntityMappingRepository<DailyJobExecuteIndex, string> jobExecuteIndexRepository) :
+        IEntityMappingRepository<DailyJobExecuteIndex, string> jobExecuteIndexRepository,
+        NodeProvider nodeProvide,
+        IEntityMappingRepository<DailyAvgBlockSizeIndex, string> blockSizeRepository) :
         base(optionsAccessor)
     {
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -159,7 +170,116 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _transactionCountRepository = transactionCountRepository;
         _uniqueAddressRepository = uniqueAddressRepository;
         _activeAddressRepository = activeAddressRepository;
-        _JobExecuteIndexRepository = jobExecuteIndexRepository;
+        _jobExecuteIndexRepository = jobExecuteIndexRepository;
+        _blockSizeRepository = blockSizeRepository;
+        _nodeProvider = nodeProvide;
+    }
+
+    public async Task BlockSizeTask()
+    {
+        _logger.LogInformation("start BlockSizeTask");
+        foreach (var chanId in _globalOptions.CurrentValue.ChainIds)
+        {
+            await BatchPullBlockSize(chanId);
+        }
+
+        while (true)
+        {
+        }
+    }
+
+
+    public async Task BatchPullBlockSize(string chainId)
+    {
+        var dic = new Dictionary<string, DailyAvgBlockSizeIndex>();
+        await ConnectAsync();
+        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.BlockSizeLastBlockHeight(chainId));
+        var lastBlockHeight = redisValue.IsNullOrEmpty ? 0 : long.Parse(redisValue);
+        while (true)
+        {
+            var tasks = new List<Task>();
+            var blockSizeIndices = new List<BlockSizeDto>();
+            var _lock = new object();
+
+            var startNew = Stopwatch.StartNew();
+
+            for (int i = 0; i < BlockSizeInterval; i++)
+            {
+                lastBlockHeight++;
+                tasks.Add(_nodeProvider.GetBlockSize(chainId, lastBlockHeight).ContinueWith(task =>
+                {
+                    lock (_lock)
+                    {
+                        if (task.Result != null)
+                        {
+                            blockSizeIndices.Add(task.Result);
+                        }
+                    }
+                }));
+            }
+
+            await tasks.WhenAll();
+            foreach (var blockSize in blockSizeIndices)
+            {
+                if (blockSize.Header == null)
+                {
+                    _logger.LogInformation("Block size index header is null:{c}", chainId);
+                    continue;
+                }
+
+                string date = "";
+                if (long.Parse(blockSize.Header.Height) == 1)
+                {
+                    date = _globalOptions.CurrentValue.OneBlockTime[chainId];
+                }
+                else
+                {
+                    date = DateTimeHelper.FormatDateStr(blockSize.Header.Time);
+                }
+
+                if (dic.TryGetValue(date, out var v))
+                {
+                    v.TotalSize += blockSize.BlockSize;
+                    v.EndBlockHeight = Math.Max(int.Parse(blockSize.Header.Height), v.EndBlockHeight);
+                    v.StartBlockHeight = Math.Min(int.Parse(blockSize.Header.Height), v.StartBlockHeight);
+                    v.BlockCount++;
+                }
+                else
+                {
+                    dic[date] = new DailyAvgBlockSizeIndex()
+                    {
+                        ChainId = chainId,
+                        DateStr = date,
+                        TotalSize = blockSize.BlockSize,
+                        StartBlockHeight = int.Parse(blockSize.Header.Height),
+                        StartTime = DateTime.UtcNow,
+                        EndBlockHeight = int.Parse(blockSize.Header.Height),
+                        BlockCount = 1
+                    };
+                }
+            }
+
+            startNew.Stop();
+            _logger.LogInformation(
+                "BatchPullBlockSize :{c},count:{1},time:{2},startBlockHeight:{s1},endBlockHeight:{s2}",
+                chainId, blockSizeIndices.Count, startNew.Elapsed.TotalSeconds, lastBlockHeight - BlockSizeInterval,
+                lastBlockHeight);
+            if (dic.Count >= 2)
+            {
+                var sizeIndices = dic.Values.OrderBy(c => c.DateStr).ToList();
+
+                var blockSizeIndex = sizeIndices[0];
+                blockSizeIndex.AvgBlockSize = (blockSizeIndex.TotalSize / blockSizeIndex.BlockCount).ToString();
+                blockSizeIndex.EndTime = DateTime.UtcNow;
+                blockSizeIndex.Date = DateTimeHelper.ConvertYYMMDD(blockSizeIndex.DateStr);
+                await _blockSizeRepository.AddOrUpdateAsync(sizeIndices[0]);
+                RedisDatabase.StringSet(RedisKeyHelper.BlockSizeLastBlockHeight(chainId),
+                    sizeIndices[0].EndBlockHeight);
+                dic.Remove(blockSizeIndex.DateStr);
+            }
+
+            lastBlockHeight++;
+        }
     }
 
 
@@ -207,31 +327,20 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "UpdateElfPrice err");
+            _logger.LogError("UpdateElfPrice err:{e}", e.Message);
         }
     }
 
     public async Task BatchPullTransactionTask()
     {
-        if (!FinishInitChartData)
-        {
-            await ConnectAsync();
-            foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
-            {
-                RedisDatabase.KeyDelete(RedisKeyHelper.TransactionLastBlockHeight(chainId));
-                RedisDatabase.KeyDelete(RedisKeyHelper.AddressSet(chainId));
-            }
-        
-            FinishInitChartData = true;
-        }
-
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
+            var lastBlockHeight = 0l;
             try
             {
                 await ConnectAsync();
                 var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionLastBlockHeight(chainId));
-                var lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
+                lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 _logger.LogInformation("BatchPullTransactionTask:{e} start,startBlockHeight:{s1},endBlockHeight:{s2}",
@@ -242,9 +351,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 if (batchTransactionList.IsNullOrEmpty())
                 {
-                    _logger.LogInformation("Find transaction list:chainId{c}, start:{s},end:{e}", chainId,
-                        lastBlockHeight,
-                        lastBlockHeight + PullTransactioninterval);
+                    continue;
                 }
 
 
@@ -287,7 +394,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         DateStr = s
                     };
 
-                    await _JobExecuteIndexRepository.AddOrUpdateAsync(dailyJobExecuteIndex);
+                    await _jobExecuteIndexRepository.AddOrUpdateAsync(dailyJobExecuteIndex);
                 }
 
                 _logger.LogInformation(
@@ -298,7 +405,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "BatchPullTransactionTask err:{c}", chainId);
+                _logger.LogError(
+                    "BatchPullTransactionTask err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}", chainId,
+                    e.Message, lastBlockHeight,
+                    lastBlockHeight + PullTransactioninterval);
             }
         }
     }
@@ -599,81 +709,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "UpdateDailyNetwork err:{c}", chainId);
+                _logger.LogError("TaskERR，UpdateDailyNetwork {c},{e}", chainId, e.Message);
                 throw;
             }
         }
     }
-
-    public async Task UpdateNetworkTmp()
-    {
-        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
-        {
-            var client = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
-            var empty = new Empty();
-            var currentValueContractAddressConsensu = _globalOptions.CurrentValue.ContractAddressConsensus[chainId];
-            if (currentValueContractAddressConsensu.IsNullOrEmpty())
-            {
-                return;
-            }
-
-            var transaction = await client.GenerateTransactionAsync(
-                client.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
-                currentValueContractAddressConsensu,
-                "GetCurrentRoundInformation", empty);
-
-            var signTransaction = client.SignTransaction(GlobalOptions.PrivateKey, transaction);
-
-            var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto()
-            {
-                RawTransaction = HexByteConvertorExtensions.ToHex(signTransaction.ToByteArray())
-            });
-
-
-            var round = Round.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
-
-            var findRoundNumber = 0l;
-            await ConnectAsync();
-            var redisValue = RedisDatabase.StringGet(RedisKeyHelper.LatestRound(chainId));
-            if (redisValue.IsNullOrEmpty)
-            {
-                findRoundNumber = round.RoundNumber - 1;
-            }
-            else
-            {
-                findRoundNumber = long.Parse(redisValue) + 1;
-                if (findRoundNumber >= round.RoundNumber)
-                {
-                    findRoundNumber = round.RoundNumber - 1;
-                }
-            }
-
-
-            var int64Value = new Int64Value()
-            {
-                Value = findRoundNumber
-            };
-
-            transaction = await client.GenerateTransactionAsync(
-                client.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
-                _globalOptions.CurrentValue.ContractAddressConsensus[chainId],
-                "GetRoundInformation", int64Value);
-
-            signTransaction = client.SignTransaction(GlobalOptions.PrivateKey, transaction);
-
-            result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto()
-            {
-                RawTransaction = HexByteConvertorExtensions.ToHex(signTransaction.ToByteArray())
-            });
-
-            round = Round.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
-
-            await StatisticRoundInfo(round, chainId);
-
-            RedisDatabase.StringSet(RedisKeyHelper.LatestRound(chainId), findRoundNumber);
-        }
-    }
-
+    
     public async Task BatchUpdateNodeNetworkTask()
     {
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
@@ -750,7 +791,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "BatchUpdateNodeNetworkTask err:{c}", chainId);
+                _logger.LogError("BatchUpdateNodeNetworkTask err:{c},{e}", chainId, e.Message);
             }
         }
     }
@@ -994,7 +1035,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task UpdateTransactionRelatedDataTaskAsync()
     {
-        var query = await _JobExecuteIndexRepository.GetQueryableAsync();
+        var query = await _jobExecuteIndexRepository.GetQueryableAsync();
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
             try
@@ -1018,13 +1059,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         stopwatch.Stop();
                         jobList[i].IsStatistic = true;
                         jobList[i].CostTime = stopwatch.Elapsed.TotalSeconds;
-                        await _JobExecuteIndexRepository.AddOrUpdateAsync((jobList[i]));
+                        await _jobExecuteIndexRepository.AddOrUpdateAsync((jobList[i]));
                     }
                 }
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "UpdateTransactionRelatedDataTaskAsync err:chainId{c}", chainId);
+                _logger.LogError("TaskERR UpdateTransactionRelatedDataTaskAsync {chainId},{e}", chainId, e.Message);
             }
         }
     }

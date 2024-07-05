@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElfScanServer.Common.Dtos.ChartData;
@@ -23,6 +24,18 @@ public class SetRoundRequest
     public bool UpdateData { get; set; }
 }
 
+public class SetJob
+{
+    public string ChainId { get; set; }
+
+    public long SetBlockHeight { get; set; }
+
+    public long SetSizBlockHeight { get; set; }
+
+
+    public long SetLastRound { get; set; }
+}
+
 public class InitRoundResp
 {
     public long MinRound { get; set; }
@@ -40,6 +53,21 @@ public class InitRoundResp
 
     public string MaxDate { get; set; }
     public string FinishDate { get; set; }
+}
+
+public class JonInfoResp
+{
+    public long RedisLastBlockHeight { get; set; }
+
+    public long EsLastBlockHeight { get; set; }
+
+    public long RedisLastRound { get; set; }
+    public long EsLastRound { get; set; }
+    public string EsLastRoundDate { get; set; }
+    public string EsTransactionLastDate { get; set; }
+
+
+    public long BlockSizeBlockHeight { get; set; }
 }
 
 public class DailyTransactionCountResp
@@ -83,10 +111,27 @@ public class DailyBlockRewardResp
     public DailyBlockReward Lowest { get; set; }
 }
 
+public class DailyAvgBlockSizeResp
+{
+    public long Total { get; set; }
+    public List<DailyAvgBlockSize> List { get; set; }
+
+    public DailyAvgBlockSize Highest { get; set; }
+    public DailyAvgBlockSize Lowest { get; set; }
+}
+
+public class DailyAvgBlockSize
+{
+    public long Date { get; set; }
+    public string DateStr { get; set; }
+    public string AvgBlockSize { get; set; }
+    public long TotalSize { get; set; }
+    public int BlockCount { get; set; }
+}
+
 public class DailyBlockReward
 {
     public long Date { get; set; }
-    public string ChainId { get; set; }
     public string BlockReward { get; set; }
     public string DateStr { get; set; }
     public long TotalBlockCount { get; set; }

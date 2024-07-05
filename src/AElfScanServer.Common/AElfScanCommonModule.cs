@@ -58,19 +58,21 @@ public class AElfScanCommonModule : AbpModule
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockProduceDurationIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyCycleCountIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(HourNodeBlockProduceIndex)); });
-        
+
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockRewardIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgBlockSizeIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgTransactionFeeIndex)); });
-        
-        
+
+
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTotalBurntIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyDeployContractIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(ElfPriceIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTransactionCountIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyUniqueAddressCountIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyActiveAddressCountIndex)); });
-        
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgBlockSizeIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(BlockSizeErrInfoIndex)); });
+
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyJobExecuteIndex)); });
 
         context.Services.AddHttpClient();

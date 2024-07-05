@@ -6,6 +6,7 @@ using AElf.Indexing.Elasticsearch;
 using AElfScanServer.Common;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.NodeProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
 using AElfScanServer.HttpApi.Dtos;
@@ -56,6 +57,7 @@ public class AElfScanServerWorkerModule : AbpModule
         context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
         context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
+        context.Services.AddSingleton<NodeProvider, NodeProvider>();
 
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AElfScanWorker:"; });
         Configure<BlockChainProducerInfoSyncWorkerOptions>(configuration.GetSection("BlockChainProducer"));
@@ -226,5 +228,6 @@ public class AElfScanServerWorkerModule : AbpModule
         context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
         context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
         context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
+        context.AddBackgroundWorkerAsync<BlockSizeWorker>();
     }
 }
