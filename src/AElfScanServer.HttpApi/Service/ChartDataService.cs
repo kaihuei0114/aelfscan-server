@@ -189,24 +189,27 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var queryable = await _deployContractRepository.GetQueryableAsync();
         var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
 
-        var datList = _objectMapper.Map<List<DailyDeployContractIndex>, List<DailyDeployContract>>(indexList);
+        var dataList = _objectMapper.Map<List<DailyDeployContractIndex>, List<DailyDeployContract>>(indexList);
 
-        datList = datList.OrderBy(c => c.DateStr).ToList();
+        dataList = dataList.OrderBy(c => c.DateStr).ToList();
 
 
-        for (int i = 1; i < datList.Count; i++)
+        dataList[0].TotalCount = dataList[0].Count;
+
+        for (int i = 1; i < dataList.Count; i++)
         {
-            var count1 = int.Parse(datList[i - 1].Count);
-            var count2 = int.Parse(datList[i].Count);
-            datList[i].Count = (count1 + count2).ToString();
+            var count1 = int.Parse(dataList[i - 1].TotalCount);
+            var count2 = dataList[i].TotalCount.IsNullOrEmpty() ? 0 : int.Parse(dataList[i].TotalCount);
+            dataList[i].TotalCount = (count1 + count2).ToString();
         }
+
 
         var resp = new DailyDeployContractResp()
         {
-            List = datList,
-            Total = datList.Count,
-            Highest = datList.MaxBy(c => c.Count),
-            Lowest = datList.MinBy(c => c.Count),
+            List = dataList,
+            Total = dataList.Count,
+            Highest = dataList.MaxBy(c => c.Count),
+            Lowest = dataList.MinBy(c => c.Count),
         };
 
         return resp;

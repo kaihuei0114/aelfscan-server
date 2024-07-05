@@ -126,6 +126,8 @@ public class DailyDeployContract
 
     public string Count { get; set; }
 
+    public string TotalCount { get; set; }
+
     public string DateStr { get; set; }
 }
 
