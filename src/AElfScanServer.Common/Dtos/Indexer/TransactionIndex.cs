@@ -23,22 +23,19 @@ public class TransactionIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 
     [Keyword] public string To { get; set; }
 
-    // public string BlockHash { get; set; }
-
-    [Keyword] public string Signature { get; set; }
     public long BlockHeight { get; set; }
 
-    // public string PreviousBlockHash { get; set; }
-
+    public string Signature { get; set; }
+    public bool Confirmed { get; set; }
     public DateTime BlockTime { get; set; }
+
+    public TransactionStatus Status { get; set; }
 
     [Keyword] public string MethodName { get; set; }
 
 
     [Keyword] public string DateStr { get; set; }
-    public TransactionStatus Status { get; set; }
 
-    public bool Confirmed { get; set; }
 
     public Dictionary<string, string> ExtraProperties { get; set; }
 

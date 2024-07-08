@@ -144,9 +144,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var v1 = RedisDatabase.StringGet(RedisKeyHelper.TransactionLastBlockHeight(request.ChainId));
         var v2 = RedisDatabase.StringGet(RedisKeyHelper.BlockSizeLastBlockHeight(request.ChainId));
         var v3 = RedisDatabase.StringGet(RedisKeyHelper.LatestRound(request.ChainId));
-        var queryable = await _transactionsRepository.GetQueryableAsync();
-        var transactionIndices = queryable.Where(c => c.ChainId == request.ChainId)
-            .OrderByDescending(c => c.BlockHeight).Take(1).ToList();
+   
 
 
         var queryable1 = await _roundIndexRepository.GetQueryableAsync();
@@ -157,9 +155,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         jonInfoResp.RedisLastBlockHeight = long.Parse(v1);
         jonInfoResp.BlockSizeBlockHeight = long.Parse(v2);
         jonInfoResp.RedisLastRound = long.Parse(v3);
-
-        jonInfoResp.EsTransactionLastDate = transactionIndices[0].DateStr;
-        jonInfoResp.EsLastBlockHeight = transactionIndices[0].BlockHeight;
 
 
         jonInfoResp.EsLastRound = roundIndices[0].RoundNumber;
@@ -196,8 +191,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             List = datList.OrderBy(c => c.DateStr).ToList(),
             Total = datList.Count,
-            Highest = datList.MaxBy(c => c.AvgBlockSize),
-            Lowest = datList.MinBy(c => c.AvgBlockSize),
+            Highest = datList.MaxBy(c => double.Parse(c.AvgBlockSize)),
+            Lowest = datList.MinBy(c => double.Parse(c.AvgBlockSize)),
         };
 
         return resp;
@@ -222,8 +217,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             List = datList.OrderBy(c => c.DateStr).ToList(),
             Total = datList.Count,
-            Highest = datList.MaxBy(c => c.AvgFeeElf),
-            Lowest = datList.MinBy(c => c.AvgFeeElf),
+            Highest = datList.MaxBy(c => double.Parse(c.AvgFeeElf)),
+            Lowest = datList.MinBy(c => double.Parse(c.AvgFeeElf)),
         };
 
         return resp;
@@ -246,8 +241,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             List = datList.OrderBy(c => c.DateStr).ToList(),
             Total = datList.Count,
-            Highest = datList.MaxBy(c => c.Burnt),
-            Lowest = datList.MinBy(c => c.Burnt),
+            Highest = datList.MaxBy(c => double.Parse(c.Burnt)),
+            Lowest = datList.MinBy(c => double.Parse(c.Burnt)),
         };
 
         return resp;
@@ -277,8 +272,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             List = dataList,
             Total = dataList.Count,
-            Highest = dataList.MaxBy(c => c.Count),
-            Lowest = dataList.MinBy(c => c.Count),
+            Highest = dataList.MaxBy(c =>double.Parse(c.Count)),
+            Lowest = dataList.MinBy(c => double.Parse(c.Count)),
         };
 
         return resp;
@@ -301,8 +296,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             List = datList.OrderBy(c => c.DateStr).ToList(),
             Total = datList.Count,
-            Highest = datList.MaxBy(c => c.Price),
-            Lowest = datList.MinBy(c => c.Price),
+            Highest = datList.MaxBy(c => double.Parse(c.Price)),
+            Lowest = datList.MinBy(c => double.Parse(c.Price)),
         };
 
         return resp;
@@ -319,13 +314,13 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             data.BlockReward = double.Parse(data.BlockReward).ToString("F6");
         }
-        
+
         var resp = new DailyBlockRewardResp()
         {
             List = datList.OrderBy(c => c.DateStr).ToList(),
             Total = datList.Count,
-            Highest = datList.MaxBy(c => c.BlockReward),
-            Lowest = datList.MinBy(c => c.BlockReward),
+            Highest = datList.MaxBy(c => double.Parse(c.BlockReward)),
+            Lowest = datList.MinBy(c => double.Parse(c.BlockReward)),
         };
 
         return resp;
@@ -757,7 +752,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyTransactionCountResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
+            List = datList.OrderBy(c => c.DateStr).ToList().GetRange(1, datList.Count - 1),
             Total = datList.Count,
             HighestTransactionCount = datList.MaxBy(c => c.TransactionCount),
             LowesTransactionCount = datList.MinBy(c => c.TransactionCount),
@@ -771,14 +766,23 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var queryable = await _uniqueAddressRepository.GetQueryableAsync();
         var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
 
-        var datList = _objectMapper.Map<List<DailyUniqueAddressCountIndex>, List<DailyUniqueAddressCount>>(indexList);
+        var dataList = _objectMapper.Map<List<DailyUniqueAddressCountIndex>, List<DailyUniqueAddressCount>>(indexList);
+
+        dataList[0].TotalUniqueAddressees = dataList[0].AddressCount;
+
+        for (int i = 1; i < dataList.Count; i++)
+        {
+            var count1 = dataList[i - 1].TotalUniqueAddressees;
+            var count2 = dataList[i].AddressCount;
+            dataList[i].TotalUniqueAddressees = count1 + count2;
+        }
 
         var resp = new UniqueAddressCountResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
-            Total = datList.Count,
-            HighestIncrease = datList.MaxBy(c => c.AddressCount),
-            LowestIncrease = datList.MinBy(c => c.AddressCount),
+            List = dataList.OrderBy(c => c.DateStr).ToList(),
+            Total = dataList.Count,
+            HighestIncrease = dataList.MaxBy(c => c.AddressCount),
+            LowestIncrease = dataList.MinBy(c => c.AddressCount),
         };
 
         return resp;

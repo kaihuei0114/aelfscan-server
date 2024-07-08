@@ -73,7 +73,8 @@ public class AElfScanCommonModule : AbpModule
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgBlockSizeIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(BlockSizeErrInfoIndex)); });
 
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyJobExecuteIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTransactionRecordIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(AddressIndex)); });
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();

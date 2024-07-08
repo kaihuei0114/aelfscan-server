@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,6 +43,7 @@ using StackExchange.Redis;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
+using AddressIndex = AElfScanServer.Common.Dtos.ChartData.AddressIndex;
 using Interval = Binance.Spot.Models.Interval;
 using Math = System.Math;
 using Timer = System.Timers.Timer;
@@ -52,7 +54,6 @@ public interface ITransactionService
 {
     public Task UpdateTransactionRatePerMinuteTaskAsync();
 
-    public Task UpdateTransactionRelatedDataTaskAsync();
 
     public Task UpdateDailyNetwork();
 
@@ -100,7 +101,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailyUniqueAddressCountIndex, string> _uniqueAddressRepository;
     private readonly IEntityMappingRepository<DailyActiveAddressCountIndex, string> _activeAddressRepository;
     private readonly IEntityMappingRepository<DailyAvgBlockSizeIndex, string> _blockSizeRepository;
-    private readonly IEntityMappingRepository<DailyJobExecuteIndex, string> _jobExecuteIndexRepository;
+    private readonly IEntityMappingRepository<DailyTransactionRecordIndex, string> _recordIndexRepository;
+    private readonly IEntityMappingRepository<AddressIndex, string> _addressRepository;
     private readonly NodeProvider _nodeProvider;
 
     private readonly ILogger<TransactionService> _logger;
@@ -135,9 +137,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyTransactionCountIndex, string> transactionCountRepository,
         IEntityMappingRepository<DailyUniqueAddressCountIndex, string> uniqueAddressRepository,
         IEntityMappingRepository<DailyActiveAddressCountIndex, string> activeAddressRepository,
-        IEntityMappingRepository<DailyJobExecuteIndex, string> jobExecuteIndexRepository,
+        IEntityMappingRepository<DailyTransactionRecordIndex, string> recordIndexRepository,
         NodeProvider nodeProvide,
-        IEntityMappingRepository<DailyAvgBlockSizeIndex, string> blockSizeRepository) :
+        IEntityMappingRepository<DailyAvgBlockSizeIndex, string> blockSizeRepository,
+        IEntityMappingRepository<AddressIndex, string> addressRepository) :
         base(optionsAccessor)
     {
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -170,9 +173,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _transactionCountRepository = transactionCountRepository;
         _uniqueAddressRepository = uniqueAddressRepository;
         _activeAddressRepository = activeAddressRepository;
-        _jobExecuteIndexRepository = jobExecuteIndexRepository;
+        _recordIndexRepository = recordIndexRepository;
         _blockSizeRepository = blockSizeRepository;
         _nodeProvider = nodeProvide;
+        _addressRepository = addressRepository;
     }
 
     public async Task BlockSizeTask()
@@ -180,7 +184,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _logger.LogInformation("start BlockSizeTask");
         foreach (var chanId in _globalOptions.CurrentValue.ChainIds)
         {
-            await BatchPullBlockSize(chanId);
+            BatchPullBlockSize(chanId);
         }
 
         while (true)
@@ -331,17 +335,43 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
     }
 
+
     public async Task BatchPullTransactionTask()
     {
-        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        await ConnectAsync();
+        if (_globalOptions.CurrentValue.NeedInitLastHeight && !FinishInitChartData)
         {
-            var lastBlockHeight = 0l;
-            try
+            foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
             {
                 await ConnectAsync();
-                var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionLastBlockHeight(chainId));
-                lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
+                RedisDatabase.KeyDelete(RedisKeyHelper.TransactionLastBlockHeight(chainId));
+            }
 
+            FinishInitChartData = true;
+        }
+
+        var tasks = new List<Task>();
+        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        {
+            tasks.Add(BatchPullTransactionJob(chainId));
+        }
+
+        await tasks.WhenAll();
+    }
+
+    public async Task BatchPullTransactionJob(string chainId)
+    {
+        var dic = new Dictionary<string, DailyTransactionsChartSet>();
+
+        var lastBlockHeight = 0l;
+        await ConnectAsync();
+        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionLastBlockHeight(chainId));
+        lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
+
+        while (true)
+        {
+            try
+            {
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 _logger.LogInformation("BatchPullTransactionTask:{e} start,startBlockHeight:{s1},endBlockHeight:{s2}",
                     chainId, lastBlockHeight,
@@ -354,9 +384,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     continue;
                 }
 
-
                 var dateSet = new HashSet<string>();
-
                 batchTransactionList = batchTransactionList.OrderBy(c => c.BlockHeight).Select(s =>
                 {
                     var totalMilliseconds = DateTimeHelper.GetTotalMilliseconds(s.BlockTime);
@@ -375,33 +403,43 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     return s;
                 }).ToList();
 
-
-                await _transactionIndexRepository.AddOrUpdateManyAsync(batchTransactionList);
-                stopwatch.Stop();
-
-
-                RedisDatabase.StringSet(RedisKeyHelper.TransactionLastBlockHeight(chainId),
-                    lastBlockHeight + PullTransactioninterval);
-
-
-                foreach (var s in dateSet)
+                if (dateSet.Min(c => c) == DateTimeHelper.GetDateStr(DateTime.UtcNow))
                 {
-                    var dailyJobExecuteIndex = new DailyJobExecuteIndex()
-                    {
-                        ChainId = chainId,
-                        IsStatistic = false,
-                        DataWriteFinishTime = DateTime.UtcNow,
-                        DateStr = s
-                    };
-
-                    await _jobExecuteIndexRepository.AddOrUpdateAsync(dailyJobExecuteIndex);
+                    break;
                 }
 
+
+                stopwatch.Stop();
                 _logger.LogInformation(
                     "BatchPullTransactionTask:{e} end date:{d},count:{1},time:{2},startBlockHeight:{s1},endBlockHeight:{s2}",
                     dateSet.ToList(),
                     chainId, batchTransactionList.Count, stopwatch.Elapsed.TotalSeconds, lastBlockHeight,
                     lastBlockHeight + PullTransactioninterval);
+
+
+                var updateDailyTransactionData = await UpdateDailyTransactionData(batchTransactionList, chainId, dic);
+
+                if (updateDailyTransactionData != null)
+                {
+                    await ConnectAsync();
+                    RedisDatabase.StringSet(RedisKeyHelper.TransactionLastBlockHeight(chainId),
+                        updateDailyTransactionData.EndBlockHeight);
+                    var dailyTransactionRecordIndex = new DailyTransactionRecordIndex()
+                    {
+                        ChainId = chainId,
+                        StartBlockHeight = updateDailyTransactionData.StartBlockHeight,
+                        EndBlockHeight = updateDailyTransactionData.EndBlockHeight,
+                        DateStr = updateDailyTransactionData.Date,
+                        StartTime = updateDailyTransactionData.StartTime,
+                        WriteCostTime = updateDailyTransactionData.CostTime,
+                        DataWriteFinishTime = updateDailyTransactionData.WirteFinishiTime,
+                        Id = Guid.NewGuid().ToString()
+                    };
+
+                    await _recordIndexRepository.AddOrUpdateAsync(dailyTransactionRecordIndex);
+                }
+
+                lastBlockHeight += PullTransactioninterval + 1;
             }
             catch (Exception e)
             {
@@ -413,198 +451,209 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
     }
 
-    public async Task UpdateDailyTransactionData(List<string> DateStrList, string chainId)
+
+    public async Task<DailyTransactionsChartSet> UpdateDailyTransactionData(List<TransactionIndex> transactionList,
+        string chainId,
+        Dictionary<string, DailyTransactionsChartSet> dic)
     {
-        if (DateStrList.IsNullOrEmpty())
+        if (transactionList.IsNullOrEmpty())
         {
             _logger.LogInformation("Date str list is null:{c}", chainId);
-            return;
+            return null;
         }
 
-        var query = await _transactionIndexRepository.GetQueryableAsync();
-        query = query.Where(c => c.ChainId == chainId).Take(10000);
-        foreach (var date in DateStrList)
+
+        foreach (var transaction in transactionList)
         {
-            var queryableAsync = await _priceRepository.GetQueryableAsync();
-            var elfPriceIndices = queryableAsync.Where(c => c.DateStr == date).ToList();
-            double elfPrice = 0;
-            if (elfPriceIndices.Count > 0)
+            var totalMilliseconds = DateTimeHelper.GetTotalMilliseconds(transaction.BlockTime);
+            var date = DateTimeHelper.GetDateStr(transaction.BlockTime);
+
+
+            var totalDeployCount = 0;
+            var hasBurntBlockCount = 0;
+            var totalBurnt = 0l;
+
+            if (!dic.ContainsKey(date))
             {
-                elfPrice = double.Parse(elfPriceIndices[0].Close);
+                var dailyTransactionsChartSet =
+                    new DailyTransactionsChartSet(transaction.ChainId, totalMilliseconds, date);
+                dailyTransactionsChartSet.StartTime = DateTime.UtcNow;
+                dailyTransactionsChartSet.Date = date;
+                dic[date] = dailyTransactionsChartSet;
             }
 
+            var dailyData = dic[date];
 
-            var totalMilliseconds = DateTimeHelper.ConvertYYMMDD(date);
-            var dayHourList = DateTimeHelper.GetDateTimeHourList(date);
-            var dailyAvgTransactionFeeIndex = new DailyAvgTransactionFeeIndex()
+            dailyData.TotalFee += LogEventHelper.ParseTransactionFees(transaction.ExtraProperties);
+            foreach (var txLogEvent in transaction.LogEvents)
             {
-                ChainId = chainId,
-                Date = totalMilliseconds,
-                DateStr = date
-            };
-            var dailyBlockRewardIndex = new DailyBlockRewardIndex()
-            {
-                ChainId = chainId,
-                Date = totalMilliseconds,
-                DateStr = date
-            };
-
-            var dailyDeployContractBurntIndex = new DailyDeployContractIndex()
-            {
-                ChainId = chainId,
-                Date = totalMilliseconds,
-                DateStr = date
-            };
-
-            var dailyTotalBurntIndex = new DailyTotalBurntIndex()
-            {
-                ChainId = chainId,
-                Date = totalMilliseconds,
-                DateStr = date
-            };
-
-            var dailyTransactionCountIndex = new DailyTransactionCountIndex()
-            {
-                ChainId = chainId,
-                Date = totalMilliseconds,
-                DateStr = date
-            };
-
-            var dailyUniqueAddressCountIndex = new DailyUniqueAddressCountIndex()
-            {
-                ChainId = chainId,
-                Date = totalMilliseconds,
-                DateStr = date
-            };
-
-            var dailyActiveAddressCountIndex = new DailyActiveAddressCountIndex()
-            {
-                ChainId = chainId,
-                Date = totalMilliseconds,
-                DateStr = date
-            };
-            var totalBurnt = 0L;
-
-            var blockSet = new HashSet<long>();
-            var addressSet = new HashSet<string>();
-
-            var addressFromSet = new HashSet<string>();
-
-            var addressToSet = new HashSet<string>();
-            decimal totalReward = 0l;
-            var totalFee = 0l;
-
-
-            for (var i = 0; i < dayHourList.Count - 1; i++)
-            {
-                var transactionIndexList = query.Where(c => c.BlockTime >= dayHourList[i])
-                    .Where(c => c.BlockTime < dayHourList[i + 1]).ToList();
-
-                if (transactionIndexList.IsNullOrEmpty())
+                var logEvent = LogEventHelper.ParseLogEventExtraProperties(txLogEvent.ExtraProperties);
+                switch (txLogEvent.EventName)
                 {
-                    _logger.LogInformation("Transaction index list is null:{c},{d}", chainId, date);
-                    continue;
-                }
+                    case nameof(ContractDeployed):
+                        dailyData.DailyDeployContractIndex.Count++;
+                        break;
 
-
-                foreach (var transactionIndex in transactionIndexList)
-                {
-                    addressFromSet.Add(transactionIndex.From);
-                    addressToSet.Add(transactionIndex.To);
-                    addressSet.Add(transactionIndex.From);
-                    addressSet.Add(transactionIndex.To);
-
-                    if (!blockSet.Contains(transactionIndex.BlockHeight))
-                    {
-                        var milliseconds = DateTimeHelper.GetTotalMilliseconds(transactionIndex.BlockTime);
-
-                        if (milliseconds < _globalOptions.CurrentValue.NextTermDate)
+                    case nameof(Burned):
+                        var burned = new Burned();
+                        burned.MergeFrom(logEvent);
+                        var burnt = LogEventHelper.ParseBurnt(burned.Amount, burned.Burner.ToBase58(),
+                            burned.Symbol,
+                            transaction.ChainId);
+                        if (burnt > 0)
                         {
-                            totalReward += (decimal)0.125;
-                        }
-                        else
-                        {
-                            totalReward += _globalOptions.CurrentValue.NextTermReward;
+                            dailyData.DailyTotalBurntIndex.HasBurntBlockCount++;
+                            dailyData.TotalBurnt += burnt;
                         }
 
-                        blockSet.Add(transactionIndex.BlockHeight);
-                    }
-
-                    foreach (var txLogEvent in transactionIndex.LogEvents)
-                    {
-                        var logEvent = LogEventHelper.ParseLogEventExtraProperties(txLogEvent.ExtraProperties);
-                        switch (txLogEvent.EventName)
-                        {
-                            case nameof(ContractDeployed):
-                                dailyDeployContractBurntIndex.Count++;
-                                break;
-
-                            case nameof(Burned):
-                                var burned = new Burned();
-                                burned.MergeFrom(logEvent);
-                                var burnt = LogEventHelper.ParseBurnt(burned.Amount, burned.Burner.ToBase58(),
-                                    burned.Symbol,
-                                    transactionIndex.ChainId);
-                                if (burnt > 0)
-                                {
-                                    dailyTotalBurntIndex.HasBurntBlockCount++;
-                                    totalBurnt += burnt;
-                                }
-
-                                break;
-                        }
-                    }
-
-                    totalFee += LogEventHelper.ParseTransactionFees(transactionIndex.ExtraProperties);
-                }
-
-                dailyAvgTransactionFeeIndex.TransactionCount += transactionIndexList.Count;
-            }
-
-            var totalFeeDouble = ((double)totalFee / 1e8);
-
-            dailyAvgTransactionFeeIndex.TotalFeeElf = totalFeeDouble.ToString();
-
-            dailyAvgTransactionFeeIndex.AvgFeeElf =
-                (totalFeeDouble / dailyAvgTransactionFeeIndex.TransactionCount).ToString();
-            dailyAvgTransactionFeeIndex.AvgFeeUsdt = ((totalFeeDouble / dailyAvgTransactionFeeIndex.TransactionCount) *
-                                                      elfPrice).ToString();
-
-            dailyBlockRewardIndex.TotalBlockCount = blockSet.Count;
-            dailyBlockRewardIndex.BlockReward = totalReward.ToString();
-
-            dailyTotalBurntIndex.Burnt = ((double)totalBurnt / 1e8).ToString();
-
-            dailyTransactionCountIndex.TransactionCount = dailyAvgTransactionFeeIndex.TransactionCount;
-            dailyTransactionCountIndex.BlockCount = blockSet.Count;
-
-            dailyActiveAddressCountIndex.AddressCount = addressSet.Count;
-            dailyActiveAddressCountIndex.SendAddressCount = addressFromSet.Count;
-            dailyActiveAddressCountIndex.ReceiveAddressCount = addressToSet.Count;
-
-
-            await ConnectAsync();
-            foreach (var s in addressSet)
-            {
-                if (!RedisDatabase.SetContains(RedisKeyHelper.AddressSet(chainId), s))
-                {
-                    dailyUniqueAddressCountIndex.AddressCount++;
-                    RedisDatabase.SetAdd(RedisKeyHelper.AddressSet(chainId), s);
+                        break;
                 }
             }
 
-            var totalAddress = RedisDatabase.SetLength(RedisKeyHelper.AddressSet(chainId));
-            dailyUniqueAddressCountIndex.TotalUniqueAddressees = (int)totalAddress;
+            dailyData.AddressFromSet.Add(transaction.From);
+            dailyData.AddressToSet.Add(transaction.To);
+            dailyData.AddressSet.Add(transaction.From);
+            dailyData.AddressSet.Add(transaction.To);
+            dailyData.DailyTransactionCountIndex.TransactionCount++;
+            dailyData.DailyAvgTransactionFeeIndex.TransactionCount++;
 
-            await _avgTransactionFeeRepository.AddOrUpdateAsync(dailyAvgTransactionFeeIndex);
-            await _blockRewardRepository.AddOrUpdateAsync(dailyBlockRewardIndex);
-            await _totalBurntRepository.AddOrUpdateAsync(dailyTotalBurntIndex);
-            await _deployContractRepository.AddAsync(dailyDeployContractBurntIndex);
-            await _transactionCountRepository.AddOrUpdateAsync(dailyTransactionCountIndex);
-            await _uniqueAddressRepository.AddOrUpdateAsync(dailyUniqueAddressCountIndex);
-            await _activeAddressRepository.AddOrUpdateAsync(dailyActiveAddressCountIndex);
-            _logger.LogInformation("Update daily transaction data,chainId:{c} date:{d},", chainId, date);
+            if (dailyData.StartBlockHeight == 0)
+            {
+                dailyData.StartBlockHeight = transaction.BlockHeight;
+            }
+            else if (dailyData.EndBlockHeight == 0)
+            {
+                dailyData.EndBlockHeight = transaction.BlockHeight;
+            }
+            else if (transaction.BlockHeight > dailyData.EndBlockHeight)
+            {
+                dailyData.EndBlockHeight = transaction.BlockHeight;
+            }
+            else
+            {
+                continue;
+            }
+
+            if (totalMilliseconds < _globalOptions.CurrentValue.NextTermDate)
+            {
+                dailyData.TotalReward += (decimal)0.125;
+            }
+            else
+            {
+                dailyData.TotalReward += _globalOptions.CurrentValue.NextTermReward;
+            }
         }
+
+        if (dic.Count == 2)
+        {
+            var minDate = dic.Keys.Min();
+            var needUpdateData = dic[minDate];
+
+
+            var queryableAsync = await _priceRepository.GetQueryableAsync();
+            var elfPriceIndices = queryableAsync.Where(c => c.DateStr == minDate).ToList();
+
+            var dailyElfPrice = 0d;
+            if (!elfPriceIndices.IsNullOrEmpty())
+            {
+                dailyElfPrice = double.Parse(elfPriceIndices[0].Close);
+            }
+
+            var totalFeeDouble = ((double)needUpdateData.TotalFee / 1e8);
+            var totalBlockCount = (int)(needUpdateData.EndBlockHeight - needUpdateData.StartBlockHeight + 1);
+
+            needUpdateData.DailyAvgTransactionFeeIndex.TotalFeeElf = totalFeeDouble.ToString("F6");
+
+            needUpdateData.DailyAvgTransactionFeeIndex.AvgFeeElf =
+                (totalFeeDouble / needUpdateData.DailyAvgTransactionFeeIndex.TransactionCount).ToString("F6");
+            needUpdateData.DailyAvgTransactionFeeIndex.AvgFeeUsdt =
+                ((totalFeeDouble / needUpdateData.DailyAvgTransactionFeeIndex.TransactionCount) *
+                 dailyElfPrice).ToString();
+
+            needUpdateData.DailyBlockRewardIndex.TotalBlockCount =
+                needUpdateData.EndBlockHeight - needUpdateData.StartBlockHeight + 1;
+            needUpdateData.DailyBlockRewardIndex.BlockReward =
+                ((double)needUpdateData.TotalReward).ToString("F6");
+
+            needUpdateData.DailyTotalBurntIndex.Burnt = ((double)needUpdateData.TotalBurnt / 1e8).ToString("F6");
+
+            needUpdateData.DailyTransactionCountIndex.BlockCount = totalBlockCount;
+
+            needUpdateData.DailyActiveAddressCountIndex.AddressCount = needUpdateData.AddressSet.Count;
+            needUpdateData.DailyActiveAddressCountIndex.SendAddressCount = needUpdateData.AddressFromSet.Count;
+            needUpdateData.DailyActiveAddressCountIndex.ReceiveAddressCount = needUpdateData.AddressToSet.Count;
+
+
+            var query = await _addressRepository.GetQueryableAsync();
+            query = query.Where(c => c.ChainId == chainId);
+
+
+            var predicates = needUpdateData.AddressSet.Select(s =>
+                (Expression<Func<AddressIndex, bool>>)(o => o.Address == s));
+            var predicate = predicates.Aggregate((prev, next) => prev.Or(next));
+            query = query.Where(predicate);
+            var addressList = query.Take(10000).ToList();
+
+
+            var addressIndices = new List<AddressIndex>();
+
+            if (addressList.IsNullOrEmpty())
+            {
+                needUpdateData.DailyUniqueAddressCountIndex.AddressCount = needUpdateData.AddressSet.Count;
+                foreach (var s in needUpdateData.AddressSet)
+                {
+                    addressIndices.Add(new AddressIndex()
+                    {
+                        Date = minDate,
+                        Address = s,
+                        ChainId = chainId
+                    });
+                }
+            }
+            else
+            {
+                needUpdateData.DailyUniqueAddressCountIndex.AddressCount =
+                    needUpdateData.AddressSet.Count - addressList.Count;
+                foreach (var addressIndex in addressList)
+                {
+                    needUpdateData.DailyUniqueAddressCountIndex.AddressCount += addressIndex.Date == minDate ? 1 : 0;
+                    if (!needUpdateData.AddressSet.Contains(addressIndex.Address))
+                    {
+                        addressIndices.Add(new AddressIndex()
+                        {
+                            Date = minDate,
+                            Address = addressIndex.Address,
+                            ChainId = chainId
+                        });
+                    }
+                }
+            }
+
+
+            var startNew = Stopwatch.StartNew();
+            await _avgTransactionFeeRepository.AddOrUpdateAsync(needUpdateData.DailyAvgTransactionFeeIndex);
+            await _blockRewardRepository.AddOrUpdateAsync(needUpdateData.DailyBlockRewardIndex);
+            await _totalBurntRepository.AddOrUpdateAsync(needUpdateData.DailyTotalBurntIndex);
+            await _deployContractRepository.AddAsync(needUpdateData.DailyDeployContractIndex);
+            await _transactionCountRepository.AddOrUpdateAsync(needUpdateData.DailyTransactionCountIndex);
+            await _uniqueAddressRepository.AddOrUpdateAsync(needUpdateData.DailyUniqueAddressCountIndex);
+            await _activeAddressRepository.AddOrUpdateAsync(needUpdateData.DailyActiveAddressCountIndex);
+            if (!addressIndices.IsNullOrEmpty())
+            {
+                await _addressRepository.AddOrUpdateManyAsync(addressIndices);
+            }
+
+            startNew.Stop();
+            needUpdateData.WirteFinishiTime = DateTime.UtcNow;
+            needUpdateData.CostTime = startNew.Elapsed.TotalSeconds;
+            dic.Remove(minDate);
+
+            _logger.LogInformation("Update daily transaction data,chainId:{c} date:{d},", chainId, minDate);
+            return needUpdateData;
+        }
+
+
+        return null;
     }
 
 
@@ -714,7 +763,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
         }
     }
-    
+
     public async Task BatchUpdateNodeNetworkTask()
     {
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
@@ -1031,43 +1080,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         await _nodeBlockProduceRepository.AddOrUpdateManyAsync(batch);
         _logger.LogInformation("Insert node block produce index chainId:{0},round number:{1},date:{2}", chainId,
             round.RoundNumber, DateTimeHelper.GetDateTimeString(roundIndex.StartTime));
-    }
-
-    public async Task UpdateTransactionRelatedDataTaskAsync()
-    {
-        var query = await _jobExecuteIndexRepository.GetQueryableAsync();
-        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
-        {
-            try
-            {
-                var jobList = query.Where(c => c.ChainId == chainId).Take(10000).ToList();
-                jobList = jobList.OrderBy(c => c.DateStr).ToList();
-                if (jobList.Count <= 1)
-                {
-                    continue;
-                }
-
-
-                for (var i = 0; i < jobList.Count - 1; i++)
-                {
-                    if (!jobList[i].IsStatistic)
-                    {
-                        jobList[i].StatisticStartTime = DateTime.UtcNow;
-                        var stopwatch = new Stopwatch();
-                        stopwatch.Start();
-                        await UpdateDailyTransactionData(new List<string>() { jobList[i].DateStr }, chainId);
-                        stopwatch.Stop();
-                        jobList[i].IsStatistic = true;
-                        jobList[i].CostTime = stopwatch.Elapsed.TotalSeconds;
-                        await _jobExecuteIndexRepository.AddOrUpdateAsync((jobList[i]));
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("TaskERR UpdateTransactionRelatedDataTaskAsync {chainId},{e}", chainId, e.Message);
-            }
-        }
     }
 
 

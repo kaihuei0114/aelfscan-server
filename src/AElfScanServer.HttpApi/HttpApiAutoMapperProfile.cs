@@ -11,6 +11,7 @@ using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.HttpApi.Dtos.ChartData;
 using AutoMapper;
+using AddressIndex = AElfScanServer.HttpApi.Dtos.AddressIndex;
 
 namespace AElfScanServer.HttpApi;
 
