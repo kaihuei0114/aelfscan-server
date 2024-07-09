@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using AElfScanServer.Worker.Core.Service;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +19,8 @@ public class TransactionIndexWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<TransactionIndexWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 1000 * 1;
+        timer.Period = 1000 * 60 * 60;
+        timer.RunOnStart = true;
         _logger = logger;
         _transactionService = transactionService;
     }

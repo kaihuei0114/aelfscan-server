@@ -140,6 +140,93 @@ public class DailyCycleCountIndex : AElfIndexerEntity<string>, IEntityMappingEnt
     public long MissedCycle { get; set; }
 }
 
+public class DailyTransactionsChartSet
+{
+    public DailyAvgTransactionFeeIndex DailyAvgTransactionFeeIndex { get; set; }
+    public DailyBlockRewardIndex DailyBlockRewardIndex { get; set; }
+    public DailyTotalBurntIndex DailyTotalBurntIndex { get; set; }
+    public DailyDeployContractIndex DailyDeployContractIndex { get; set; }
+    public DailyTransactionCountIndex DailyTransactionCountIndex { get; set; }
+    public DailyUniqueAddressCountIndex DailyUniqueAddressCountIndex { get; set; }
+    public DailyActiveAddressCountIndex DailyActiveAddressCountIndex { get; set; }
+
+    public string Date { get; set; }
+    public DateTime StartTime { get; set; }
+    public DateTime WirteFinishiTime { get; set; }
+
+    public double CostTime { get; set; }
+
+
+    public long StartBlockHeight { get; set; }
+    public long EndBlockHeight { get; set; }
+
+    public HashSet<string> AddressSet { get; set; }
+    public HashSet<string> AddressFromSet { get; set; }
+    public HashSet<string> AddressToSet { get; set; }
+
+
+    public long TotalBurnt { get; set; }
+    public decimal TotalReward { get; set; }
+    public long TotalFee { get; set; }
+
+    public DailyTransactionsChartSet(string chainId, long totalMilliseconds, string date)
+    {
+        DailyAvgTransactionFeeIndex = new DailyAvgTransactionFeeIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+        DailyBlockRewardIndex = new DailyBlockRewardIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+
+        DailyDeployContractIndex = new DailyDeployContractIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+
+        DailyTotalBurntIndex = new DailyTotalBurntIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+
+        DailyTransactionCountIndex = new DailyTransactionCountIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+
+        DailyUniqueAddressCountIndex = new DailyUniqueAddressCountIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+
+        DailyActiveAddressCountIndex = new DailyActiveAddressCountIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+
+        AddressSet = new HashSet<string>();
+
+        AddressFromSet = new HashSet<string>();
+
+        AddressToSet = new HashSet<string>();
+    }
+}
+
 public class DailyAvgTransactionFeeIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
     [Keyword]
@@ -297,6 +384,20 @@ public class DailyActiveAddressCountIndex : AElfIndexerEntity<string>, IEntityMa
     [Keyword] public string DateStr { get; set; }
 }
 
+public class AddressIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Address + "_" + ChainId; }
+    }
+
+    [Keyword] public string Date { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+    [Keyword] public string Address { get; set; }
+}
+
 public class DailyAvgBlockSizeIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
     [Keyword]
@@ -337,19 +438,13 @@ public class BlockSizeErrInfoIndex : AElfIndexerEntity<string>, IEntityMappingEn
     public long BlockHeight { get; set; }
 }
 
-public class DailyJobExecuteIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+public class DailyTransactionRecordIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
-    [Keyword]
-    public override string Id
-    {
-        get { return DateStr + "_" + ChainId; }
-    }
-
     [Keyword] public string ChainId { get; set; }
     [Keyword] public string DateStr { get; set; }
-    public bool IsStatistic { get; set; }
-    public DateTime StatisticStartTime { get; set; }
-    public double CostTime { get; set; }
-
+    public DateTime StartTime { get; set; }
     public DateTime DataWriteFinishTime { get; set; }
+    public double WriteCostTime { get; set; }
+    public long StartBlockHeight { get; set; }
+    public long EndBlockHeight { get; set; }
 }

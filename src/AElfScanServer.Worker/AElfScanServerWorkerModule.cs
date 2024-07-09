@@ -223,7 +223,6 @@ public class AElfScanServerWorkerModule : AbpModule
         context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
         context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
         context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
-        context.AddBackgroundWorkerAsync<ChartDataWorker>();
         context.AddBackgroundWorkerAsync<BnElfUsdtPriceWorker>();
         context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
         context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
