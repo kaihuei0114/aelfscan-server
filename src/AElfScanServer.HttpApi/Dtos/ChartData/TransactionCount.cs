@@ -88,6 +88,15 @@ public class DailyAvgTransactionFeeResp
     public DailyAvgTransactionFee Lowest { get; set; }
 }
 
+public class DailyTransactionFeeResp
+{
+    public long Total { get; set; }
+    public List<DailyTransactionFee> List { get; set; }
+
+    public DailyTransactionFee Highest { get; set; }
+    public DailyTransactionFee Lowest { get; set; }
+}
+
 public class DailyAvgTransactionFee
 {
     public long Date { get; set; }
@@ -101,6 +110,16 @@ public class DailyAvgTransactionFee
 
     public string DateStr { get; set; }
 }
+
+public class DailyTransactionFee
+{
+    public long Date { get; set; }
+
+    public string TotalFeeElf { get; set; }
+
+    public string DateStr { get; set; }
+}
+
 
 public class DailyBlockRewardResp
 {
@@ -194,4 +213,45 @@ public class ElfPrice
     public string High { get; set; }
     public string Low { get; set; }
     public string Price { get; set; }
+}
+
+public class DailyTotalContractCallResp
+{
+    public long Total { get; set; }
+    public List<DailyTotalContractCall> List { get; set; }
+
+    public DailyTotalContractCall Highest { get; set; }
+    public DailyTotalContractCall Lowest { get; set; }
+}
+
+public class TopContractCallResp
+{
+    public long Total { get; set; }
+    public List<TopContractCall> List { get; set; }
+
+    public TopContractCall Highest { get; set; }
+    public TopContractCall Lowest { get; set; }
+}
+
+public class DailyTotalContractCall
+{
+    public long Date { get; set; }
+    public string DateStr { get; set; }
+
+
+    public long CallCount { get; set; }
+
+    public long CallAddressCount { get; set; }
+}
+
+public class TopContractCall
+{
+    public long CallCount { get; set; }
+
+    public long CallAddressCount { get; set; }
+
+    public string CallRate { get; set; }
+    public string ContractName { get; set; }
+
+    public string ContractAddress { get; set; }
 }

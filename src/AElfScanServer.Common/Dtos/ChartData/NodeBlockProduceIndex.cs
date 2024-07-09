@@ -149,7 +149,13 @@ public class DailyTransactionsChartSet
     public DailyTransactionCountIndex DailyTransactionCountIndex { get; set; }
     public DailyUniqueAddressCountIndex DailyUniqueAddressCountIndex { get; set; }
     public DailyActiveAddressCountIndex DailyActiveAddressCountIndex { get; set; }
+    public DailyHasFeeTransactionIndex DailyHasFeeTransactionIndex { get; set; }
 
+    public Dictionary<string, DailyContractCallIndex> DailyContractCallIndexDic { get; set; }
+
+    public DailyTotalContractCallIndex DailyTotalContractCallIndex { get; set; }
+
+    public Dictionary<string, HashSet<string>> CallersDic { get; set; } = new();
     public string Date { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime WirteFinishiTime { get; set; }
@@ -219,6 +225,22 @@ public class DailyTransactionsChartSet
             DateStr = date
         };
 
+        DailyContractCallIndexDic = new Dictionary<string, DailyContractCallIndex>();
+
+        DailyTotalContractCallIndex = new DailyTotalContractCallIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+
+        DailyHasFeeTransactionIndex = new DailyHasFeeTransactionIndex()
+        {
+            ChainId = chainId,
+            DateStr = date,
+            TransactionIds = new List<string>()
+        };
+
         AddressSet = new HashSet<string>();
 
         AddressFromSet = new HashSet<string>();
@@ -243,10 +265,28 @@ public class DailyAvgTransactionFeeIndex : AElfIndexerEntity<string>, IEntityMap
 
     [Keyword] public string AvgFeeElf { get; set; }
 
+    public int HasFeeTransactionCount { get; set; }
     public string TotalFeeElf { get; set; }
     public int TransactionCount { get; set; }
 
     [Keyword] public string DateStr { get; set; }
+}
+
+public class DailyHasFeeTransactionIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    [Keyword] public string DateStr { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+
+    public List<string> TransactionIds { get; set; }
+
+    public int TransactionCount { get; set; }
 }
 
 public class DailyBlockRewardIndex : AElfIndexerEntity<string>, IEntityMappingEntity
@@ -436,6 +476,45 @@ public class BlockSizeErrInfoIndex : AElfIndexerEntity<string>, IEntityMappingEn
     [Keyword] public string ErrMsg { get; set; }
 
     public long BlockHeight { get; set; }
+}
+
+
+
+public class DailyTotalContractCallIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    public long CallCount { get; set; }
+
+    public long CallAddressCount { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+}
+
+public class DailyContractCallIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return Date + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+    public long CallCount { get; set; }
+
+    public HashSet<string> CallerSet { get; set; }
+    public long CallAddressCount { get; set; }
+
+    [Keyword] public string ContractAddress { get; set; }
+    [Keyword] public string ChainId { get; set; }
 }
 
 public class DailyTransactionRecordIndex : AElfIndexerEntity<string>, IEntityMappingEntity

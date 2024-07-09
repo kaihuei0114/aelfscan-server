@@ -102,6 +102,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailyActiveAddressCountIndex, string> _activeAddressRepository;
     private readonly IEntityMappingRepository<DailyAvgBlockSizeIndex, string> _blockSizeRepository;
     private readonly IEntityMappingRepository<DailyTransactionRecordIndex, string> _recordIndexRepository;
+    private readonly IEntityMappingRepository<DailyHasFeeTransactionIndex, string> _hasFeeTransactionRepository;
+    private readonly IEntityMappingRepository<DailyContractCallIndex, string> _dailyContractCallRepository;
+    private readonly IEntityMappingRepository<DailyTotalContractCallIndex, string> _dailyTotalContractCallRepository;
     private readonly IEntityMappingRepository<AddressIndex, string> _addressRepository;
     private readonly NodeProvider _nodeProvider;
 
@@ -140,7 +143,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyTransactionRecordIndex, string> recordIndexRepository,
         NodeProvider nodeProvide,
         IEntityMappingRepository<DailyAvgBlockSizeIndex, string> blockSizeRepository,
-        IEntityMappingRepository<AddressIndex, string> addressRepository) :
+        IEntityMappingRepository<AddressIndex, string> addressRepository,
+        IEntityMappingRepository<DailyHasFeeTransactionIndex, string> hasFeeTransactionRepository,
+        IEntityMappingRepository<DailyContractCallIndex, string> dailyContractCallRepository,
+        IEntityMappingRepository<DailyTotalContractCallIndex, string> dailyTotalContractCallRepository) :
         base(optionsAccessor)
     {
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -177,6 +183,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _blockSizeRepository = blockSizeRepository;
         _nodeProvider = nodeProvide;
         _addressRepository = addressRepository;
+        _hasFeeTransactionRepository = hasFeeTransactionRepository;
+        _dailyContractCallRepository = dailyContractCallRepository;
+        _dailyTotalContractCallRepository = dailyTotalContractCallRepository;
     }
 
     public async Task BlockSizeTask()
@@ -483,8 +492,15 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
 
             var dailyData = dic[date];
+            var transactionFees = LogEventHelper.ParseTransactionFees(transaction.ExtraProperties);
+            if (transactionFees > 0)
+            {
+                dailyData.TotalFee += LogEventHelper.ParseTransactionFees(transaction.ExtraProperties);
+                dailyData.DailyAvgTransactionFeeIndex.HasFeeTransactionCount++;
+                dailyData.DailyHasFeeTransactionIndex.TransactionIds.Add(transaction.TransactionId + "_" +
+                                                                         transactionFees);
+            }
 
-            dailyData.TotalFee += LogEventHelper.ParseTransactionFees(transaction.ExtraProperties);
             foreach (var txLogEvent in transaction.LogEvents)
             {
                 var logEvent = LogEventHelper.ParseLogEventExtraProperties(txLogEvent.ExtraProperties);
@@ -516,6 +532,27 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             dailyData.AddressSet.Add(transaction.To);
             dailyData.DailyTransactionCountIndex.TransactionCount++;
             dailyData.DailyAvgTransactionFeeIndex.TransactionCount++;
+            dailyData.DailyTotalContractCallIndex.CallCount++;
+
+            if (dailyData.DailyContractCallIndexDic.TryGetValue(transaction.To, out var v))
+            {
+                v.CallCount++;
+                v.CallerSet.Add(transaction.From);
+                dailyData.CallersDic[transaction.To].Add(transaction.From);
+            }
+            else
+            {
+                dailyData.DailyContractCallIndexDic[transaction.To] = new DailyContractCallIndex()
+                {
+                    Date = totalMilliseconds,
+                    DateStr = date,
+                    ChainId = chainId,
+                    CallCount = 1,
+                    ContractAddress = transaction.To,
+                    CallerSet = new HashSet<string>() { transaction.From }
+                };
+                dailyData.CallersDic[transaction.To] = new HashSet<string>() { transaction.From };
+            }
 
             if (dailyData.StartBlockHeight == 0)
             {
@@ -583,7 +620,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             needUpdateData.DailyActiveAddressCountIndex.SendAddressCount = needUpdateData.AddressFromSet.Count;
             needUpdateData.DailyActiveAddressCountIndex.ReceiveAddressCount = needUpdateData.AddressToSet.Count;
 
+            needUpdateData.DailyTotalContractCallIndex.CallAddressCount = needUpdateData.AddressFromSet.Count;
 
+            var dailyContractCallIndexList = needUpdateData.DailyContractCallIndexDic.Values.Select(c =>
+            {
+                c.CallAddressCount = needUpdateData.CallersDic[c.ContractAddress].Count;
+                return c;
+            }).ToList();
             var query = await _addressRepository.GetQueryableAsync();
             query = query.Where(c => c.ChainId == chainId);
 
@@ -629,6 +672,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 }
             }
 
+            needUpdateData.DailyHasFeeTransactionIndex.TransactionCount =
+                needUpdateData.DailyHasFeeTransactionIndex.TransactionIds.Count;
+
 
             var startNew = Stopwatch.StartNew();
             await _avgTransactionFeeRepository.AddOrUpdateAsync(needUpdateData.DailyAvgTransactionFeeIndex);
@@ -638,6 +684,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             await _transactionCountRepository.AddOrUpdateAsync(needUpdateData.DailyTransactionCountIndex);
             await _uniqueAddressRepository.AddOrUpdateAsync(needUpdateData.DailyUniqueAddressCountIndex);
             await _activeAddressRepository.AddOrUpdateAsync(needUpdateData.DailyActiveAddressCountIndex);
+            await _hasFeeTransactionRepository.AddOrUpdateAsync(needUpdateData.DailyHasFeeTransactionIndex);
+            await _dailyTotalContractCallRepository.AddOrUpdateAsync(needUpdateData.DailyTotalContractCallIndex);
+            if (!dailyContractCallIndexList.IsNullOrEmpty())
+            {
+                await _dailyContractCallRepository.AddOrUpdateManyAsync(dailyContractCallIndexList);
+            }
+
             if (!addressIndices.IsNullOrEmpty())
             {
                 await _addressRepository.AddOrUpdateManyAsync(addressIndices);

@@ -45,6 +45,7 @@ public interface IChartDataService
 
     public Task<DailyAvgTransactionFeeResp> GetDailyAvgTransactionFeeRespAsync(ChartDataRequest request);
 
+    public Task<DailyTransactionFeeResp> GetDailyTransactionFeeRespAsync(ChartDataRequest request);
 
     public Task<DailyTotalBurntResp> GetDailyTotalBurntRespAsync(ChartDataRequest request);
 
@@ -56,6 +57,11 @@ public interface IChartDataService
     public Task<DailyBlockRewardResp> GetDailyBlockRewardRespAsync(ChartDataRequest request);
 
     public Task<DailyAvgBlockSizeResp> GetDailyAvgBlockSizeRespRespAsync(ChartDataRequest request);
+
+
+    public Task<DailyTotalContractCallResp> GetDailyTotalContractCallRespRespAsync(ChartDataRequest request);
+
+    public Task<TopContractCallResp> GetTopContractCallRespRespAsync(ChartDataRequest request);
     public Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request);
 
     public Task<JonInfoResp> GetJobInfo(SetJob request);
@@ -82,6 +88,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IEntityMappingRepository<DailyTransactionCountIndex, string> _transactionCountRepository;
     private readonly IEntityMappingRepository<DailyUniqueAddressCountIndex, string> _uniqueAddressRepository;
     private readonly IEntityMappingRepository<DailyActiveAddressCountIndex, string> _activeAddressRepository;
+    private readonly IEntityMappingRepository<DailyContractCallIndex, string> _dailyContractCallRepository;
+    private readonly IEntityMappingRepository<DailyTotalContractCallIndex, string> _dailyTotalContractCallRepository;
 
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
@@ -106,6 +114,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         IEntityMappingRepository<DailyUniqueAddressCountIndex, string> uniqueAddressRepository,
         IEntityMappingRepository<DailyActiveAddressCountIndex, string> activeAddressRepository,
         IEntityMappingRepository<TransactionIndex, string> transactionsRepository,
+        IEntityMappingRepository<DailyContractCallIndex, string> dailyContractCallRepository,
+        IEntityMappingRepository<DailyTotalContractCallIndex, string> dailyTotalContractCallRepository,
         IOptionsMonitor<ElasticsearchOptions> options) : base(
         optionsAccessor)
     {
@@ -133,6 +143,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _uniqueAddressRepository = uniqueAddressRepository;
         _activeAddressRepository = activeAddressRepository;
         _transactionsRepository = transactionsRepository;
+        _dailyContractCallRepository = dailyContractCallRepository;
+        _dailyTotalContractCallRepository = dailyTotalContractCallRepository;
     }
 
 
@@ -144,7 +156,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var v1 = RedisDatabase.StringGet(RedisKeyHelper.TransactionLastBlockHeight(request.ChainId));
         var v2 = RedisDatabase.StringGet(RedisKeyHelper.BlockSizeLastBlockHeight(request.ChainId));
         var v3 = RedisDatabase.StringGet(RedisKeyHelper.LatestRound(request.ChainId));
-   
 
 
         var queryable1 = await _roundIndexRepository.GetQueryableAsync();
@@ -193,6 +204,104 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             Total = datList.Count,
             Highest = datList.MaxBy(c => double.Parse(c.AvgBlockSize)),
             Lowest = datList.MinBy(c => double.Parse(c.AvgBlockSize)),
+        };
+
+        return resp;
+    }
+
+
+    public async Task<DailyTotalContractCallResp> GetDailyTotalContractCallRespRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _dailyTotalContractCallRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+
+        var dataList = _objectMapper.Map<List<DailyTotalContractCallIndex>, List<DailyTotalContractCall>>(indexList);
+
+        var resp = new DailyTotalContractCallResp()
+        {
+            List = dataList.OrderBy(c => c.DateStr).ToList(),
+            Total = dataList.Count,
+            Highest = dataList.MaxBy(c => c.CallCount),
+            Lowest = dataList.MinBy(c => c.CallCount),
+        };
+
+        return resp;
+    }
+
+    public async Task<TopContractCallResp> GetTopContractCallRespRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _dailyContractCallRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+
+
+        var dic = new Dictionary<string, TopContractCall>();
+        var addressDic = new Dictionary<string, HashSet<string>>();
+
+        var totalCall = 0l;
+        foreach (var dailyContractCall in indexList)
+        {
+            if (dic.TryGetValue(dailyContractCall.ContractAddress, out var v))
+            {
+                v.CallCount += dailyContractCall.CallCount;
+                totalCall += dailyContractCall.CallCount;
+                foreach (var s in dailyContractCall.CallerSet)
+                {
+                    addressDic[dailyContractCall.ContractAddress].Add(s);
+                }
+            }
+            else
+            {
+                dic[dailyContractCall.ContractAddress] = new TopContractCall()
+                {
+                    ContractAddress = dailyContractCall.ContractAddress,
+                    ContractName = await GetContractName(request.ChainId, dailyContractCall.ContractAddress),
+                    CallCount = dailyContractCall.CallCount,
+                };
+                totalCall += dailyContractCall.CallCount;
+
+                addressDic[dailyContractCall.ContractAddress] = new HashSet<string>(dailyContractCall.CallerSet);
+            }
+        }
+
+
+        var list = dic.Values.Select(c =>
+        {
+            c.CallAddressCount = addressDic[c.ContractAddress].Count;
+            c.CallRate = ((double)c.CallCount / totalCall * 100).ToString("F2");
+            return c;
+        }).OrderByDescending(c => c.CallCount);
+
+
+        var resp = new TopContractCallResp()
+        {
+            List = list.ToList(),
+            Total = list.Count(),
+            Highest = list.MaxBy(c => c.CallCount),
+            Lowest = list.MinBy(c => c.CallCount),
+        };
+
+        return resp;
+    }
+
+    public async Task<DailyTransactionFeeResp> GetDailyTransactionFeeRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _avgTransactionFeeRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+
+        var datList = _objectMapper.Map<List<DailyAvgTransactionFeeIndex>, List<DailyTransactionFee>>(indexList);
+
+
+        foreach (var dailyAvgTransactionFee in datList)
+        {
+            dailyAvgTransactionFee.TotalFeeElf = double.Parse(dailyAvgTransactionFee.TotalFeeElf).ToString("F6");
+        }
+
+        var resp = new DailyTransactionFeeResp()
+        {
+            List = datList.OrderBy(c => c.DateStr).ToList(),
+            Total = datList.Count,
+            Highest = datList.MaxBy(c => double.Parse(c.TotalFeeElf)),
+            Lowest = datList.MinBy(c => double.Parse(c.TotalFeeElf)),
         };
 
         return resp;
@@ -272,7 +381,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             List = dataList,
             Total = dataList.Count,
-            Highest = dataList.MaxBy(c =>double.Parse(c.Count)),
+            Highest = dataList.MaxBy(c => double.Parse(c.Count)),
             Lowest = dataList.MinBy(c => double.Parse(c.Count)),
         };
 
@@ -810,6 +919,19 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<string> GetBpName(string chainId, string address)
     {
         _globalOptions.CurrentValue.BPNames.TryGetValue(chainId, out var contractNames);
+        if (contractNames == null)
+        {
+            return "";
+        }
+
+        contractNames.TryGetValue(address, out var contractName);
+
+        return contractName;
+    }
+    
+    public async Task<string> GetContractName(string chainId, string address)
+    {
+        _globalOptions.CurrentValue.ContractNames.TryGetValue(chainId, out var contractNames);
         if (contractNames == null)
         {
             return "";

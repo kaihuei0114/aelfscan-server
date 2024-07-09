@@ -75,6 +75,9 @@ public class AElfScanCommonModule : AbpModule
 
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTransactionRecordIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(AddressIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyHasFeeTransactionIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTotalContractCallIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyContractCallIndex)); });
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();
