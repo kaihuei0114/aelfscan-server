@@ -218,15 +218,15 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        // context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
-        // context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
-        // context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
-        // context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
-        // context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
-        // context.AddBackgroundWorkerAsync<BnElfUsdtPriceWorker>();
+        context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
+        context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
+        context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
+        context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
+        context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
+        context.AddBackgroundWorkerAsync<BnElfUsdtPriceWorker>();
         context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
-        // context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
-        // context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
-        // context.AddBackgroundWorkerAsync<BlockSizeWorker>();
+        context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
+        context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
+        context.AddBackgroundWorkerAsync<BlockSizeWorker>();
     }
 }

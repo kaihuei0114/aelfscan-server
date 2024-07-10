@@ -117,7 +117,7 @@ public class ChartDataController : AbpController
     [HttpGet("topContractCall")]
     public async Task<TopContractCallResp> GetTopContractCallRespRespAsync(ChartDataRequest request)
     {
-        return await _chartDataService.GetTopContractCallRespRespAsync(request);
+        return await _chartDataService.GetTopContractCallRespAsync(request);
     }
 
 
@@ -126,6 +126,27 @@ public class ChartDataController : AbpController
     {
         return await _chartDataService.GetDailyTotalContractCallRespRespAsync(request);
     }
+    
+    
+    [HttpGet("dailySupplyGrowth")]
+    public async Task<DailySupplyGrowthResp> GetDailySupplyGrowthRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetDailySupplyGrowthRespAsync(request);
+    }
+    
+    [HttpGet("dailyMarketCap")]
+    public async Task<DailyMarketCapResp> GetDailyMarketCapRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetDailyMarketCapRespAsync(request);
+    }
+
+
+    [HttpGet("dailyStaked")]
+    public async Task<DailyStakedResp> GetDailyStakedRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetDailyStakedRespAsync(request);
+    }
+    
 
 
     [HttpGet("initRound")]

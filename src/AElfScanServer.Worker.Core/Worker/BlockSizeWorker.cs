@@ -7,9 +7,6 @@ using Volo.Abp.Threading;
 
 namespace AElfScanServer.Worker.Core.Worker;
 
-
-
-
 public class BlockSizeWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly ITransactionService _transactionService;
@@ -21,7 +18,8 @@ public class BlockSizeWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<BlockSizeWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 1000 * 1;
+        timer.Period = 1000 * 60 * 60;
+        timer.RunOnStart = true;
         _logger = logger;
         _transactionService = transactionService;
     }

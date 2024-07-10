@@ -32,6 +32,16 @@ public static class DateTimeHelper
         return (long)dateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
     }
 
+
+    public static long GetPreviousDayMilliseconds(long time, int dateInterval)
+    {
+        long msInDay = 24 * 60 * 60 * 1000;
+        long msInDays = (dateInterval - 1) * msInDay;
+
+        return time - msInDays;
+    }
+
+
     public static string GetDateTimeString(long milliseconds)
     {
         return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(milliseconds)
@@ -184,6 +194,7 @@ public static class DateTimeHelper
         DateTime currentDate = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day);
         return (long)currentDate.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds;
     }
+
 
 
     public static long GetTotalMinutes(DateTime dateTime)

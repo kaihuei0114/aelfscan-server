@@ -41,6 +41,7 @@
         <PackageReference Include="AElf.EntityMapping" Version="1.0.0-rc9" />
         <PackageReference Include="AElf.EntityMapping.Elasticsearch" Version="1.0.0-rc9" />
         <PackageReference Include="AElf.Indexing.Elasticsearch" Version="0.0.16" />
+        <PackageReference Include="AetherlinkPriceServer" Version="1.0.3" />
     </ItemGroup>
 
     <ItemGroup>
