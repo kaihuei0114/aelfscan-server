@@ -100,6 +100,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IEntityMappingRepository<DailyMarketCapIndex, string> _dailyMarketCapIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyGrowthIndex, string> _dailySupplyGrowthIndexRepository;
     private readonly IEntityMappingRepository<DailyStakedIndex, string> _dailyStakedIndexRepository;
+    private readonly IEntityMappingRepository<DailyTransactionRecordIndex, string> _transactionRecordIndexRepository;
+
 
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
@@ -129,6 +131,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         IEntityMappingRepository<DailyMarketCapIndex, string> dailyMarketCapIndexRepository,
         IEntityMappingRepository<DailySupplyGrowthIndex, string> dailySupplyGrowthIndexRepository,
         IEntityMappingRepository<DailyStakedIndex, string> dailyStakedIndexRepository,
+        IEntityMappingRepository<DailyTransactionRecordIndex, string> transactionRecordIndexRepository,
         IOptionsMonitor<ElasticsearchOptions> options) : base(
         optionsAccessor)
     {
@@ -161,6 +164,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _dailyMarketCapIndexRepository = dailyMarketCapIndexRepository;
         _dailySupplyGrowthIndexRepository = dailySupplyGrowthIndexRepository;
         _dailyStakedIndexRepository = dailyStakedIndexRepository;
+        _transactionRecordIndexRepository = transactionRecordIndexRepository;
     }
 
 
@@ -240,12 +244,13 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyStakedResp> GetDailyStakedRespAsync(ChartDataRequest request)
     {
         var queryable = await _dailyStakedIndexRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c=>c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
 
         var datList = _objectMapper.Map<List<DailyStakedIndex>, List<DailyStaked>>(indexList);
         var totalStaked = double.Parse(datList[0].BpStaked) + double.Parse(datList[0].VoteStaked);
 
+        datList[0].TotalStaked = totalStaked.ToString("F4");
         datList[0].Rate = (totalStaked / double.Parse(datList[0].Supply) * 100).ToString("F4");
         for (var i = 1; i < datList.Count; i++)
         {
@@ -254,6 +259,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             var curTotalStaked = double.Parse(datList[i].BpStaked) + double.Parse(datList[i].VoteStaked);
 
             datList[i].Rate = (curTotalStaked / supply * 100).ToString("F4");
+            datList[i].TotalStaked = curTotalStaked.ToString("f4");
         }
 
         var resp = new DailyStakedResp()
@@ -268,9 +274,10 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailySupplyGrowthResp> GetDailySupplyGrowthRespAsync(ChartDataRequest request)
     {
         var queryable = await _dailySupplyGrowthIndexRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c=>c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var datList = _objectMapper.Map<List<DailySupplyGrowthIndex>, List<DailySupplyGrowth>>(indexList);
+        var d = double.Parse("-0.264870");
 
         datList[0].TotalSupply = datList[0].IncrSupply;
         for (var i = 1; i < datList.Count; i++)
@@ -294,7 +301,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyAvgBlockSizeResp> GetDailyAvgBlockSizeRespRespAsync(ChartDataRequest request)
     {
         var queryable = await _blockSizeRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c=>c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var datList = _objectMapper.Map<List<DailyAvgBlockSizeIndex>, List<DailyAvgBlockSize>>(indexList);
 
@@ -313,7 +320,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyTotalContractCallResp> GetDailyTotalContractCallRespRespAsync(ChartDataRequest request)
     {
         var queryable = await _dailyTotalContractCallRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c=>c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var dataList = _objectMapper.Map<List<DailyTotalContractCallIndex>, List<DailyTotalContractCall>>(indexList);
 
@@ -333,7 +340,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var queryable = await _dailyContractCallRepository.GetQueryableAsync();
         queryable = queryable.Where(c => c.ChainId == request.ChainId);
 
-        var lastIndex = queryable.OrderByDescending(c => c.Date).OrderBy(c=>c.Date).Take(1).ToList().First();
+        var lastIndex = queryable.OrderByDescending(c => c.Date).OrderBy(c => c.Date).Take(1).ToList().First();
 
         var end = lastIndex.Date;
         var start = DateTimeHelper.GetPreviousDayMilliseconds(end, request.DateInterval);
@@ -394,7 +401,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyTransactionFeeResp> GetDailyTransactionFeeRespAsync(ChartDataRequest request)
     {
         var queryable = await _avgTransactionFeeRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c=>c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var datList = _objectMapper.Map<List<DailyAvgTransactionFeeIndex>, List<DailyTransactionFee>>(indexList);
 
@@ -418,7 +425,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyAvgTransactionFeeResp> GetDailyAvgTransactionFeeRespAsync(ChartDataRequest request)
     {
         var queryable = await _avgTransactionFeeRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c=>c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var datList = _objectMapper.Map<List<DailyAvgTransactionFeeIndex>, List<DailyAvgTransactionFee>>(indexList);
 
@@ -444,7 +451,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyTotalBurntResp> GetDailyTotalBurntRespAsync(ChartDataRequest request)
     {
         var queryable = await _totalBurntRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c=>c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var datList = _objectMapper.Map<List<DailyTotalBurntIndex>, List<DailyTotalBurnt>>(indexList);
 
@@ -468,7 +475,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyDeployContractResp> GetDailyDeployContractRespAsync(ChartDataRequest request)
     {
         var queryable = await _deployContractRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c=>c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var dataList = _objectMapper.Map<List<DailyDeployContractIndex>, List<DailyDeployContract>>(indexList);
 
@@ -523,7 +530,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyBlockRewardResp> GetDailyBlockRewardRespAsync(ChartDataRequest request)
     {
         var queryable = await _blockRewardRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c=>c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var datList = _objectMapper.Map<List<DailyBlockRewardIndex>, List<DailyBlockReward>>(indexList);
 
@@ -882,12 +889,13 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var orderList = destination.OrderBy(c => c.BlockProductionRate);
 
+
         foreach (var i in destination)
         {
             i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);
         }
 
-
+        destination.RemoveAt(destination.Count - 1);
         var blockProduceRateResp = new BlockProduceRateResp()
         {
             List = destination,
@@ -943,7 +951,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             _objectMapper.Map<List<DailyCycleCountIndex>, List<DailyCycleCount>>(list);
 
         var orderList = destination.OrderBy(c => c.CycleCount).ToList();
-
+        orderList.RemoveAt(orderList.Count - 1);
         foreach (var i in destination)
         {
             i.DateStr = DateTimeHelper.GetDateTimeString(i.Date);

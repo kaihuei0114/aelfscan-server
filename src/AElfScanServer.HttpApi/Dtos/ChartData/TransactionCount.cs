@@ -284,7 +284,7 @@ public class DailyMarketCap
     public string TotalMarketCap { get; set; }
 
     public string FDV { get; set; }
-    
+
     public string Price { get; set; }
 
     public string IncrMarketCap { get; set; }
@@ -315,10 +315,11 @@ public class DailyStaked
     public long Date { get; set; }
     public string DateStr { get; set; }
 
+    public string TotalStaked { get; set; }
     public string BpStaked { get; set; }
 
     public string VoteStaked { get; set; }
-    
+
     public string Supply { get; set; }
 
     public string Rate { get; set; }
