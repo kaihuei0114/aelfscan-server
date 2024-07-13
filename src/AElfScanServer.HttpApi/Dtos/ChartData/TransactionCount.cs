@@ -62,15 +62,13 @@ public class JonInfoResp
 {
     public long RedisLastBlockHeight { get; set; }
 
-    public long EsLastBlockHeight { get; set; }
-
     public long RedisLastRound { get; set; }
     public long EsLastRound { get; set; }
     public string EsLastRoundDate { get; set; }
-    public string EsTransactionLastDate { get; set; }
-
-
     public long BlockSizeBlockHeight { get; set; }
+
+    public string TransactionLastDate { get; set; }
+    public int TransactionDateCount { get; set; }
 }
 
 public class DailyTransactionCountResp
@@ -308,6 +306,23 @@ public class DailyStakedResp
 {
     public long Total { get; set; }
     public List<DailyStaked> List { get; set; }
+}
+
+public class DailyHolderResp
+{
+    public long Total { get; set; }
+    public List<DailyHolder> List { get; set; }
+
+    public DailyHolder Highest { get; set; }
+    public DailyHolder Lowest { get; set; }
+}
+
+public class DailyHolder
+{
+    public long Date { get; set; }
+    public string DateStr { get; set; }
+
+    public long Count { get; set; }
 }
 
 public class DailyStaked

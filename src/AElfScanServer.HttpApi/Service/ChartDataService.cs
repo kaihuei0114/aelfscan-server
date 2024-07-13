@@ -13,6 +13,7 @@ using AElfScanServer.Domain.Shared.Common;
 using AElfScanServer.HttpApi.Dtos.ChartData;
 using AElfScanServer.HttpApi.Helper;
 using AElfScanServer.HttpApi.Options;
+using AElfScanServer.HttpApi.Provider;
 using Elasticsearch.Net;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
@@ -69,6 +70,8 @@ public interface IChartDataService
 
     public Task<DailyStakedResp> GetDailyStakedRespAsync(ChartDataRequest request);
 
+    public Task<DailyHolderResp> GetDailyHolderRespAsync(ChartDataRequest request);
+
     public Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request);
 
     public Task<JonInfoResp> GetJobInfo(SetJob request);
@@ -100,6 +103,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IEntityMappingRepository<DailyMarketCapIndex, string> _dailyMarketCapIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyGrowthIndex, string> _dailySupplyGrowthIndexRepository;
     private readonly IEntityMappingRepository<DailyStakedIndex, string> _dailyStakedIndexRepository;
+    private readonly IDailyHolderProvider _dailyHolderProvider;
     private readonly IEntityMappingRepository<DailyTransactionRecordIndex, string> _transactionRecordIndexRepository;
 
 
@@ -132,6 +136,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         IEntityMappingRepository<DailySupplyGrowthIndex, string> dailySupplyGrowthIndexRepository,
         IEntityMappingRepository<DailyStakedIndex, string> dailyStakedIndexRepository,
         IEntityMappingRepository<DailyTransactionRecordIndex, string> transactionRecordIndexRepository,
+        IDailyHolderProvider dailyHolderProvider,
         IOptionsMonitor<ElasticsearchOptions> options) : base(
         optionsAccessor)
     {
@@ -165,6 +170,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _dailySupplyGrowthIndexRepository = dailySupplyGrowthIndexRepository;
         _dailyStakedIndexRepository = dailyStakedIndexRepository;
         _transactionRecordIndexRepository = transactionRecordIndexRepository;
+        _dailyHolderProvider = dailyHolderProvider;
     }
 
 
@@ -208,9 +214,60 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
                 request.SetLastRound);
         }
 
+
+        var queryable2 = await _transactionRecordIndexRepository.GetQueryableAsync();
+        queryable2 = queryable2.Where(c => c.ChainId == request.ChainId);
+        var count = queryable2.Count();
+        var dailyTransactionRecordIndices = queryable2.OrderByDescending(c => c.DateStr).Take(1);
+        jonInfoResp.TransactionLastDate = dailyTransactionRecordIndices.First().DateStr;
+        jonInfoResp.TransactionDateCount = count;
+
         return jonInfoResp;
     }
 
+
+    public async Task<DailyHolderResp> GetDailyHolderRespAsync(ChartDataRequest request)
+    {
+        var dailyHolderListAsync = await _dailyHolderProvider.GetDailyHolderListAsync(request.ChainId);
+        var dailyHolderDtos = dailyHolderListAsync.DailyHolder;
+
+        var dailyHolders = new List<DailyHolder>();
+
+        dailyHolderDtos = dailyHolderDtos.OrderBy(c => c.DateStr).ToList();
+
+
+        for (var i = 0; i < dailyHolderDtos.Count; i++)
+        {
+            dailyHolders.Add(new DailyHolder()
+            {
+                Date = DateTimeHelper.ConvertYYMMDD(dailyHolderDtos[i].DateStr),
+                DateStr = dailyHolderDtos[i].DateStr,
+                Count = dailyHolderDtos[i].Count
+            });
+
+            var curCount = dailyHolderDtos[i].Count;
+            var nextDate = DateTimeHelper.GetNextDayDate(dailyHolderDtos[i].DateStr);
+
+            while (i < dailyHolderDtos.Count - 1 && nextDate != dailyHolderDtos[i + 1].DateStr)
+            {
+                dailyHolders.Add(new DailyHolder()
+                {
+                    Date = DateTimeHelper.ConvertYYMMDD(nextDate),
+                    DateStr = nextDate,
+                    Count = curCount
+                });
+                nextDate = DateTimeHelper.GetNextDayDate(nextDate);
+            }
+        }
+
+        return new DailyHolderResp()
+        {
+            List = dailyHolders,
+            Total = dailyHolders.Count,
+            Highest = dailyHolders.MaxBy(c => c.Count),
+            Lowest = dailyHolders.MinBy(c => c.Count),
+        };
+    }
 
     public async Task<DailyMarketCapResp> GetDailyMarketCapRespAsync(ChartDataRequest request)
     {

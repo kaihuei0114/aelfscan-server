@@ -147,6 +147,14 @@ public class ChartDataController : AbpController
         return await _chartDataService.GetDailyStakedRespAsync(request);
     }
     
+    
+    [HttpGet("dailyHolder")]
+    public async Task<DailyHolderResp> GetDailyHolderRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetDailyHolderRespAsync(request);
+    }
+
+
 
 
     [HttpGet("initRound")]

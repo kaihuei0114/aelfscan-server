@@ -90,6 +90,17 @@ public static class DateTimeHelper
     }
 
 
+    public static string GetNextDayDate(string dateString)
+    {
+        string dateFormat = "yyyy-MM-dd";
+
+        DateTime dateTime;
+        DateTime.TryParseExact(dateString, dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None,
+            out dateTime);
+
+        return dateTime.AddDays(1).ToUtc8String(dateFormat);
+    }
+
     public static string GetDateStr(DateTime dateTime)
     {
         return new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, DateTimeKind.Utc).ToString(
@@ -194,7 +205,6 @@ public static class DateTimeHelper
         DateTime currentDate = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day);
         return (long)currentDate.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds;
     }
-
 
 
     public static long GetTotalMinutes(DateTime dateTime)
