@@ -305,15 +305,34 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
 
         var datList = _objectMapper.Map<List<DailyStakedIndex>, List<DailyStaked>>(indexList);
+
+
+        if (_globalOptions.CurrentValue.IsMainNet)
+        {
+            datList[0].TotalStaked = "1700000";
+            datList[0].BpStaked = "1700000";
+        }
+        else
+        {
+            datList[0].TotalStaked = "500000";
+            datList[0].BpStaked = "500000";
+        }
+
         var totalStaked = double.Parse(datList[0].BpStaked) + double.Parse(datList[0].VoteStaked);
 
-        datList[0].TotalStaked = totalStaked.ToString("F4");
         datList[0].Rate = (totalStaked / double.Parse(datList[0].Supply) * 100).ToString("F4");
         for (var i = 1; i < datList.Count; i++)
         {
             var supply = double.Parse(datList[i - 1].Supply) + double.Parse(datList[i].Supply);
             datList[i].Supply = supply.ToString();
-            var curTotalStaked = double.Parse(datList[i].BpStaked) + double.Parse(datList[i].VoteStaked);
+
+            var curtBpStaked = double.Parse(datList[i].BpStaked) + double.Parse(datList[i - 1].BpStaked);
+            datList[i].BpStaked = curtBpStaked.ToString();
+
+            var curtVoteStaked = double.Parse(datList[i].VoteStaked) + double.Parse(datList[i - 1].VoteStaked);
+            datList[i].VoteStaked = curtVoteStaked.ToString();
+
+            var curTotalStaked = curtBpStaked + curtVoteStaked;
 
             datList[i].Rate = (curTotalStaked / supply * 100).ToString("F4");
             datList[i].TotalStaked = curTotalStaked.ToString("f4");
