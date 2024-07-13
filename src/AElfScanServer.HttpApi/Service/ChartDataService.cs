@@ -334,7 +334,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var datList = _objectMapper.Map<List<DailySupplyGrowthIndex>, List<DailySupplyGrowth>>(indexList);
-        var d = double.Parse("-0.264870");
 
         datList[0].TotalSupply = datList[0].IncrSupply;
         for (var i = 1; i < datList.Count; i++)

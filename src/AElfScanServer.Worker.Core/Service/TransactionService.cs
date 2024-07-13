@@ -116,6 +116,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailyStakedIndex, string> _dailyStakedIndexRepository;
     private readonly IEntityMappingRepository<DailyVotedIndex, string> _dailyVotedIndexRepository;
     private readonly IEntityMappingRepository<TransactionErrInfoIndex, string> _transactionErrInfoIndexRepository;
+    private readonly IEntityMappingRepository<DailySupplyChange, string> _dailySupplyChangeRepository;
     private readonly IPriceServerProvider _priceServerProvider;
 
 
@@ -167,6 +168,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyStakedIndex, string> dailyStakedIndexRepository,
         IEntityMappingRepository<DailyVotedIndex, string> dailyVotedIndexRepository,
         IEntityMappingRepository<TransactionErrInfoIndex, string> transactionErrInfoIndexRepository,
+        IEntityMappingRepository<DailySupplyChange, string> dailySupplyChangeRepository,
         IPriceServerProvider priceServerProvider) :
         base(optionsAccessor)
     {
@@ -213,6 +215,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _dailyStakedIndexRepository = dailyStakedIndexRepository;
         _dailyVotedIndexRepository = dailyVotedIndexRepository;
         _transactionErrInfoIndexRepository = transactionErrInfoIndexRepository;
+        _dailySupplyChangeRepository = dailySupplyChangeRepository;
     }
 
     public async Task BlockSizeTask()
@@ -577,15 +580,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         burned.MergeFrom(logEvent);
                         if (burned.Symbol == "ELF")
                         {
-                            var burnt = LogEventHelper.ParseBurnt(burned.Amount, burned.Burner.ToBase58(),
-                                burned.Symbol,
-                                transaction.ChainId);
-                            if (burnt > 0)
-                            {
-                                dailyData.DailyTotalBurntIndex.HasBurntBlockCount++;
-                                dailyData.TotalBurnt += burnt;
-                                dailyData.TotalSupply -= burned.Amount;
-                            }
+                            var transactionId = transaction.Id + "_" + "burned" + "_" + burned.Amount / 1e8;
+                            dailyData.DailySupplyChange.SupplyChange.Add(transactionId);
+                            dailyData.TotalSupply -= burned.Amount;
+                            dailyData.TotalBurnt += burned.Amount;
                         }
 
                         break;
@@ -594,6 +592,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         issued.MergeFrom(logEvent);
                         if (issued.Symbol == "ELF")
                         {
+                            var transactionId = transaction.Id + "_" + "issued" + "_" + issued.Amount / 1e8;
+                            dailyData.DailySupplyChange.SupplyChange.Add(transactionId);
                             dailyData.TotalSupply += issued.Amount;
                         }
 
@@ -604,6 +604,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         crossChainReceived.MergeFrom(logEvent);
                         if (crossChainReceived.Symbol == "ELF")
                         {
+                            var transactionId = transaction.Id + "_" + "crossChainReceived" + "_" +
+                                                crossChainReceived.Amount / 1e8;
+                            dailyData.DailySupplyChange.SupplyChange.Add(transactionId);
                             dailyData.TotalSupply += crossChainReceived.Amount;
                         }
 
@@ -831,6 +834,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 var dailyVotedIndices = needUpdateData.DailyVotedIndexDic.Values.ToList();
                 await _dailyVotedIndexRepository.AddOrUpdateManyAsync(dailyVotedIndices);
             }
+
+            await _dailySupplyChangeRepository.AddOrUpdateAsync(needUpdateData.DailySupplyChange);
 
             startNew.Stop();
             needUpdateData.WirteFinishiTime = DateTime.UtcNow;

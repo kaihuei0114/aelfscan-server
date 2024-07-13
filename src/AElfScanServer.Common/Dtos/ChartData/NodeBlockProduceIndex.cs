@@ -158,6 +158,8 @@ public class DailyTransactionsChartSet
     public DailyStakedIndex DailyStakedIndex { get; set; }
     public Dictionary<string, DailyContractCallIndex> DailyContractCallIndexDic { get; set; }
     public DailyTotalContractCallIndex DailyTotalContractCallIndex { get; set; }
+
+    public DailySupplyChange DailySupplyChange { get; set; }
     public Dictionary<string, HashSet<string>> CallersDic { get; set; } = new();
     public string Date { get; set; }
     public DateTime StartTime { get; set; }
@@ -270,6 +272,13 @@ public class DailyTransactionsChartSet
             ChainId = chainId,
             Date = totalMilliseconds,
             DateStr = date,
+        };
+
+        DailySupplyChange = new DailySupplyChange()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
         };
 
 
@@ -626,6 +635,23 @@ public class DailyStakedIndex : AElfIndexerEntity<string>, IEntityMappingEntity
     [Keyword] public string ChainId { get; set; }
 }
 
+public class DailySupplyChange : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    public List<string> SupplyChange { get; set; } = new();
+
+    public long TotalSupply { get; set; }
+    [Keyword] public string ChainId { get; set; }
+}
+
 public class DailyVotedIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
     [Keyword]
@@ -650,7 +676,7 @@ public class TransactionErrInfoIndex : AElfIndexerEntity<string>, IEntityMapping
     [Keyword]
     public override string Id
     {
-        get { return  "_" + ChainId; }
+        get { return "_" + ChainId; }
     }
 
     public DateTime HappenTime { get; set; }
