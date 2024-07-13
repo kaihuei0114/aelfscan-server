@@ -11,6 +11,8 @@ public class GlobalOptions
 
     public bool NeedInitLastHeight { get; set; }
 
+    public bool IsMainNet { get; set; }
+
     public Dictionary<string, List<string>> BurntFeeContractAddresses { get; set; } =
         new Dictionary<string, List<string>>();
 

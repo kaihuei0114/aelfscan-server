@@ -9,6 +9,7 @@ using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.ThirdPart.Exchange;
 using AElfScanServer.Common.Token.Provider;
+using Aetherlink.PriceServer;
 using AutoResponseWrapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,13 +24,16 @@ namespace AElfScanServer.Common;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),
-    typeof(AbpCachingStackExchangeRedisModule)
+    typeof(AbpCachingStackExchangeRedisModule),
+    typeof(AetherlinkPriceServerModule)
 )]
 public class AElfScanCommonModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var configuration = context.Services.GetConfiguration();
+
+
         Configure<ChainOptions>(configuration.GetSection("ChainOptions"));
         Configure<ApiClientOption>(configuration.GetSection("ApiClient"));
         Configure<IndexerOptions>(configuration.GetSection("Indexers"));
@@ -75,6 +79,15 @@ public class AElfScanCommonModule : AbpModule
 
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTransactionRecordIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(AddressIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyHasFeeTransactionIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTotalContractCallIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyContractCallIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailySupplyGrowthIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyMarketCapIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyStakedIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyVotedIndex)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailySupplyChange)); });
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(TransactionErrInfoIndex)); });
 
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();

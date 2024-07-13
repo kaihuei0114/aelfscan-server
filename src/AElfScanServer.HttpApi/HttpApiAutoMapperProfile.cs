@@ -19,6 +19,36 @@ public class BlockChainAutoMapperProfile : Profile
 {
     public BlockChainAutoMapperProfile()
     {
+        CreateMap<DailyHolderDto, DailyHolder>()
+            .ReverseMap();
+
+
+        CreateMap<DailyStakedIndex, DailyStaked>()
+            .ReverseMap();
+        CreateMap<DailySupplyGrowthIndex, DailySupplyGrowth>()
+            .ReverseMap();
+
+        CreateMap<DailyMarketCapIndex, DailyMarketCap>()
+            .ReverseMap();
+
+
+        CreateMap<DailyTotalContractCallIndex, DailyTotalContractCall>()
+            .ReverseMap();
+
+        CreateMap<DailyContractCallIndex, DailyTotalContractCall>()
+            .ReverseMap();
+
+
+        CreateMap<DailyAvgTransactionFeeIndex, DailyTransactionFee>()
+            .ReverseMap();
+
+
+        CreateMap<DailyActiveAddressCountIndex, DailyTransactionFee>()
+            .ReverseMap();
+
+        CreateMap<DailyActiveAddressCountIndex, DailyTransactionFee>()
+            .ReverseMap();
+
         CreateMap<DailyActiveAddressCountIndex, DailyActiveAddressCount>()
             .ReverseMap();
 

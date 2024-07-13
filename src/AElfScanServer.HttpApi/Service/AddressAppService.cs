@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
-
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.Provider;
 using AElfScanServer.Common.Address.Provider;
@@ -159,7 +157,8 @@ public class AddressAppService : IAddressAppService
             input.ChainId, JsonConvert.SerializeObject(dailyAddressAsset));
         //of result info
         var result = new GetAddressDetailResultDto();
-        if (contractInfo != null)
+        if (contractInfo != null && contractInfo.ContractList != null && contractInfo.ContractList.Items != null &&
+            contractInfo.ContractList.Items.Count > 0)
         {
             result = _objectMapper.Map<ContractInfoDto, GetAddressDetailResultDto>(contractInfo.ContractList.Items[0]);
             result.ContractName = _globalOptions.GetContractName(input.ChainId, input.Address);

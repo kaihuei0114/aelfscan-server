@@ -32,6 +32,16 @@ public static class DateTimeHelper
         return (long)dateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
     }
 
+
+    public static long GetPreviousDayMilliseconds(long time, int dateInterval)
+    {
+        long msInDay = 24 * 60 * 60 * 1000;
+        long msInDays = (dateInterval - 1) * msInDay;
+
+        return time - msInDays;
+    }
+
+
     public static string GetDateTimeString(long milliseconds)
     {
         return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(milliseconds)
@@ -79,6 +89,17 @@ public static class DateTimeHelper
         return 0;
     }
 
+
+    public static string GetNextDayDate(string dateString)
+    {
+        string dateFormat = "yyyy-MM-dd";
+
+        DateTime dateTime;
+        DateTime.TryParseExact(dateString, dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None,
+            out dateTime);
+
+        return dateTime.AddDays(1).ToUtc8String(dateFormat);
+    }
 
     public static string GetDateStr(DateTime dateTime)
     {

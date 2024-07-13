@@ -149,13 +149,27 @@ public class DailyTransactionsChartSet
     public DailyTransactionCountIndex DailyTransactionCountIndex { get; set; }
     public DailyUniqueAddressCountIndex DailyUniqueAddressCountIndex { get; set; }
     public DailyActiveAddressCountIndex DailyActiveAddressCountIndex { get; set; }
+    public DailyHasFeeTransactionIndex DailyHasFeeTransactionIndex { get; set; }
+    public DailyMarketCapIndex DailyMarketCapIndex { get; set; }
+    public DailySupplyGrowthIndex DailySupplyGrowthIndex { get; set; }
 
+    public Dictionary<string, DailyVotedIndex> DailyVotedIndexDic { get; set; }
+
+    public DailyStakedIndex DailyStakedIndex { get; set; }
+    public Dictionary<string, DailyContractCallIndex> DailyContractCallIndexDic { get; set; }
+    public DailyTotalContractCallIndex DailyTotalContractCallIndex { get; set; }
+
+    public DailySupplyChange DailySupplyChange { get; set; }
+    public Dictionary<string, HashSet<string>> CallersDic { get; set; } = new();
     public string Date { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime WirteFinishiTime { get; set; }
 
     public double CostTime { get; set; }
 
+    public double TotalBpStaked { get; set; }
+    public double TotalVotedStaked { get; set; }
+    public List<string> WithDrawVotedIds { get; set; } = new();
 
     public long StartBlockHeight { get; set; }
     public long EndBlockHeight { get; set; }
@@ -168,6 +182,8 @@ public class DailyTransactionsChartSet
     public long TotalBurnt { get; set; }
     public decimal TotalReward { get; set; }
     public long TotalFee { get; set; }
+
+    public double TotalSupply { get; set; }
 
     public DailyTransactionsChartSet(string chainId, long totalMilliseconds, string date)
     {
@@ -219,6 +235,53 @@ public class DailyTransactionsChartSet
             DateStr = date
         };
 
+        DailyContractCallIndexDic = new Dictionary<string, DailyContractCallIndex>();
+
+        DailyTotalContractCallIndex = new DailyTotalContractCallIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+
+        DailyHasFeeTransactionIndex = new DailyHasFeeTransactionIndex()
+        {
+            ChainId = chainId,
+            DateStr = date,
+            TransactionIds = new List<string>()
+        };
+
+        DailyMarketCapIndex = new DailyMarketCapIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date,
+        };
+
+        DailySupplyGrowthIndex = new DailySupplyGrowthIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date,
+        };
+
+        DailyVotedIndexDic = new Dictionary<string, DailyVotedIndex>();
+
+        DailyStakedIndex = new DailyStakedIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date,
+        };
+
+        DailySupplyChange = new DailySupplyChange()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
+
+
         AddressSet = new HashSet<string>();
 
         AddressFromSet = new HashSet<string>();
@@ -232,7 +295,7 @@ public class DailyAvgTransactionFeeIndex : AElfIndexerEntity<string>, IEntityMap
     [Keyword]
     public override string Id
     {
-        get { return Date + "_" + ChainId; }
+        get { return DateStr + "_" + ChainId; }
     }
 
     public long Date { get; set; }
@@ -243,10 +306,28 @@ public class DailyAvgTransactionFeeIndex : AElfIndexerEntity<string>, IEntityMap
 
     [Keyword] public string AvgFeeElf { get; set; }
 
+    public int HasFeeTransactionCount { get; set; }
     public string TotalFeeElf { get; set; }
     public int TransactionCount { get; set; }
 
     [Keyword] public string DateStr { get; set; }
+}
+
+public class DailyHasFeeTransactionIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    [Keyword] public string DateStr { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+
+    public List<string> TransactionIds { get; set; }
+
+    public int TransactionCount { get; set; }
 }
 
 public class DailyBlockRewardIndex : AElfIndexerEntity<string>, IEntityMappingEntity
@@ -254,7 +335,7 @@ public class DailyBlockRewardIndex : AElfIndexerEntity<string>, IEntityMappingEn
     [Keyword]
     public override string Id
     {
-        get { return Date + "_" + ChainId; }
+        get { return DateStr + "_" + ChainId; }
     }
 
     public long Date { get; set; }
@@ -273,7 +354,7 @@ public class DailyTotalBurntIndex : AElfIndexerEntity<string>, IEntityMappingEnt
     [Keyword]
     public override string Id
     {
-        get { return Date + "_" + ChainId; }
+        get { return DateStr + "_" + ChainId; }
     }
 
     public long Date { get; set; }
@@ -291,7 +372,7 @@ public class DailyDeployContractIndex : AElfIndexerEntity<string>, IEntityMappin
     [Keyword]
     public override string Id
     {
-        get { return Date + "_" + ChainId; }
+        get { return DateStr + "_" + ChainId; }
     }
 
     public long Date { get; set; }
@@ -333,7 +414,7 @@ public class DailyTransactionCountIndex : AElfIndexerEntity<string>, IEntityMapp
     [Keyword]
     public override string Id
     {
-        get { return Date + "_" + ChainId; }
+        get { return DateStr + "_" + ChainId; }
     }
 
     public long Date { get; set; }
@@ -351,7 +432,7 @@ public class DailyUniqueAddressCountIndex : AElfIndexerEntity<string>, IEntityMa
     [Keyword]
     public override string Id
     {
-        get { return Date + "_" + ChainId; }
+        get { return DateStr + "_" + ChainId; }
     }
 
     public long Date { get; set; }
@@ -370,7 +451,7 @@ public class DailyActiveAddressCountIndex : AElfIndexerEntity<string>, IEntityMa
     [Keyword]
     public override string Id
     {
-        get { return Date + "_" + ChainId; }
+        get { return DateStr + "_" + ChainId; }
     }
 
     public long Date { get; set; }
@@ -438,13 +519,171 @@ public class BlockSizeErrInfoIndex : AElfIndexerEntity<string>, IEntityMappingEn
     public long BlockHeight { get; set; }
 }
 
+public class DailyTotalContractCallIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    public long CallCount { get; set; }
+
+    public long CallAddressCount { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+}
+
+public class DailyContractCallIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId + "_" + ContractAddress; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+    public long CallCount { get; set; }
+
+    public HashSet<string> CallerSet { get; set; }
+    public long CallAddressCount { get; set; }
+
+    [Keyword] public string ContractAddress { get; set; }
+    [Keyword] public string ChainId { get; set; }
+}
+
 public class DailyTransactionRecordIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
     [Keyword] public string ChainId { get; set; }
     [Keyword] public string DateStr { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime DataWriteFinishTime { get; set; }
     public double WriteCostTime { get; set; }
+    public long StartBlockHeight { get; set; }
+    public long EndBlockHeight { get; set; }
+}
+
+public class DailyMarketCapIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    [Keyword] public string IncrMarketCap { get; set; }
+
+    [Keyword] public string Price { get; set; }
+
+    [Keyword] public string FDV { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+}
+
+public class DailySupplyGrowthIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    [Keyword] public string IncrSupply { get; set; }
+
+    [Keyword] public string Reward { get; set; }
+
+    [Keyword] public string Burnt { get; set; }
+
+
+    [Keyword] public string ChainId { get; set; }
+}
+
+public class DailyStakedIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    [Keyword] public string BpStaked { get; set; }
+
+    [Keyword] public string VoteStaked { get; set; }
+
+    [Keyword] public string Supply { get; set; }
+
+
+    [Keyword] public string ChainId { get; set; }
+}
+
+public class DailySupplyChange : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    public List<string> SupplyChange { get; set; } = new();
+
+    public long TotalSupply { get; set; }
+    [Keyword] public string ChainId { get; set; }
+}
+
+public class DailyVotedIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    [Keyword] public string VoteId { get; set; }
+
+    public double VoteAmount { get; set; }
+
+
+    [Keyword] public string ChainId { get; set; }
+}
+
+public class TransactionErrInfoIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return "_" + ChainId; }
+    }
+
+    public DateTime HappenTime { get; set; }
+    [Keyword] public string ChainId { get; set; }
+
+    [Keyword] public string ErrMsg { get; set; }
+
     public long StartBlockHeight { get; set; }
     public long EndBlockHeight { get; set; }
 }

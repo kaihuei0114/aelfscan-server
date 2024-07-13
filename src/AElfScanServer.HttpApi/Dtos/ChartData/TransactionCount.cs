@@ -9,6 +9,9 @@ public class ChartDataRequest
 {
     public long StartDate { get; set; } = 0;
     public long EndDate { get; set; } = 0;
+
+    public int DateInterval { get; set; }
+
     public string ChainId { get; set; }
 }
 
@@ -59,15 +62,13 @@ public class JonInfoResp
 {
     public long RedisLastBlockHeight { get; set; }
 
-    public long EsLastBlockHeight { get; set; }
-
     public long RedisLastRound { get; set; }
     public long EsLastRound { get; set; }
     public string EsLastRoundDate { get; set; }
-    public string EsTransactionLastDate { get; set; }
-
-
     public long BlockSizeBlockHeight { get; set; }
+
+    public string TransactionLastDate { get; set; }
+    public int TransactionDateCount { get; set; }
 }
 
 public class DailyTransactionCountResp
@@ -88,6 +89,15 @@ public class DailyAvgTransactionFeeResp
     public DailyAvgTransactionFee Lowest { get; set; }
 }
 
+public class DailyTransactionFeeResp
+{
+    public long Total { get; set; }
+    public List<DailyTransactionFee> List { get; set; }
+
+    public DailyTransactionFee Highest { get; set; }
+    public DailyTransactionFee Lowest { get; set; }
+}
+
 public class DailyAvgTransactionFee
 {
     public long Date { get; set; }
@@ -98,6 +108,15 @@ public class DailyAvgTransactionFee
 
     public string TotalFeeElf { get; set; }
     public int TransactionCount { get; set; }
+
+    public string DateStr { get; set; }
+}
+
+public class DailyTransactionFee
+{
+    public long Date { get; set; }
+
+    public string TotalFeeElf { get; set; }
 
     public string DateStr { get; set; }
 }
@@ -194,4 +213,129 @@ public class ElfPrice
     public string High { get; set; }
     public string Low { get; set; }
     public string Price { get; set; }
+}
+
+public class DailyTotalContractCallResp
+{
+    public long Total { get; set; }
+    public List<DailyTotalContractCall> List { get; set; }
+
+    public DailyTotalContractCall Highest { get; set; }
+    public DailyTotalContractCall Lowest { get; set; }
+}
+
+public class TopContractCallResp
+{
+    public long Total { get; set; }
+    public List<TopContractCall> List { get; set; }
+
+    public TopContractCall Highest { get; set; }
+    public TopContractCall Lowest { get; set; }
+}
+
+public class DailyTotalContractCall
+{
+    public long Date { get; set; }
+    public string DateStr { get; set; }
+
+
+    public long CallCount { get; set; }
+
+    public long CallAddressCount { get; set; }
+}
+
+public class TopContractCall
+{
+    public long CallCount { get; set; }
+
+    public long CallAddressCount { get; set; }
+
+    public string CallRate { get; set; }
+    public string ContractName { get; set; }
+
+    public string ContractAddress { get; set; }
+}
+
+public class DailyMarketCapResp
+{
+    public long Total { get; set; }
+    public List<DailyMarketCap> List { get; set; }
+
+    public DailyMarketCap Highest { get; set; }
+    public DailyMarketCap Lowest { get; set; }
+}
+
+public class DailySupplyGrowthResp
+{
+    public long Total { get; set; }
+    public List<DailySupplyGrowth> List { get; set; }
+
+    public DailySupplyGrowth Highest { get; set; }
+    public DailySupplyGrowth Lowest { get; set; }
+}
+
+public class DailyMarketCap
+{
+    public long Date { get; set; }
+    public string DateStr { get; set; }
+
+    public string TotalMarketCap { get; set; }
+
+    public string FDV { get; set; }
+
+    public string Price { get; set; }
+
+    public string IncrMarketCap { get; set; }
+}
+
+public class DailySupplyGrowth
+{
+    public long Date { get; set; }
+    public string DateStr { get; set; }
+
+    public string TotalSupply { get; set; } = "0";
+
+    public string IncrSupply { get; set; }
+
+    public string Reward { get; set; }
+
+    public string Burnt { get; set; }
+}
+
+public class DailyStakedResp
+{
+    public long Total { get; set; }
+    public List<DailyStaked> List { get; set; }
+}
+
+public class DailyHolderResp
+{
+    public long Total { get; set; }
+    public List<DailyHolder> List { get; set; }
+
+    public DailyHolder Highest { get; set; }
+    public DailyHolder Lowest { get; set; }
+}
+
+public class DailyHolder
+{
+    public long Date { get; set; }
+    public string DateStr { get; set; }
+
+    public long Count { get; set; }
+}
+
+public class DailyStaked
+{
+    public long Date { get; set; }
+    public string DateStr { get; set; }
+
+    public string TotalStaked { get; set; }
+    public string BpStaked { get; set; }
+
+    public string VoteStaked { get; set; }
+
+    public string Supply { get; set; }
+
+    public string Rate { get; set; }
 }
