@@ -588,6 +588,10 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         foreach (var data in datList)
         {
             data.Price = double.Parse(data.Price).ToString("F6");
+            if (data.Date == 0)
+            {
+                data.Date = DateTimeHelper.ConvertYYMMDD(data.DateStr);
+            }
         }
 
 
