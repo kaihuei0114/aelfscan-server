@@ -58,6 +58,7 @@ public class AElfScanServerWorkerModule : AbpModule
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
         context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
         context.Services.AddSingleton<NodeProvider, NodeProvider>();
+        context.Services.AddSingleton<IAwakenIndexerProvider, AwakenIndexerProvider>();
 
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AElfScanWorker:"; });
         Configure<BlockChainProducerInfoSyncWorkerOptions>(configuration.GetSection("BlockChainProducer"));
@@ -218,13 +219,13 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
+        context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
         context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
         context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
         context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
         context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
         context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
         context.AddBackgroundWorkerAsync<BnElfUsdtPriceWorker>();
-        context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
         context.AddBackgroundWorkerAsync<NetworkStatisticWorker>();
         context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
         context.AddBackgroundWorkerAsync<BlockSizeWorker>();

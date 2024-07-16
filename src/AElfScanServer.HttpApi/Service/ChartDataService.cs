@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Client.Dto;
+using AElf.Client.Service;
+using AElf.Contracts.Consensus.AEDPoS;
 using AElf.EntityMapping.Repositories;
 using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Dtos.Indexer;
@@ -15,10 +19,13 @@ using AElfScanServer.HttpApi.Helper;
 using AElfScanServer.HttpApi.Options;
 using AElfScanServer.HttpApi.Provider;
 using Elasticsearch.Net;
+using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
@@ -72,6 +79,10 @@ public interface IChartDataService
 
     public Task<DailyHolderResp> GetDailyHolderRespAsync(ChartDataRequest request);
 
+    public Task<DailyTVLResp> GetDailyTVLRespAsync(ChartDataRequest request);
+
+    public Task<NodeProduceBlockInfoResp> GetNodeProduceBlockInfoRespAsync(NodeProduceBlockRequest request);
+
     public Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request);
 
     public Task<JonInfoResp> GetJobInfo(SetJob request);
@@ -103,6 +114,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IEntityMappingRepository<DailyMarketCapIndex, string> _dailyMarketCapIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyGrowthIndex, string> _dailySupplyGrowthIndexRepository;
     private readonly IEntityMappingRepository<DailyStakedIndex, string> _dailyStakedIndexRepository;
+    private readonly IEntityMappingRepository<DailyTVLIndex, string> _dailyTVLRepository;
     private readonly IDailyHolderProvider _dailyHolderProvider;
     private readonly IEntityMappingRepository<DailyTransactionRecordIndex, string> _transactionRecordIndexRepository;
 
@@ -136,6 +148,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         IEntityMappingRepository<DailySupplyGrowthIndex, string> dailySupplyGrowthIndexRepository,
         IEntityMappingRepository<DailyStakedIndex, string> dailyStakedIndexRepository,
         IEntityMappingRepository<DailyTransactionRecordIndex, string> transactionRecordIndexRepository,
+        IEntityMappingRepository<DailyTVLIndex, string> dailyTVLRepository,
         IDailyHolderProvider dailyHolderProvider,
         IOptionsMonitor<ElasticsearchOptions> options) : base(
         optionsAccessor)
@@ -171,6 +184,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _dailyStakedIndexRepository = dailyStakedIndexRepository;
         _transactionRecordIndexRepository = transactionRecordIndexRepository;
         _dailyHolderProvider = dailyHolderProvider;
+        _dailyTVLRepository = dailyTVLRepository;
     }
 
 
@@ -225,6 +239,79 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         return jonInfoResp;
     }
 
+
+    public async Task<NodeProduceBlockInfoResp> GetNodeProduceBlockInfoRespAsync(NodeProduceBlockRequest request)
+    {
+        var currentRound = await GetCurrentRound(request.ChainId);
+
+        var nodeBlockProduceResp = new NodeProduceBlockInfoResp()
+        {
+            NodeAddress = request.NodeAddress,
+            NodeName = await GetBpName(request.ChainId, request.NodeAddress)
+        };
+
+        foreach (var minerInRound in currentRound.RealTimeMinersInformation)
+        {
+            if (minerInRound.Key != request.NodeAddress)
+            {
+                continue;
+            }
+
+            nodeBlockProduceResp.BlockCount = minerInRound.Value.ActualMiningTimes.Count;
+        }
+
+        return nodeBlockProduceResp;
+    }
+
+    public async Task<DailyTVLResp> GetDailyTVLRespAsync(ChartDataRequest request)
+    {
+        var queryable = await _dailyTVLRepository.GetQueryableAsync();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000)
+            .ToList();
+
+
+        var dailyTvls = new List<DailyTVL>();
+        var dailyTvlIndex = indexList.First();
+        dailyTvlIndex.BPLockedAmount = 500000;
+        dailyTvls.Add(new DailyTVL()
+        {
+            Date = dailyTvlIndex.Date,
+            DateStr = dailyTvlIndex.DateStr,
+            BPLocked = (dailyTvlIndex.BPLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
+            VoteLocked = (dailyTvlIndex.VoteLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
+            AwakenLocked = (dailyTvlIndex.AwakenLocked * dailyTvlIndex.DailyPrice).ToString("F2"),
+            TVL = ((dailyTvlIndex.BPLockedAmount + dailyTvlIndex.VoteLockedAmount + dailyTvlIndex.AwakenLocked) *
+                   dailyTvlIndex.DailyPrice)
+                .ToString("F2")
+        });
+
+        for (var i = 1; i < indexList.Count; i++)
+        {
+            indexList[i].BPLockedAmount += indexList[i - 1].BPLockedAmount;
+            indexList[i].VoteLockedAmount += indexList[i - 1].VoteLockedAmount;
+
+            dailyTvls.Add(new DailyTVL()
+            {
+                Date = indexList[i].Date,
+                DateStr = indexList[i].DateStr,
+                BPLocked = (indexList[i].BPLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
+                VoteLocked = (indexList[i].VoteLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
+                AwakenLocked = (indexList[i].AwakenLocked * dailyTvlIndex.DailyPrice).ToString("F2"),
+                TVL = ((indexList[i].BPLockedAmount + indexList[i].VoteLockedAmount + indexList[i].AwakenLocked) *
+                       dailyTvlIndex.DailyPrice).ToString()
+            });
+        }
+
+        var resp = new DailyTVLResp()
+        {
+            List = dailyTvls.OrderBy(c => c.DateStr).ToList(),
+            Total = dailyTvls.Count,
+            Highest = dailyTvls.MaxBy(c => double.Parse(c.TVL)),
+            Lowest = dailyTvls.MinBy(c => double.Parse(c.TVL)),
+        };
+
+        return resp;
+    }
 
     public async Task<DailyHolderResp> GetDailyHolderRespAsync(ChartDataRequest request)
     {
@@ -1135,5 +1222,32 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         contractNames.TryGetValue(address, out var contractName);
 
         return contractName;
+    }
+
+    internal async Task<Round> GetCurrentRound(string chainId)
+    {
+        var client = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
+
+        var param = new StringValue()
+        {
+            Value = chainId
+        };
+
+
+        var transaction = await client.GenerateTransactionAsync(
+            client.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
+            _globalOptions.CurrentValue.ContractAddressConsensus[chainId],
+            "GetCurrentRoundInformation", param);
+
+
+        var signTransaction = client.SignTransaction(GlobalOptions.PrivateKey, transaction);
+
+        var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto()
+        {
+            RawTransaction = HexByteConvertorExtensions.ToHex(signTransaction.ToByteArray())
+        });
+
+        var round = Round.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
+        return round;
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElfScanServer.Common.Dtos.ChartData;
+using Nest;
 
 namespace AElfScanServer.HttpApi.Dtos.ChartData;
 
@@ -338,4 +339,41 @@ public class DailyStaked
     public string Supply { get; set; }
 
     public string Rate { get; set; }
+}
+
+public class DailyTVLResp
+{
+    public long Total { get; set; }
+    public List<DailyTVL> List { get; set; }
+
+    public DailyTVL Highest { get; set; }
+    public DailyTVL Lowest { get; set; }
+}
+
+public class DailyTVL
+{
+    public string DateStr { get; set; }
+    public string TVL { get; set; }
+
+    public long Date { get; set; }
+    public string BPLocked { get; set; }
+
+    public string VoteLocked { get; set; }
+
+    public string AwakenLocked { get; set; }
+}
+
+public class NodeProduceBlockInfoResp
+{
+    public string NodeAddress { get; set; }
+    public string NodeName { get; set; }
+    public int BlockCount { get; set; }
+    public int MissedBlockCount { get; set; }
+}
+
+public class NodeProduceBlockRequest
+{
+    public string NodeAddress { get; set; }
+
+    public string ChainId { get; set; }
 }

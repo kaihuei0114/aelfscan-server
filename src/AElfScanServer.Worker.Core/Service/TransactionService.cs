@@ -23,6 +23,7 @@ using AElfScanServer.Common.EsIndex;
 using AElfScanServer.Worker.Core.Provider;
 using Elasticsearch.Net;
 using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.NodeProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.HttpApi.Dtos;
@@ -117,7 +118,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailyVotedIndex, string> _dailyVotedIndexRepository;
     private readonly IEntityMappingRepository<TransactionErrInfoIndex, string> _transactionErrInfoIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyChange, string> _dailySupplyChangeRepository;
+    private readonly IEntityMappingRepository<DailyTVLIndex, string> _dailyTVLIndexRepository;
     private readonly IPriceServerProvider _priceServerProvider;
+    private readonly IAwakenIndexerProvider _awakenIndexerProvider;
 
 
     private readonly IEntityMappingRepository<AddressIndex, string> _addressRepository;
@@ -131,7 +134,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private static object _lock = new object();
 
     private static Timer timer;
-    private static long PullTransactioninterval = 4000 - 1;
+    private static long PullTransactioninterval = 2000 - 1;
 
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
@@ -169,6 +172,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyVotedIndex, string> dailyVotedIndexRepository,
         IEntityMappingRepository<TransactionErrInfoIndex, string> transactionErrInfoIndexRepository,
         IEntityMappingRepository<DailySupplyChange, string> dailySupplyChangeRepository,
+        IEntityMappingRepository<DailyTVLIndex, string> dailyTVLIndexRepository,
+        IAwakenIndexerProvider awakenIndexerProvider,
         IPriceServerProvider priceServerProvider) :
         base(optionsAccessor)
     {
@@ -211,11 +216,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _dailyTotalContractCallRepository = dailyTotalContractCallRepository;
         _dailyMarketCapIndexRepository = dailyMarketCapIndexRepository;
         _dailySupplyGrowthIndexRepository = dailySupplyGrowthIndexRepository;
+        _awakenIndexerProvider = awakenIndexerProvider;
         _priceServerProvider = priceServerProvider;
         _dailyStakedIndexRepository = dailyStakedIndexRepository;
         _dailyVotedIndexRepository = dailyVotedIndexRepository;
         _transactionErrInfoIndexRepository = transactionErrInfoIndexRepository;
         _dailySupplyChangeRepository = dailySupplyChangeRepository;
+        _dailyTVLIndexRepository = dailyTVLIndexRepository;
     }
 
     public async Task BlockSizeTask()
@@ -542,6 +549,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     new DailyTransactionsChartSet(transaction.ChainId, totalMilliseconds, date);
                 dailyTransactionsChartSet.StartTime = DateTime.UtcNow;
                 dailyTransactionsChartSet.Date = date;
+                dailyTransactionsChartSet.DateTimeStamp = totalMilliseconds;
                 dic[date] = dailyTransactionsChartSet;
             }
 
@@ -726,7 +734,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             needUpdateData.DailyMarketCapIndex.IncrMarketCap =
                 (dailyElfPrice * needUpdateData.TotalSupply / 1e8).ToString("F6");
             needUpdateData.DailyMarketCapIndex.FDV =
-                (dailyElfPrice * 100000000000000000).ToString("F6");
+                (dailyElfPrice * 1000000000).ToString("F6");
             needUpdateData.DailyMarketCapIndex.Price = dailyElfPrice.ToString("F6");
 
             needUpdateData.DailySupplyGrowthIndex.IncrSupply =
@@ -805,6 +813,17 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             needUpdateData.TotalVotedStaked -= withDrawVotedAmount;
             needUpdateData.DailyStakedIndex.VoteStaked = needUpdateData.TotalVotedStaked.ToString("F4");
             needUpdateData.DailyStakedIndex.Supply = needUpdateData.DailySupplyGrowthIndex.IncrSupply;
+            needUpdateData.DailyTVLIndex.DailyPrice = dailyElfPrice;
+
+
+            needUpdateData.DailyTVLIndex.BPLockedAmount = needUpdateData.TotalBpStaked;
+            needUpdateData.DailyTVLIndex.VoteLockedAmount = needUpdateData.TotalVotedStaked;
+            if (chainId != "AELF")
+            {
+                var awakenTvl = await _awakenIndexerProvider.GetAwakenTvl(chainId, needUpdateData.DateTimeStamp);
+                needUpdateData.DailyTVLIndex.AwakenLocked = awakenTvl == null ? 0 : awakenTvl.Value;
+            }
+            
 
             var startNew = Stopwatch.StartNew();
             await _avgTransactionFeeRepository.AddOrUpdateAsync(needUpdateData.DailyAvgTransactionFeeIndex);
@@ -819,6 +838,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             await _dailyMarketCapIndexRepository.AddOrUpdateAsync(needUpdateData.DailyMarketCapIndex);
             await _dailySupplyGrowthIndexRepository.AddOrUpdateAsync(needUpdateData.DailySupplyGrowthIndex);
             await _dailyStakedIndexRepository.AddOrUpdateAsync(needUpdateData.DailyStakedIndex);
+            await _dailyTVLIndexRepository.AddOrUpdateAsync(needUpdateData.DailyTVLIndex);
             if (!dailyContractCallIndexList.IsNullOrEmpty())
             {
                 await _dailyContractCallRepository.AddOrUpdateManyAsync(dailyContractCallIndexList);

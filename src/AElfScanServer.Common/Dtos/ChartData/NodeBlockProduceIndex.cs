@@ -152,6 +152,7 @@ public class DailyTransactionsChartSet
     public DailyHasFeeTransactionIndex DailyHasFeeTransactionIndex { get; set; }
     public DailyMarketCapIndex DailyMarketCapIndex { get; set; }
     public DailySupplyGrowthIndex DailySupplyGrowthIndex { get; set; }
+    public DailyTVLIndex DailyTVLIndex { get; set; }
 
     public Dictionary<string, DailyVotedIndex> DailyVotedIndexDic { get; set; }
 
@@ -162,6 +163,8 @@ public class DailyTransactionsChartSet
     public DailySupplyChange DailySupplyChange { get; set; }
     public Dictionary<string, HashSet<string>> CallersDic { get; set; } = new();
     public string Date { get; set; }
+    
+    public long DateTimeStamp { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime WirteFinishiTime { get; set; }
 
@@ -281,6 +284,12 @@ public class DailyTransactionsChartSet
             DateStr = date
         };
 
+        DailyTVLIndex = new DailyTVLIndex()
+        {
+            ChainId = chainId,
+            Date = totalMilliseconds,
+            DateStr = date
+        };
 
         AddressSet = new HashSet<string>();
 
@@ -686,4 +695,27 @@ public class TransactionErrInfoIndex : AElfIndexerEntity<string>, IEntityMapping
 
     public long StartBlockHeight { get; set; }
     public long EndBlockHeight { get; set; }
+}
+
+public class DailyTVLIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId; }
+    }
+
+    [Keyword] public string DateStr { get; set; }
+    public double TVL { get; set; }
+
+    public double DailyPrice { get; set; }
+    public long Date { get; set; }
+    public double BPLockedAmount { get; set; }
+
+    public double VoteLockedAmount { get; set; }
+
+    public double AwakenLocked { get; set; }
+
+
+    [Keyword] public string ChainId { get; set; }
 }
