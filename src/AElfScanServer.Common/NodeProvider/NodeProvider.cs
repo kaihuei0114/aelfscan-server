@@ -58,13 +58,13 @@ public class NodeProvider : AbpRedisCache, ISingletonDependency
             {
                 ChainId = chainId,
                 BlockHeight = blockHeight,
-                ErrMsg = e.Message,
+                // ErrMsg = e,
                 Date = DateTime.UtcNow
             };
             await _blockSizeErrInfoIndexRepository.AddOrUpdateAsync(blockSizeErrInfoIndex);
             var blockSizeDto = new BlockSizeDto();
             blockSizeDto.PullFalse = true;
-            _logger.LogError("GetBlockSize {c},blockHiegh:{h} ,error: {0}", chainId, blockHeight, e.Message);
+            _logger.LogError("GetBlockSize {c},blockHiegh:{h} ,error: {0}", chainId, blockHeight, e);
             return null;
         }
     }

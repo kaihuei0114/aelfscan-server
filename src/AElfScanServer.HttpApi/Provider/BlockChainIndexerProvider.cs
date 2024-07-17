@@ -132,7 +132,7 @@ public class BlockChainIndexerProvider : IBlockChainIndexerProvider, ISingletonD
         }
         catch (Exception e)
         {
-            _logger.LogError("Get {0}transaction count error from blockchain app plugin:{1}", chainId, e.Message);
+            _logger.LogError("Get {0}transaction count error from blockchain app plugin:{1}", chainId, e);
         }
 
         return 0;

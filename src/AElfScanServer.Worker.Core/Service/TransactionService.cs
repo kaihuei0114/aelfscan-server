@@ -134,7 +134,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private static object _lock = new object();
 
     private static Timer timer;
-    private static long PullTransactioninterval = 2000 - 1;
+    private static long PullTransactioninterval = 4000 - 1;
 
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
@@ -248,15 +248,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var lastBlockHeight = redisValue.IsNullOrEmpty ? 0 : long.Parse(redisValue);
         while (true)
         {
-            try
-            {
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-
             var tasks = new List<Task>();
             var blockSizeIndices = new List<BlockSizeDto>();
             var _lock = new object();
@@ -282,7 +273,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             catch (Exception e)
             {
                 _logger.LogError("BatchPullBlockSize err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
-                    chainId, e.Message, lastBlockHeight - BlockSizeInterval,
+                    chainId, e, lastBlockHeight - BlockSizeInterval,
                     lastBlockHeight);
                 break;
             }
@@ -402,7 +393,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogError("UpdateElfPrice err:{e}", e.Message);
+            _logger.LogError("UpdateElfPrice err:{e}", e);
         }
     }
 
@@ -517,7 +508,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             {
                 _logger.LogError(
                     "BatchPullTransactionTask err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}", chainId,
-                    e.Message, lastBlockHeight,
+                    e, lastBlockHeight,
                     lastBlockHeight + PullTransactioninterval);
             }
         }
@@ -621,6 +612,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         break;
 
                     case nameof(Voted):
+                        if (_globalOptions.CurrentValue.ContractAddressConsensus[chainId] != transaction.To)
+                        {
+                            continue;
+                        }
+
                         var voted = new Voted();
                         voted.MergeFrom(logEvent);
                         var votedAmount = (double)voted.Amount / 1e8;
@@ -747,19 +743,17 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 c.CallAddressCount = needUpdateData.CallersDic[c.ContractAddress].Count;
                 return c;
             }).ToList();
+
+
             var query = await _addressRepository.GetQueryableAsync();
             query = query.Where(c => c.ChainId == chainId);
-
 
             var predicates = needUpdateData.AddressSet.Select(s =>
                 (Expression<Func<AddressIndex, bool>>)(o => o.Address == s));
             var predicate = predicates.Aggregate((prev, next) => prev.Or(next));
             query = query.Where(predicate);
             var addressList = query.Take(10000).ToList();
-
-
             var addressIndices = new List<AddressIndex>();
-
             if (addressList.IsNullOrEmpty())
             {
                 needUpdateData.DailyUniqueAddressCountIndex.AddressCount = needUpdateData.AddressSet.Count;
@@ -777,15 +771,21 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             {
                 needUpdateData.DailyUniqueAddressCountIndex.AddressCount =
                     needUpdateData.AddressSet.Count - addressList.Count;
+                var findedAddressList = new List<string>();
                 foreach (var addressIndex in addressList)
                 {
                     needUpdateData.DailyUniqueAddressCountIndex.AddressCount += addressIndex.Date == minDate ? 1 : 0;
-                    if (!needUpdateData.AddressSet.Contains(addressIndex.Address))
+                    findedAddressList.Add(addressIndex.Address);
+                }
+
+                foreach (var s in needUpdateData.AddressSet)
+                {
+                    if (!findedAddressList.Contains(s))
                     {
                         addressIndices.Add(new AddressIndex()
                         {
                             Date = minDate,
-                            Address = addressIndex.Address,
+                            Address = s,
                             ChainId = chainId
                         });
                     }
@@ -823,7 +823,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 var awakenTvl = await _awakenIndexerProvider.GetAwakenTvl(chainId, needUpdateData.DateTimeStamp);
                 needUpdateData.DailyTVLIndex.AwakenLocked = awakenTvl == null ? 0 : awakenTvl.Value;
             }
-            
+
 
             var startNew = Stopwatch.StartNew();
             await _avgTransactionFeeRepository.AddOrUpdateAsync(needUpdateData.DailyAvgTransactionFeeIndex);
@@ -903,7 +903,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogError("GetWithDrawVotedAmount {chainId},{list},err:{e}", chainId, voteIds, e.Message);
+            _logger.LogError("GetWithDrawVotedAmount {chainId},{list},err:{e}", chainId, voteIds, e);
             return 0;
         }
     }
@@ -1010,7 +1010,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
             catch (Exception e)
             {
-                _logger.LogError("TaskERR，UpdateDailyNetwork {c},{e}", chainId, e.Message);
+                _logger.LogError("TaskERR，UpdateDailyNetwork {c},{e}", chainId, e);
                 throw;
             }
         }
@@ -1057,7 +1057,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 }
                 catch (Exception e)
                 {
-                    _logger.LogInformation("Get round err,{e}", e.Message);
+                    _logger.LogInformation("Get round err,{e}", e);
                     Thread.Sleep(1000 * 20);
                 }
 
@@ -1092,7 +1092,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
             catch (Exception e)
             {
-                _logger.LogError("BatchUpdateNodeNetworkTask err:{c},{e}", chainId, e.Message);
+                _logger.LogError("BatchUpdateNodeNetworkTask err:{c},{e}", chainId, e);
             }
         }
     }
@@ -1411,7 +1411,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogError("Update transaction count per minute error:{e}", e.Message);
+            _logger.LogError("Update transaction count per minute error:{e}", e);
         }
     }
 
@@ -1472,7 +1472,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogInformation("Parse key:{0} data to transaction err:{1}", key, e.Message);
+            _logger.LogInformation("Parse key:{0} data to transaction err:{1}", key, e);
         }
 
         return newList;
@@ -1510,7 +1510,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogError("GetElfPrice err:{e},date:{d}", e.Message, date.Replace("-", ""));
+            _logger.LogError("GetElfPrice err:{e},date:{d}", e, date.Replace("-", ""));
             return 0;
         }
     }

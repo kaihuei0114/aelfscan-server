@@ -196,7 +196,7 @@ public class AELFIndexerProvider : ISingletonDependency
         {
             _logger.LogError(
                 "get transaction list from AELFIndexer error:{c}:{error},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
-                chainId, e.Message, startBlockHeight, endBlockHeight);
+                chainId, e, startBlockHeight, endBlockHeight);
             return new List<TransactionIndex>();
         }
     }

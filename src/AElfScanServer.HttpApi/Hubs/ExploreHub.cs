@@ -94,7 +94,7 @@ public class ExploreHub : AbpHub
             }
             catch (Exception e)
             {
-                _logger.LogError("push bp produce error: {error}", e.Message);
+                _logger.LogError("push bp produce error: {error}", e);
             }
         }
     }
@@ -145,7 +145,7 @@ public class ExploreHub : AbpHub
             }
             catch (Exception e)
             {
-                _logger.LogError("push transaction error: {error}", e.Message);
+                _logger.LogError("push transaction error: {error}", e);
             }
         }
     }
@@ -196,7 +196,7 @@ public class ExploreHub : AbpHub
             }
             catch (Exception e)
             {
-                _logger.LogError("push block overview error: {error}", e.Message);
+                _logger.LogError("push block overview error: {error}", e);
             }
         }
     }
@@ -253,7 +253,7 @@ public class ExploreHub : AbpHub
             }
             catch (Exception e)
             {
-                _logger.LogError("Push blocks error: {error}", e.Message);
+                _logger.LogError("Push blocks error: {error}", e);
             }
         }
     }
@@ -306,7 +306,7 @@ public class ExploreHub : AbpHub
             }
             catch (Exception e)
             {
-                _logger.LogError("Push transaction count per minute error: {error}", e.Message);
+                _logger.LogError("Push transaction count per minute error: {error}", e);
             }
         }
     }
