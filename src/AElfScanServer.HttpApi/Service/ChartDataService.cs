@@ -246,18 +246,23 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var nodeBlockProduceResp = new NodeProduceBlockInfoResp()
         {
-            NodeAddress = request.NodeAddress,
-            NodeName = await GetBpName(request.ChainId, request.NodeAddress)
+            List = new List<NodeProduceBlockInfo>()
         };
 
+        var client = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[request.ChainId]);
+
+        nodeBlockProduceResp.RoundNumber = currentRound.RoundNumber;
         foreach (var minerInRound in currentRound.RealTimeMinersInformation)
         {
-            if (minerInRound.Key != request.NodeAddress)
-            {
-                continue;
-            }
+            var bpAddress = client.GetAddressFromPubKey(minerInRound.Key);
 
-            nodeBlockProduceResp.BlockCount = minerInRound.Value.ActualMiningTimes.Count;
+            nodeBlockProduceResp.List.Add(new NodeProduceBlockInfo()
+            {
+                NodeAddress = bpAddress,
+                BlockCount = minerInRound.Value.ActualMiningTimes.Count,
+                Order = minerInRound.Value.Order,
+                ExpectingTime = minerInRound.Value.ExpectedMiningTime.Seconds
+            });
         }
 
         return nodeBlockProduceResp;
@@ -1228,9 +1233,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     {
         var client = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[chainId]);
 
-        var param = new StringValue()
+        var param = new Empty()
         {
-            Value = chainId
         };
 
 

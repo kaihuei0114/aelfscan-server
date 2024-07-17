@@ -365,15 +365,19 @@ public class DailyTVL
 
 public class NodeProduceBlockInfoResp
 {
+    public long RoundNumber { get; set; }
+    public List<NodeProduceBlockInfo> List { get; set; }
+}
+
+public class NodeProduceBlockInfo
+{
     public string NodeAddress { get; set; }
-    public string NodeName { get; set; }
+    public int Order { get; set; }
+    public long ExpectingTime { get; set; }
     public int BlockCount { get; set; }
-    public int MissedBlockCount { get; set; }
 }
 
 public class NodeProduceBlockRequest
 {
-    public string NodeAddress { get; set; }
-
     public string ChainId { get; set; }
 }

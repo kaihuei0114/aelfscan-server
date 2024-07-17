@@ -25,6 +25,7 @@ public class ExploreHub : AbpHub
     private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
     private readonly DataStrategyContext<string, TransactionsResponseDto> _latestTransactionsDataStrategy;
     private readonly DataStrategyContext<string, BlocksResponseDto> _latestBlocksDataStrategy;
+    private readonly DataStrategyContext<string, BlockProduceInfoDto> _bpDataStrategy;
     private static readonly object _lock = new object();
     private static readonly HashSet<string> _isPushRunning = new HashSet<string>();
 
@@ -32,6 +33,7 @@ public class ExploreHub : AbpHub
     public ExploreHub(IHomePageService homePageService, ILogger<ExploreHub> logger,
         IBlockChainService blockChainService, IHubContext<ExploreHub> hubContext,
         OverviewDataStrategy overviewDataStrategy, LatestTransactionDataStrategy latestTransactionsDataStrategy,
+        CurrentBpProduceDataStrategy bpDataStrategy,
         LatestBlocksDataStrategy latestBlocksDataStrategy)
     {
         _HomePageService = homePageService;
@@ -43,6 +45,58 @@ public class ExploreHub : AbpHub
             new DataStrategyContext<string, TransactionsResponseDto>(latestTransactionsDataStrategy);
         _latestBlocksDataStrategy =
             new DataStrategyContext<string, BlocksResponseDto>(latestBlocksDataStrategy);
+        _bpDataStrategy = new DataStrategyContext<string, BlockProduceInfoDto>(bpDataStrategy);
+    }
+
+
+    public async Task RequestBpProduce(CommonRequest request)
+    {
+        var resp = await _bpDataStrategy.DisplayData(request.ChainId);
+
+        await Groups.AddToGroupAsync(Context.ConnectionId,
+            HubGroupHelper.GetBpProduceGroupName(request.ChainId));
+        _logger.LogInformation("RequestBpProduce: {chainId}", request.ChainId);
+        await Clients.Caller.SendAsync("ReceiveBpProduce", resp);
+
+        PushRequestBpProduceAsync(request.ChainId);
+    }
+
+    public async Task UnsubscribeBpProduce(CommonRequest request)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
+            HubGroupHelper.GetBpProduceGroupName(request.ChainId));
+    }
+
+
+    public async Task PushRequestBpProduceAsync(string chainId)
+    {
+        lock (_lock)
+        {
+            var key = "bpProduce" + chainId;
+            if (_isPushRunning.Contains(key))
+            {
+                return;
+            }
+
+            _isPushRunning.Add(key);
+        }
+
+        while (true)
+        {
+            Thread.Sleep(2000);
+
+            try
+            {
+                var resp = await _bpDataStrategy.DisplayData(chainId);
+
+                await _hubContext.Clients.Groups(HubGroupHelper.GetBpProduceGroupName(chainId))
+                    .SendAsync("ReceiveBpProduce", resp);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("push bp produce error: {error}", e.Message);
+            }
+        }
     }
 
 
@@ -56,6 +110,12 @@ public class ExploreHub : AbpHub
         await Clients.Caller.SendAsync("ReceiveLatestTransactions", resp);
 
         PushLatestTransactionsAsync(request.ChainId);
+    }
+
+    public async Task UnsubscribeLatestTransactions(CommonRequest request)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
+            HubGroupHelper.GetLatestTransactionsGroupName(request.ChainId));
     }
 
 
@@ -90,18 +150,6 @@ public class ExploreHub : AbpHub
         }
     }
 
-    public async Task UnsubscribeLatestBlocks(string chainId)
-    {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
-            HubGroupHelper.GetLatestBlocksGroupName(chainId));
-    }
-
-    public async Task UnsubscribeLatestTransactions(string chainId)
-    {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
-            HubGroupHelper.GetLatestTransactionsGroupName(chainId));
-    }
-
 
     public async Task RequestBlockchainOverview(BlockchainOverviewRequestDto request)
     {
@@ -112,6 +160,13 @@ public class ExploreHub : AbpHub
         await Clients.Caller.SendAsync("ReceiveBlockchainOverview", resp);
         PushBlockOverViewAsync(request.ChainId);
     }
+
+    public async Task UnsubscribeBlockchainOverview(CommonRequest request)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
+            HubGroupHelper.GetBlockOverviewGroupName(request.ChainId));
+    }
+
 
     public async Task PushBlockOverViewAsync(string chainId)
     {
@@ -158,6 +213,12 @@ public class ExploreHub : AbpHub
         await Clients.Caller.SendAsync("ReceiveLatestBlocks", resp);
 
         PushLatestBlocksAsync(request.ChainId);
+    }
+
+    public async Task UnsubscribeRequestLatestBlocks(CommonRequest request)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
+            HubGroupHelper.GetLatestBlocksGroupName(request.ChainId));
     }
 
 
@@ -208,6 +269,13 @@ public class ExploreHub : AbpHub
         _logger.LogInformation("RequestTransactionDataChart: {chainId}", request.ChainId);
         await Clients.Caller.SendAsync("ReceiveTransactionDataChart", resp);
         PushTransactionCountPerMinuteAsync(request.ChainId);
+    }
+
+
+    public async Task UnsubscribeTransactionDataChart(CommonRequest request)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
+            HubGroupHelper.GetTransactionCountPerMinuteGroupName(request.ChainId));
     }
 
 

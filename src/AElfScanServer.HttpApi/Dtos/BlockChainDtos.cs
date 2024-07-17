@@ -11,7 +11,6 @@ using Volo.Abp.Application.Dtos;
 
 namespace AElfScanServer.HttpApi.Dtos;
 
-
 public class LatestTransactionsReq
 {
     public string ChainId { get; set; }
@@ -27,11 +26,20 @@ public class TransactionsRequestDto : PagedResultRequestDto
     public string Address { get; set; } = "";
 }
 
-public class BlockchainOverviewRequestDto
+public class BpDataRequestDto
 {
     public string ChainId { get; set; }
 }
 
+public class CommonRequest
+{
+    public string ChainId { get; set; }
+}
+
+public class BlockchainOverviewRequestDto
+{
+    public string ChainId { get; set; }
+}
 
 public class HomeOverviewResponseDto
 {
@@ -340,6 +348,23 @@ public class BlockResponseDto
     public string BurntFees { get; set; }
 
     public string ProducerName { get; set; }
+
+    public string ProducerAddress { get; set; }
+}
+
+public class BlockProduceInfoDto
+{
+    public List<BlockProduceDto> List { get; set; }
+}
+
+public class BlockProduceDto
+{
+    public int BlockCount { get; set; }
+    public int MissedCount { get; set; }
+    public string ProducerName { get; set; }
+    public bool IsMinning { get; set; }
+
+    public int Order { get; set; }
 
     public string ProducerAddress { get; set; }
 }
