@@ -163,7 +163,7 @@ public class DailyTransactionsChartSet
     public DailySupplyChange DailySupplyChange { get; set; }
     public Dictionary<string, HashSet<string>> CallersDic { get; set; } = new();
     public string Date { get; set; }
-    
+
     public long DateTimeStamp { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime WirteFinishiTime { get; set; }
@@ -182,11 +182,13 @@ public class DailyTransactionsChartSet
     public HashSet<string> AddressToSet { get; set; }
 
 
-    public long TotalBurnt { get; set; }
-    public decimal TotalReward { get; set; }
-    public long TotalFee { get; set; }
+    public double TotalBurnt { get; set; }
+    public double TotalReward { get; set; }
+    public double TotalFee { get; set; }
 
     public double TotalSupply { get; set; }
+
+    public double OrganizationSupply { get; set; }
 
     public DailyTransactionsChartSet(string chainId, long totalMilliseconds, string date)
     {
@@ -613,12 +615,13 @@ public class DailySupplyGrowthIndex : AElfIndexerEntity<string>, IEntityMappingE
     public long Date { get; set; }
     [Keyword] public string DateStr { get; set; }
 
-    [Keyword] public string IncrSupply { get; set; }
+    public double DailySupply { get; set; }
 
-    [Keyword] public string Reward { get; set; }
+    public double DailyReward { get; set; }
 
-    [Keyword] public string Burnt { get; set; }
+    public double DailyBurnt { get; set; }
 
+    public double DailyOrganizationUnlock { get; set; }
 
     [Keyword] public string ChainId { get; set; }
 }

@@ -13,6 +13,10 @@ public class GlobalOptions
 
     public bool IsMainNet { get; set; }
 
+    public bool InitRound { get; set; }
+
+    public List<string> OrganizationAddressList { get; set; }
+
     public Dictionary<string, List<string>> BurntFeeContractAddresses { get; set; } =
         new Dictionary<string, List<string>>();
 

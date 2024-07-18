@@ -152,6 +152,10 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     {
         var tokenUsdPriceAsync = await GetTokenUsdPriceAsync(symbol);
 
+        if (tokenUsdPriceAsync.IsNullOrEmpty())
+        {
+            return "0";
+        }
 
         var tokenDecimals = await GetTokenDecimals(symbol, "AELF");
         var price = double.Parse(tokenUsdPriceAsync);

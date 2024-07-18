@@ -23,6 +23,7 @@ public class SetRoundRequest
     public string StartDate { get; set; }
     public string EndDate { get; set; }
 
+    public bool InitRound { get; set; }
     public int SetNumber { get; set; }
 
     public bool UpdateData { get; set; }
@@ -48,6 +49,10 @@ public class InitRoundResp
 
     public long RoundCount { get; set; }
 
+    public long InitRoundNumber { get; set; }
+
+    public string InitRoundDate { get; set; }
+
     public string MinDate { get; set; }
 
     public List<string> UpdateDate { get; set; }
@@ -70,6 +75,8 @@ public class JonInfoResp
 
     public string TransactionLastDate { get; set; }
     public int TransactionDateCount { get; set; }
+
+    public HomeOverviewResponseDto Overview { get; set; }
 }
 
 public class DailyTransactionCountResp
@@ -270,9 +277,6 @@ public class DailySupplyGrowthResp
 {
     public long Total { get; set; }
     public List<DailySupplyGrowth> List { get; set; }
-
-    public DailySupplyGrowth Highest { get; set; }
-    public DailySupplyGrowth Lowest { get; set; }
 }
 
 public class DailyMarketCap
@@ -296,7 +300,10 @@ public class DailySupplyGrowth
 
     public string TotalSupply { get; set; } = "0";
 
-    public string IncrSupply { get; set; }
+    public string MainChainBurnt { get; set; }
+
+    public string SideChainBurnt { get; set; }
+    public string OrganizationUnlock { get; set; }
 
     public string Reward { get; set; }
 

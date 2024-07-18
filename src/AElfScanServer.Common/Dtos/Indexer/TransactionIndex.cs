@@ -42,6 +42,27 @@ public class TransactionIndex : AElfIndexerEntity<string>, IEntityMappingEntity
     public List<IndexerLogEventDto> LogEvents { get; set; }
 }
 
+public class TransactionData
+{
+    public string TransactionId { get; set; }
+
+    public string From { get; set; }
+
+    public string To { get; set; }
+
+    public long BlockHeight { get; set; }
+
+    public DateTime BlockTime { get; set; }
+
+
+    public string MethodName { get; set; }
+    public string DateStr { get; set; }
+
+    public Dictionary<string, string> ExtraProperties { get; set; }
+
+    public List<IndexerLogEventDto> LogEvents { get; set; }
+}
+
 public class IndexerLogEventDto
 {
     // public string ChainId { get; set; }
