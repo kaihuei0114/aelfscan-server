@@ -18,7 +18,8 @@ public class DailyNetworkStatisticWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<DailyNetworkStatisticWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 1000 * 60 * 60 * 12;
+        timer.Period = 1000 * 60 * 60;
+        timer.RunOnStart = true;
         _logger = logger;
         _transactionService = transactionService;
     }

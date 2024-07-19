@@ -7,15 +7,15 @@ using Volo.Abp.Threading;
 
 namespace AElfScanServer.Worker.Core.Worker;
 
-public class NetworkStatisticWorker : AsyncPeriodicBackgroundWorkerBase
+public class RoundWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly ITransactionService _transactionService;
 
-    private readonly ILogger<NetworkStatisticWorker> _logger;
+    private readonly ILogger<RoundWorker> _logger;
 
 
-    public NetworkStatisticWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        ILogger<NetworkStatisticWorker> logger, ITransactionService transactionService) : base(timer,
+    public RoundWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
+        ILogger<RoundWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
         timer.Period = 1000 * 60;

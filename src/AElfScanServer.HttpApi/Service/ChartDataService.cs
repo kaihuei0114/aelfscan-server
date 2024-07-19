@@ -296,7 +296,16 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         }
 
         sideIndexList[0].BPLockedAmount = 500000;
+        for (var i = 1; i < sideIndexList.Count; i++)
+        {
+            var curSide = sideIndexList[i];
+            var previousSide = sideIndexList[i - 1];
+            curSide.VoteLockedAmount += previousSide.VoteLockedAmount;
+            curSide.BPLockedAmount += previousSide.BPLockedAmount;
+        }
+
         var sideDic = sideIndexList.ToDictionary(c => c.Date, c => c);
+
 
         var dailyTvls = new List<DailyTVL>();
         var dailyTvlIndex = mainIndexList.First();
@@ -322,19 +331,19 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             {
                 curMain.BPLockedAmount += v.BPLockedAmount;
                 curMain.VoteLockedAmount += v.VoteLockedAmount;
-                curMain.AwakenLocked += v.VoteLockedAmount;
+                curMain.AwakenLocked = v.AwakenLocked;
             }
 
             dailyTvls.Add(new DailyTVL()
             {
                 Date = curMain.Date,
                 DateStr = curMain.DateStr,
-                BPLocked = (curMain.BPLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
-                VoteLocked = (curMain.VoteLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
-                AwakenLocked = (curMain.AwakenLocked * dailyTvlIndex.DailyPrice).ToString("F2"),
+                BPLocked = (curMain.BPLockedAmount * curMain.DailyPrice).ToString("F2"),
+                VoteLocked = (curMain.VoteLockedAmount * curMain.DailyPrice).ToString("F2"),
+                AwakenLocked = (curMain.AwakenLocked * curMain.DailyPrice).ToString("F2"),
                 TVL = ((curMain.BPLockedAmount + curMain.VoteLockedAmount +
                         curMain.AwakenLocked) *
-                       dailyTvlIndex.DailyPrice).ToString("F2")
+                       curMain.DailyPrice).ToString("F2")
             });
         }
 
@@ -489,61 +498,48 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var dailySupplyGrowths = new List<DailySupplyGrowth>();
 
-        double curMainBurnt = 0;
-        double curSideBurnt = 0;
+
         for (var i = 0; i < mainIndexList.Count; i++)
         {
             var cur = mainIndexList[i];
-            curMainBurnt += cur.DailyBurnt;
+            double curSideBurnt = 0;
             if (sideDic.TryGetValue(cur.DateStr, out var v))
             {
                 cur.DailySupply += v.DailySupply;
                 cur.DailyBurnt += v.DailyBurnt;
                 cur.DailyReward += v.DailyReward;
                 cur.DailyOrganizationUnlock += v.DailyOrganizationUnlock;
-                curSideBurnt += v.DailyBurnt;
+                curSideBurnt = v.DailyBurnt;
             }
 
+            var curSupplyGrowth = new DailySupplyGrowth()
+            {
+                DateStr = cur.DateStr,
+                Date = cur.Date,
+                Reward = cur.DailyReward.ToString("F4"),
+                Burnt = cur.DailyBurnt.ToString("F4"),
+                SideChainBurnt = curSideBurnt.ToString("F4"),
+                MainChainBurnt = cur.DailyBurnt.ToString("f4"),
+                OrganizationUnlock = cur.DailyOrganizationUnlock.ToString("f4"),
+                TotalSupply = cur.DailySupply.ToString("F4")
+            };
             if (i == 0)
             {
-                dailySupplyGrowths.Add(new DailySupplyGrowth()
-                {
-                    DateStr = cur.DateStr,
-                    Date = cur.Date,
-                    Reward = cur.DailyReward.ToString("F4"),
-                    Burnt = cur.DailyBurnt.ToString("F4"),
-                    SideChainBurnt = curSideBurnt.ToString("F4"),
-                    MainChainBurnt = curMainBurnt.ToString("f4"),
-                    OrganizationUnlock = cur.DailyOrganizationUnlock.ToString("f4"),
-                    TotalSupply = (cur.DailyReward + cur.DailyOrganizationUnlock - cur.DailyBurnt).ToString("F4")
-                });
+                curSupplyGrowth.TotalSupply = cur.DailySupply.ToString("F4");
             }
             else
             {
                 var previous = mainIndexList[i - 1];
-                cur.DailySupply = cur.DailyReward + cur.DailyOrganizationUnlock -
-                    cur.DailyBurnt + previous.DailySupply;
-
-                cur.DailyBurnt = previous.DailyBurnt + cur.DailyBurnt;
-                cur.DailyReward = previous.DailyReward + cur.DailyReward;
-                cur.DailyOrganizationUnlock = previous.DailyOrganizationUnlock + cur.DailyOrganizationUnlock;
-                dailySupplyGrowths.Add(
-                    new DailySupplyGrowth()
-                    {
-                        DateStr = cur.DateStr,
-                        Date = cur.Date,
-                        Reward = (cur.DailyReward).ToString("F4"),
-                        Burnt = (cur.DailyBurnt).ToString("F4"),
-                        SideChainBurnt = curSideBurnt.ToString("F4"),
-                        MainChainBurnt = curMainBurnt.ToString("f4"),
-                        OrganizationUnlock =
-                            (cur.DailyOrganizationUnlock).ToString("F4"),
-                        TotalSupply = (cur.DailySupply).ToString("F4")
-                    }
-                );
+                cur.DailySupply += previous.DailySupply;
+                curSupplyGrowth.TotalSupply = cur.DailySupply.ToString("F4");
             }
         }
 
+
+        if (_globalOptions.CurrentValue.SupplyChartShowOffset > 0)
+        {
+            dailySupplyGrowths = dailySupplyGrowths.Skip(_globalOptions.CurrentValue.SupplyChartShowOffset).ToList();
+        }
 
         var resp = new DailySupplyGrowthResp()
         {

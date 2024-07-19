@@ -967,11 +967,23 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             try
             {
                 var queryable = await _roundIndexRepository.GetQueryableAsync();
-                var todayTotalSeconds = DateTimeHelper.GetTodayTotalSeconds();
-                var tomorrowTotalSeconds = DateTimeHelper.GetTomorrowTotalSeconds();
 
-                var list = queryable.Where(w => w.StartTime >= todayTotalSeconds)
-                    .Where(w => w.StartTime < tomorrowTotalSeconds).Where(c => c.ChainId == chainId).ToList();
+
+                var roundIndices = queryable.Where(c => c.ChainId == chainId).OrderByDescending(c => c.StartTime)
+                    .Take(1);
+
+                if (roundIndices.IsNullOrEmpty())
+                {
+                    return;
+                }
+
+                var startTime = roundIndices.First().StartTime;
+
+                var endTime = DateTimeHelper.GetDateTimeLong(startTime);
+                 startTime = DateTimeHelper.GetBeforeDayMilliSeconds(endTime);
+
+                var list = queryable.Where(c => c.ChainId == chainId).Where(c => c.StartTime >= startTime)
+                    .Where(c => c.StartTime < endTime).Take(10000).ToList();
 
                 if (list.IsNullOrEmpty())
                 {
@@ -980,19 +992,19 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 var blockProduceIndex = new DailyBlockProduceCountIndex()
                 {
-                    Date = todayTotalSeconds * 1000,
+                    Date = startTime,
                     ChainId = chainId
                 };
 
                 var dailyCycleCountIndex = new DailyCycleCountIndex()
                 {
-                    Date = todayTotalSeconds * 1000,
+                    Date = startTime,
                     ChainId = chainId
                 };
 
                 var dailyBlockProduceDurationIndex = new DailyBlockProduceDurationIndex()
                 {
-                    Date = todayTotalSeconds * 1000,
+                    Date = startTime,
                     ChainId = chainId
                 };
 
@@ -1057,12 +1069,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 await _blockProduceDurationRepository.AddOrUpdateAsync(dailyBlockProduceDurationIndex);
                 await _cycleCountRepository.AddOrUpdateAsync(dailyCycleCountIndex);
                 _logger.LogInformation("Insert daily network statistic count index chainId:{0},date:{1}", chainId,
-                    DateTimeHelper.GetDateTimeString(todayTotalSeconds * 1000));
+                    DateTimeHelper.GetDateTimeString(startTime));
             }
             catch (Exception e)
             {
-                _logger.LogError("TaskERR，UpdateDailyNetwork {c},{e}", chainId, e);
-                throw;
+                _logger.LogError("UpdateDailyNetwork err，UpdateDailyNetwork {c},{e}", chainId, e);
             }
         }
     }

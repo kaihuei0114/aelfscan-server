@@ -15,6 +15,8 @@ public class GlobalOptions
 
     public bool InitRound { get; set; }
 
+    public int SupplyChartShowOffset { get; set; }
+
     public List<string> OrganizationAddressList { get; set; }
 
     public Dictionary<string, List<string>> BurntFeeContractAddresses { get; set; } =
