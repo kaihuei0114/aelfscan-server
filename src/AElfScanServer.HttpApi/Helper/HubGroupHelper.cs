@@ -6,6 +6,11 @@ public class HubGroupHelper
     {
         return $"{chainId}_latest_transactions";
     }
+    
+    public static string GetBpProduceGroupName(string chainId)
+    {
+        return $"{chainId}_BpProduce";
+    }
 
     public static string GetTransactionCountPerMinuteGroupName(string chainId)
     {

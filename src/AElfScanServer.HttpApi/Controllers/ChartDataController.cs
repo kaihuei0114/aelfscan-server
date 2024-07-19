@@ -126,14 +126,14 @@ public class ChartDataController : AbpController
     {
         return await _chartDataService.GetDailyTotalContractCallRespRespAsync(request);
     }
-    
-    
+
+
     [HttpGet("dailySupplyGrowth")]
     public async Task<DailySupplyGrowthResp> GetDailySupplyGrowthRespAsync(ChartDataRequest request)
     {
         return await _chartDataService.GetDailySupplyGrowthRespAsync(request);
     }
-    
+
     [HttpGet("dailyMarketCap")]
     public async Task<DailyMarketCapResp> GetDailyMarketCapRespAsync(ChartDataRequest request)
     {
@@ -146,8 +146,8 @@ public class ChartDataController : AbpController
     {
         return await _chartDataService.GetDailyStakedRespAsync(request);
     }
-    
-    
+
+
     [HttpGet("dailyHolder")]
     public async Task<DailyHolderResp> GetDailyHolderRespAsync(ChartDataRequest request)
     {
@@ -155,6 +155,19 @@ public class ChartDataController : AbpController
     }
 
 
+    [HttpGet("dailyTvl")]
+    public async Task<DailyTVLResp> GetDailyTVLRespAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetDailyTVLRespAsync(request);
+    }
+    
+    
+    
+    [HttpGet("nodeCurrentProduceInfo")]
+    public async Task<NodeProduceBlockInfoResp> GetNodeProduceBlockInfoRespAsync(NodeProduceBlockRequest request)
+    {
+        return await _chartDataService.GetNodeProduceBlockInfoRespAsync(request);
+    }
 
 
     [HttpGet("initRound")]

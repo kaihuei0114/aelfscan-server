@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElfScanServer.Common.Dtos.ChartData;
+using Nest;
 
 namespace AElfScanServer.HttpApi.Dtos.ChartData;
 
@@ -22,6 +23,7 @@ public class SetRoundRequest
     public string StartDate { get; set; }
     public string EndDate { get; set; }
 
+    public bool InitRound { get; set; }
     public int SetNumber { get; set; }
 
     public bool UpdateData { get; set; }
@@ -47,6 +49,10 @@ public class InitRoundResp
 
     public long RoundCount { get; set; }
 
+    public long InitRoundNumber { get; set; }
+
+    public string InitRoundDate { get; set; }
+
     public string MinDate { get; set; }
 
     public List<string> UpdateDate { get; set; }
@@ -69,6 +75,8 @@ public class JonInfoResp
 
     public string TransactionLastDate { get; set; }
     public int TransactionDateCount { get; set; }
+
+    public HomeOverviewResponseDto Overview { get; set; }
 }
 
 public class DailyTransactionCountResp
@@ -269,9 +277,6 @@ public class DailySupplyGrowthResp
 {
     public long Total { get; set; }
     public List<DailySupplyGrowth> List { get; set; }
-
-    public DailySupplyGrowth Highest { get; set; }
-    public DailySupplyGrowth Lowest { get; set; }
 }
 
 public class DailyMarketCap
@@ -295,7 +300,10 @@ public class DailySupplyGrowth
 
     public string TotalSupply { get; set; } = "0";
 
-    public string IncrSupply { get; set; }
+    public string MainChainBurnt { get; set; }
+
+    public string SideChainBurnt { get; set; }
+    public string OrganizationUnlock { get; set; }
 
     public string Reward { get; set; }
 
@@ -338,4 +346,45 @@ public class DailyStaked
     public string Supply { get; set; }
 
     public string Rate { get; set; }
+}
+
+public class DailyTVLResp
+{
+    public long Total { get; set; }
+    public List<DailyTVL> List { get; set; }
+
+    public DailyTVL Highest { get; set; }
+    public DailyTVL Lowest { get; set; }
+}
+
+public class DailyTVL
+{
+    public string DateStr { get; set; }
+    public string TVL { get; set; }
+
+    public long Date { get; set; }
+    public string BPLocked { get; set; }
+
+    public string VoteLocked { get; set; }
+
+    public string AwakenLocked { get; set; }
+}
+
+public class NodeProduceBlockInfoResp
+{
+    public long RoundNumber { get; set; }
+    public List<NodeProduceBlockInfo> List { get; set; }
+}
+
+public class NodeProduceBlockInfo
+{
+    public string NodeAddress { get; set; }
+    public int Order { get; set; }
+    public long ExpectingTime { get; set; }
+    public int BlockCount { get; set; }
+}
+
+public class NodeProduceBlockRequest
+{
+    public string ChainId { get; set; }
 }

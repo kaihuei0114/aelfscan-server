@@ -58,6 +58,7 @@ public class HttpApiModule : AbpModule
         context.Services.AddSingleton<ISearchService, SearchService>();
 
         context.Services.AddSingleton<OverviewDataStrategy, OverviewDataStrategy>();
+        context.Services.AddSingleton<CurrentBpProduceDataStrategy, CurrentBpProduceDataStrategy>();
         context.Services.AddSingleton<LatestTransactionDataStrategy, LatestTransactionDataStrategy>();
         context.Services.AddSingleton<LatestBlocksDataStrategy, LatestBlocksDataStrategy>();
         context.Services.AddSingleton<IIndexerGenesisProvider, IndexerGenesisProvider>();

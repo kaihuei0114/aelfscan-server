@@ -262,4 +262,12 @@ public static class DateTimeHelper
     {
         return GetTotalMilliseconds(DateTime.Now.AddDays(-day));
     }
+
+    public static long GetBeforeDayMilliSeconds(long milliseconds)
+    {
+        DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds);
+        DateTime dateTime = dateTimeOffset.DateTime;
+        var time = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day);
+        return GetTotalMilliseconds(time.AddDays(-1));
+    }
 }

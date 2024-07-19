@@ -8,6 +8,7 @@ public class AELFIndexerOptions
 
     public string AELFIndexerHost { get; set; }
     
+    
 
     public string ClientId { get; set; }
 

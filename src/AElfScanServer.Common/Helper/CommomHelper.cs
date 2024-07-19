@@ -115,7 +115,6 @@ public static class LogEventHelper
     }
     
     
-    
 
     public static readonly Dictionary<string, List<string>> AddressListMap = new()
     {

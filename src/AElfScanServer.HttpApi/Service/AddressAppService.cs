@@ -197,6 +197,7 @@ public class AddressAppService : IAddressAppService
     public async Task<GetAddressTokenListResultDto> GetAddressTokenListAsync(
         GetAddressTokenListInput input)
     {
+        input.SetDefaultSort();
         Dictionary<string, IndexerTokenInfoDto> tokenDict;
         IndexerTokenHolderInfoListDto holderInfos;
         //search token name or symbol
@@ -230,6 +231,7 @@ public class AddressAppService : IAddressAppService
 
         var elfPriceDto =
             await _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
+     
         var tokenInfoList = await GetTokenInfoListAsync(holderInfos.Items, tokenDict, elfPriceDto);
 
         return new GetAddressTokenListResultDto

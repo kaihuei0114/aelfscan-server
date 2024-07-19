@@ -36,6 +36,13 @@ public class RedisKeyHelper
     {
         return $"explore_{chainId}_latest_blocks";
     }
+    
+    
+    public static string CurrentBpProduce(string chainId)
+    {
+        return $"explore_{chainId}_CurrentBpProduce";
+    }
+
 
     public static string LatestTransactions(string chainId)
     {

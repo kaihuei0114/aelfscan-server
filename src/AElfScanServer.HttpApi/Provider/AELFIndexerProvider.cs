@@ -111,7 +111,7 @@ public class AELFIndexerProvider : ISingletonDependency
 
     public async Task<long> GetLatestBlockHeightAsync(string chainId)
     {
-        var blockhieght = await _blockHeightCache.GetAsync(BlockHeightCacheKey);
+        var blockhieght = await _blockHeightCache.GetAsync(BlockHeightCacheKey + chainId);
 
         if (!blockhieght.IsNullOrEmpty())
         {
@@ -134,7 +134,7 @@ public class AELFIndexerProvider : ISingletonDependency
                 });
 
         var latestBlockHeight = response[0].LatestBlockHeight;
-        await _blockHeightCache.SetAsync(BlockHeightCacheKey, latestBlockHeight.ToString(),
+        await _blockHeightCache.SetAsync(BlockHeightCacheKey + chainId, latestBlockHeight.ToString(),
             new DistributedCacheEntryOptions()
             {
                 AbsoluteExpiration =
@@ -196,8 +196,44 @@ public class AELFIndexerProvider : ISingletonDependency
         {
             _logger.LogError(
                 "get transaction list from AELFIndexer error:{c}:{error},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
-                chainId, e.Message, startBlockHeight, endBlockHeight);
+                chainId, e, startBlockHeight, endBlockHeight);
             return new List<TransactionIndex>();
+        }
+    }
+    
+    
+    public async Task<List<TransactionData>> GetTransactionsDataAsync(string chainId, long startBlockHeight,
+        long endBlockHeight, string transactionId)
+    {
+        try
+        {
+            var accessTokenAsync = GetAccessTokenAsync();
+            var response =
+                await _httpProvider.PostAsync<List<TransactionData>>(
+                    _aelfIndexerOptions.AELFIndexerHost + AELFIndexerApi.GetTransaction.Path,
+                    RequestMediaType.Json, new Dictionary<string, object>
+                    {
+                        ["chainId"] = chainId,
+                        ["startBlockHeight"] = startBlockHeight,
+                        ["endBlockHeight"] = endBlockHeight,
+                        ["transactionId"] = transactionId
+                    },
+                    new Dictionary<string, string>
+                    {
+                        ["content-type"] = "application/json",
+                        ["accept"] = "application/json",
+                        ["Authorization"] = $"Bearer {accessTokenAsync.Result}"
+                    });
+
+
+            return response;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "get transaction data list from AELFIndexer error:{c}:{error},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
+                chainId, e, startBlockHeight, endBlockHeight);
+            return new List<TransactionData>();
         }
     }
 
