@@ -554,8 +554,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             {
                 dailyData.TotalFee += LogEventHelper.ParseTransactionFees(transaction.ExtraProperties);
                 dailyData.DailyAvgTransactionFeeIndex.HasFeeTransactionCount++;
-                dailyData.DailyHasFeeTransactionIndex.TransactionIds.Add(transaction.TransactionId + "_" +
-                                                                         transactionFees);
+         
             }
 
             if (transaction.MethodName == "AnnounceElection" || transaction.MethodName == "AnnounceElectionFor")
@@ -652,10 +651,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                             {
                                 dailyData.OrganizationSupply += transactionFeeCharged.Amount;
                                 dailyData.TotalSupply += transactionFeeCharged.Amount;
-                                var transactionId =
-                                    transaction.TransactionId + "_" + "feeChargedFrom" + "_" + address +
-                                    "_" + transactionFeeCharged.Amount / 1e8;
-                                dailyData.DailySupplyChange.SupplyChange.Add(transactionId);
                             }
                         }
 
@@ -836,8 +831,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 }
             }
 
-            needUpdateData.DailyHasFeeTransactionIndex.TransactionCount =
-                needUpdateData.DailyHasFeeTransactionIndex.TransactionIds.Count;
 
             needUpdateData.DailyStakedIndex.BpStaked = needUpdateData.TotalBpStaked.ToString("F4");
             var ids = new List<string>();
@@ -877,7 +870,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             await _transactionCountRepository.AddOrUpdateAsync(needUpdateData.DailyTransactionCountIndex);
             await _uniqueAddressRepository.AddOrUpdateAsync(needUpdateData.DailyUniqueAddressCountIndex);
             await _activeAddressRepository.AddOrUpdateAsync(needUpdateData.DailyActiveAddressCountIndex);
-            await _hasFeeTransactionRepository.AddOrUpdateAsync(needUpdateData.DailyHasFeeTransactionIndex);
             await _dailyTotalContractCallRepository.AddOrUpdateAsync(needUpdateData.DailyTotalContractCallIndex);
             await _dailyMarketCapIndexRepository.AddOrUpdateAsync(needUpdateData.DailyMarketCapIndex);
             await _dailySupplyGrowthIndexRepository.AddOrUpdateAsync(needUpdateData.DailySupplyGrowthIndex);
