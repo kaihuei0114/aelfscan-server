@@ -796,14 +796,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }).ToList();
 
 
-            var query = await _addressRepository.GetQueryableAsync();
-            query = query.Where(c => c.ChainId == chainId);
-
-            var predicates = needUpdateData.AddressSet.Select(s =>
-                (Expression<Func<AddressIndex, bool>>)(o => o.Address == s));
-            var predicate = predicates.Aggregate((prev, next) => prev.Or(next));
-            query = query.Where(predicate);
-            var addressList = query.Take(10000).ToList();
+            var addressList = await GetAddressIndexList(needUpdateData.AddressSet.ToList(), chainId);
             var addressIndices = new List<AddressIndex>();
             if (addressList.IsNullOrEmpty())
             {
@@ -922,6 +915,35 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     }
 
 
+    public async Task<List<AddressIndex>> GetAddressIndexList(List<string> list, string chainId)
+    {
+        var query = await _addressRepository.GetQueryableAsync();
+        query = query.Where(c => c.ChainId == chainId);
+
+        var addressIndices = new List<AddressIndex>();
+
+        var chunkSize = 100;
+        var chunks = list.Select((value, index) => new { Index = index, Value = value })
+            .GroupBy(x => x.Index / chunkSize)
+            .Select(grp => grp.Select(x => x.Value).ToList())
+            .ToList();
+
+        foreach (var chunk in chunks)
+        {
+            var predicates = chunk.Select(s => (Expression<Func<AddressIndex, bool>>)(o => o.Address == s));
+            var combinedPredicate = predicates.Aggregate((prev, next) => prev.Or(next));
+
+            var chunkQuery = query.Where(combinedPredicate).Take(1000).ToList();
+
+            if (chunkQuery.Any())
+            {
+                addressIndices.AddRange(chunkQuery);
+            }
+        }
+
+        return addressIndices;
+    }
+
     public async Task<double> GetWithDrawVotedAmount(string chainId, List<string> voteIds)
     {
         try
@@ -980,7 +1002,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 var startTime = roundIndices.First().StartTime;
 
                 var endTime = DateTimeHelper.GetDateTimeLong(startTime);
-                 startTime = DateTimeHelper.GetBeforeDayMilliSeconds(endTime);
+                startTime = DateTimeHelper.GetBeforeDayMilliSeconds(endTime);
 
                 var list = queryable.Where(c => c.ChainId == chainId).Where(c => c.StartTime >= startTime)
                     .Where(c => c.StartTime < endTime).Take(10000).ToList();
