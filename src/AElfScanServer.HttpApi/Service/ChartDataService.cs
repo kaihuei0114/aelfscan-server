@@ -28,6 +28,7 @@ using HotChocolate;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
@@ -484,32 +485,30 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var queryable = await _dailySupplyGrowthIndexRepository.GetQueryableAsync();
         var mainIndexList = queryable.Where(c => c.ChainId == "AELF").OrderBy(c => c.Date).Take(10000).ToList();
 
-        var sideIndexList = new List<DailySupplyGrowthIndex>();
+        var sideIndexList = new List<DailyTotalBurntIndex>();
+
+
+        var queryableBurnt = await _totalBurntRepository.GetQueryableAsync();
         if (_globalOptions.CurrentValue.IsMainNet)
         {
-            sideIndexList = queryable.Where(c => c.ChainId == "tDVV").OrderBy(c => c.Date).Take(10000).ToList();
+            sideIndexList = queryableBurnt.Where(c => c.ChainId == "tDVV").OrderBy(c => c.Date).Take(10000).ToList();
         }
         else
         {
-            sideIndexList = queryable.Where(c => c.ChainId == "tDVW").OrderBy(c => c.Date).Take(10000).ToList();
+            sideIndexList = queryableBurnt.Where(c => c.ChainId == "tDVW").OrderBy(c => c.Date).Take(10000).ToList();
         }
 
         var sideDic = sideIndexList.ToDictionary(c => c.DateStr, c => c);
-
         var dailySupplyGrowths = new List<DailySupplyGrowth>();
-
-
         for (var i = 0; i < mainIndexList.Count; i++)
         {
             var cur = mainIndexList[i];
             double curSideBurnt = 0;
             if (sideDic.TryGetValue(cur.DateStr, out var v))
             {
-                cur.DailySupply += v.DailySupply;
-                cur.DailyBurnt += v.DailyBurnt;
-                cur.DailyReward += v.DailyReward;
-                cur.DailyOrganizationUnlock += v.DailyOrganizationUnlock;
-                curSideBurnt = v.DailyBurnt;
+                var sideBurnt = v.Burnt.IsNullOrEmpty() ? 0 : double.Parse(v.Burnt);
+                cur.DailySupply -= sideBurnt;
+                curSideBurnt = sideBurnt;
             }
 
             var curSupplyGrowth = new DailySupplyGrowth()
