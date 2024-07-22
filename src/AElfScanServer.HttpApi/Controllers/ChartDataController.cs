@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.HttpApi.Dtos.ChartData;
 using AElfScanServer.HttpApi.Service;
 using Microsoft.AspNetCore.Mvc;
@@ -160,9 +161,8 @@ public class ChartDataController : AbpController
     {
         return await _chartDataService.GetDailyTVLRespAsync(request);
     }
-    
-    
-    
+
+
     [HttpGet("nodeCurrentProduceInfo")]
     public async Task<NodeProduceBlockInfoResp> GetNodeProduceBlockInfoRespAsync(NodeProduceBlockRequest request)
     {
@@ -181,5 +181,12 @@ public class ChartDataController : AbpController
     public async Task<JonInfoResp> GetJobInfo(SetJob request)
     {
         return await _chartDataService.GetJobInfo(request);
+    }
+
+
+    [HttpPost("fixDailyData")]
+    public async Task FixDailyData(FixDailyData request)
+    {
+        await _chartDataService.FixDailyData(request);
     }
 }
