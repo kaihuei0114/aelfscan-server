@@ -1266,7 +1266,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<UniqueAddressCountResp> GetUniqueAddressCountAsync(ChartDataRequest request)
     {
         var queryable = await _uniqueAddressRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var dataList = _objectMapper.Map<List<DailyUniqueAddressCountIndex>, List<DailyUniqueAddressCount>>(indexList);
 
@@ -1281,7 +1281,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new UniqueAddressCountResp()
         {
-            List = dataList.OrderBy(c => c.DateStr).ToList(),
+            List = dataList,
             Total = dataList.Count,
             HighestIncrease = dataList.MaxBy(c => c.AddressCount),
             LowestIncrease = dataList.MinBy(c => c.AddressCount),

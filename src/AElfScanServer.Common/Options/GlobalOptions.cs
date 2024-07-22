@@ -39,6 +39,7 @@ public class GlobalOptions
     public long TokenUsdPriceExpireDurationSeconds { get; set; }
 
     public string ContractAddressTreasury { get; set; }
+    public string ContractAddressElection { get; set; }
     public Dictionary<string, string> ContractAddressConsensus { get; set; }
 
     public long NextTermDate { get; set; } = 1725724800000;

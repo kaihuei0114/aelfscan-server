@@ -138,7 +138,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private static object _lock = new object();
 
     private static Timer timer;
-    private static long PullTransactioninterval = 2000 - 1;
+    private static long PullTransactioninterval = 4000 - 1;
 
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
@@ -758,7 +758,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         break;
 
                     case nameof(Voted):
-                        if (_globalOptions.CurrentValue.ContractAddressConsensus[chainId] != transaction.To)
+                        if (_globalOptions.CurrentValue.ContractAddressElection != transaction.To)
                         {
                             continue;
                         }
@@ -779,6 +779,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     case nameof(Withdrawn):
                         var withdrawn = new Withdrawn();
                         withdrawn.MergeFrom(logEvent);
+
                         dailyData.WithDrawVotedIds.Add(withdrawn.VoteId.ToString());
                         break;
                 }
@@ -1172,12 +1173,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 dailyCycleCountIndex.MissedBlockCount = blockProduceIndex.MissedBlockCount;
                 dailyBlockProduceDurationIndex.AvgBlockDuration =
-                    (totalDuration*1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
-                dailyBlockProduceDurationIndex.LongestBlockDuration = (longestBlockDuration/1000).ToString("F2");
-                dailyBlockProduceDurationIndex.ShortestBlockDuration = (shortestBlockDuration/1000).ToString("F2");
+                    (totalDuration * 1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
+                dailyBlockProduceDurationIndex.LongestBlockDuration = (longestBlockDuration / 1000).ToString("F2");
+                dailyBlockProduceDurationIndex.ShortestBlockDuration = (shortestBlockDuration / 1000).ToString("F2");
 
                 decimal result = blockProduceIndex.BlockCount /
-                                 (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount)*100;
+                    (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount) * 100;
                 blockProduceIndex.BlockProductionRate = result.ToString("F2");
 
                 await _blockProduceRepository.AddOrUpdateAsync(blockProduceIndex);
