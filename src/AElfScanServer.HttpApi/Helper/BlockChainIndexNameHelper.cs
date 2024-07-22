@@ -36,8 +36,8 @@ public class RedisKeyHelper
     {
         return $"explore_{chainId}_latest_blocks";
     }
-    
-    
+
+
     public static string CurrentBpProduce(string chainId)
     {
         return $"explore_{chainId}_CurrentBpProduce";
@@ -80,6 +80,12 @@ public class RedisKeyHelper
     public static string TransactionLastBlockHeight(string chainId)
     {
         return $"explore_{chainId}_transaction_last_blockheight";
+    }
+
+
+    public static string FixDailyData()
+    {
+        return $"explore_FixDailyDaya";
     }
 
 

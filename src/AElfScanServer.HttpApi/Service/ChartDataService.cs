@@ -91,6 +91,8 @@ public interface IChartDataService
     public Task<InitRoundResp> InitDailyNetwork(SetRoundRequest request);
 
     public Task<JonInfoResp> GetJobInfo(SetJob request);
+
+    public Task FixDailyData(FixDailyData request);
 }
 
 public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDependency
@@ -195,6 +197,12 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _overviewDataStrategy = new DataStrategyContext<string, HomeOverviewResponseDto>(overviewDataStrategy);
     }
 
+    public async Task FixDailyData(FixDailyData request)
+    {
+        await ConnectAsync();
+        var serializeObject = JsonConvert.SerializeObject(request);
+        RedisDatabase.StringSet(RedisKeyHelper.FixDailyData(), serializeObject);
+    }
 
     public async Task<JonInfoResp> GetJobInfo(SetJob request)
     {

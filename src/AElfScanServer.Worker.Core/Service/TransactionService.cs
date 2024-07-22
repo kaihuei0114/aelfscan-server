@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
@@ -70,6 +71,9 @@ public interface ITransactionService
     public Task UpdateElfPrice();
 
     public Task BatchPullTransactionTask();
+
+
+    public Task FixDailyData();
 
 
     public Task BlockSizeTask();
@@ -424,6 +428,97 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         await tasks.WhenAll();
     }
 
+
+    public async Task FixDailyData()
+    {
+        await ConnectAsync();
+        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.FixDailyData());
+        if (redisValue.IsNullOrEmpty)
+        {
+            _logger.LogInformation("No fix data");
+            return;
+        }
+
+        var fixDailyData = JsonConvert.DeserializeObject<FixDailyData>(redisValue);
+        var queryable = await _recordIndexRepository.GetQueryableAsync();
+        foreach (var keyValuePair in fixDailyData.FixDate)
+        {
+            var chainId = keyValuePair.Key;
+            queryable = queryable.Where(c => c.ChainId == chainId);
+
+            foreach (var date in keyValuePair.Value)
+            {
+                var recordList = queryable.Where(c => c.DateStr == date).Take(1).ToList();
+                if (recordList.IsNullOrEmpty())
+                {
+                    continue;
+                }
+
+                var record = recordList.First();
+
+                var startBlockHeight = record.StartBlockHeight;
+                await FixDailyDataByStartBlockHeight(chainId, startBlockHeight);
+            }
+        }
+
+        await ConnectAsync();
+        RedisDatabase.KeyDelete(RedisKeyHelper.FixDailyData());
+    }
+
+
+    public async Task FixDailyDataByStartBlockHeight(string chainId, long startBlockHeight)
+    {
+        var dic = new Dictionary<string, DailyTransactionsChartSet>();
+        while (true)
+        {
+            try
+            {
+                var batchTransactionList =
+                    await GetBatchTransactionList(chainId, startBlockHeight,
+                        startBlockHeight + PullTransactioninterval);
+                if (batchTransactionList.IsNullOrEmpty())
+                {
+                    continue;
+                }
+
+                batchTransactionList = batchTransactionList.OrderBy(c => c.BlockHeight).Select(s =>
+                {
+                    var totalMilliseconds = DateTimeHelper.GetTotalMilliseconds(s.BlockTime);
+                    if (totalMilliseconds == 0 && s.BlockHeight == 1)
+                    {
+                        s.DateStr = _globalOptions.CurrentValue.OneBlockTime[chainId];
+                        s.BlockTime =
+                            DateTimeHelper.GetDateTimeFromYYMMDD(_globalOptions.CurrentValue.OneBlockTime[chainId]);
+                    }
+                    else
+                    {
+                        s.DateStr = DateTimeHelper.GetDateStr(s.BlockTime);
+                    }
+
+                    return s;
+                }).ToList();
+
+
+                _logger.LogInformation("Fix daily data:{c},start:{s}", chainId, startBlockHeight);
+                var updateDailyTransactionData = await UpdateDailyTransactionData(batchTransactionList, chainId, dic);
+
+                if (updateDailyTransactionData != null)
+                {
+                    _logger.LogInformation("Fix daily data finished:{c},{c2}", chainId,
+                        updateDailyTransactionData.Date);
+                    break;
+                }
+
+                startBlockHeight += PullTransactioninterval + 1;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("Fix daily data err:{c},{e}", chainId, e.ToString());
+                break;
+            }
+        }
+    }
+
     public async Task BatchPullTransactionJob(string chainId)
     {
         var dic = new Dictionary<string, DailyTransactionsChartSet>();
@@ -513,6 +608,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     chainId,
                     e, lastBlockHeight,
                     lastBlockHeight + PullTransactioninterval);
+
+
+                dic = new Dictionary<string, DailyTransactionsChartSet>();
+
+                await ConnectAsync();
+                redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionLastBlockHeight(chainId));
+                lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
             }
         }
     }
@@ -554,7 +656,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             {
                 dailyData.TotalFee += LogEventHelper.ParseTransactionFees(transaction.ExtraProperties);
                 dailyData.DailyAvgTransactionFeeIndex.HasFeeTransactionCount++;
-         
             }
 
             if (transaction.MethodName == "AnnounceElection" || transaction.MethodName == "AnnounceElectionFor")
@@ -1071,12 +1172,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 dailyCycleCountIndex.MissedBlockCount = blockProduceIndex.MissedBlockCount;
                 dailyBlockProduceDurationIndex.AvgBlockDuration =
-                    (totalDuration / (decimal)blockProduceIndex.BlockCount).ToString("F2");
-                dailyBlockProduceDurationIndex.LongestBlockDuration = longestBlockDuration.ToString("F2");
-                dailyBlockProduceDurationIndex.ShortestBlockDuration = shortestBlockDuration.ToString("F2");
+                    (totalDuration*1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
+                dailyBlockProduceDurationIndex.LongestBlockDuration = (longestBlockDuration/1000).ToString("F2");
+                dailyBlockProduceDurationIndex.ShortestBlockDuration = (shortestBlockDuration/1000).ToString("F2");
 
                 decimal result = blockProduceIndex.BlockCount /
-                                 (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount);
+                                 (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount)*100;
                 blockProduceIndex.BlockProductionRate = result.ToString("F2");
 
                 await _blockProduceRepository.AddOrUpdateAsync(blockProduceIndex);

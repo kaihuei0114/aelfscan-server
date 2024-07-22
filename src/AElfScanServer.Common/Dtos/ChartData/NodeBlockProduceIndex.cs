@@ -722,3 +722,8 @@ public class DailyTVLIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 
     [Keyword] public string ChainId { get; set; }
 }
+
+public class FixDailyData
+{
+    public Dictionary<string, List<string>> FixDate { get; set; }
+}

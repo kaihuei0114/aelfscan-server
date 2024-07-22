@@ -11,6 +11,9 @@ public class GlobalOptions
 
     public bool NeedInitLastHeight { get; set; }
 
+
+    public Dictionary<string, List<string>> FixDailyData { get; set; }
+
     public bool IsMainNet { get; set; }
 
     public bool InitRound { get; set; }

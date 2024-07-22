@@ -79,6 +79,7 @@ public class JonInfoResp
     public HomeOverviewResponseDto Overview { get; set; }
 }
 
+
 public class DailyTransactionCountResp
 {
     public long Total { get; set; }
