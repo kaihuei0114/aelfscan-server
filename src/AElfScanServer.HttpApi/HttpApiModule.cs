@@ -9,6 +9,7 @@ using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
+using Aetherlink.PriceServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -44,7 +45,8 @@ namespace AElfScanServer.HttpApi;
     typeof(AbpAutofacModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBackgroundWorkersModule),
-    typeof(AElfScanCommonModule)
+    typeof(AElfScanCommonModule),
+    typeof(AetherlinkPriceServerModule)
 )]
 public class HttpApiModule : AbpModule
 {

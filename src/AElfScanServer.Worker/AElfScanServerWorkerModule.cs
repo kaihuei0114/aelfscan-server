@@ -219,7 +219,7 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        context.AddBackgroundWorkerAsync<RoundWorker>();
+       
         context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
         context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
         context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();

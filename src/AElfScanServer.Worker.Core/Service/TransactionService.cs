@@ -116,7 +116,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailyContractCallIndex, string> _dailyContractCallRepository;
     private readonly IEntityMappingRepository<DailyTotalContractCallIndex, string> _dailyTotalContractCallRepository;
 
-    private readonly IEntityMappingRepository<DailyMarketCapIndex, string> _dailyMarketCapIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyGrowthIndex, string> _dailySupplyGrowthIndexRepository;
     private readonly IEntityMappingRepository<DailyStakedIndex, string> _dailyStakedIndexRepository;
     private readonly IEntityMappingRepository<DailyVotedIndex, string> _dailyVotedIndexRepository;
@@ -138,7 +137,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private static object _lock = new object();
 
     private static Timer timer;
-    private static long PullTransactioninterval = 2000 - 1;
+    private static long PullTransactioninterval = 4000 - 1;
 
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
@@ -170,7 +169,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyHasFeeTransactionIndex, string> hasFeeTransactionRepository,
         IEntityMappingRepository<DailyContractCallIndex, string> dailyContractCallRepository,
         IEntityMappingRepository<DailyTotalContractCallIndex, string> dailyTotalContractCallRepository,
-        IEntityMappingRepository<DailyMarketCapIndex, string> dailyMarketCapIndexRepository,
         IEntityMappingRepository<DailySupplyGrowthIndex, string> dailySupplyGrowthIndexRepository,
         IEntityMappingRepository<DailyStakedIndex, string> dailyStakedIndexRepository,
         IEntityMappingRepository<DailyVotedIndex, string> dailyVotedIndexRepository,
@@ -218,7 +216,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _hasFeeTransactionRepository = hasFeeTransactionRepository;
         _dailyContractCallRepository = dailyContractCallRepository;
         _dailyTotalContractCallRepository = dailyTotalContractCallRepository;
-        _dailyMarketCapIndexRepository = dailyMarketCapIndexRepository;
         _dailySupplyGrowthIndexRepository = dailySupplyGrowthIndexRepository;
         _awakenIndexerProvider = awakenIndexerProvider;
         _priceServerProvider = priceServerProvider;
@@ -758,7 +755,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         break;
 
                     case nameof(Voted):
-                        if (_globalOptions.CurrentValue.ContractAddressConsensus[chainId] != transaction.To)
+                        if (_globalOptions.CurrentValue.ContractAddressElection != transaction.To)
                         {
                             continue;
                         }
@@ -779,6 +776,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     case nameof(Withdrawn):
                         var withdrawn = new Withdrawn();
                         withdrawn.MergeFrom(logEvent);
+
                         dailyData.WithDrawVotedIds.Add(withdrawn.VoteId.ToString());
                         break;
                 }
@@ -872,12 +870,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             needUpdateData.DailyActiveAddressCountIndex.ReceiveAddressCount = needUpdateData.AddressToSet.Count;
 
             needUpdateData.DailyTotalContractCallIndex.CallAddressCount = needUpdateData.AddressFromSet.Count;
-            needUpdateData.DailyMarketCapIndex.IncrMarketCap =
-                (dailyElfPrice * needUpdateData.TotalSupply).ToString("F6");
-            needUpdateData.DailyMarketCapIndex.FDV =
-                (dailyElfPrice * 1000000000).ToString("F6");
-            needUpdateData.DailyMarketCapIndex.Price = dailyElfPrice.ToString("F6");
-
 
             needUpdateData.DailySupplyGrowthIndex.DailyBurnt = needUpdateData.TotalBurnt;
             needUpdateData.DailySupplyGrowthIndex.DailyReward = needUpdateData.TotalReward;
@@ -972,7 +964,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             await _uniqueAddressRepository.AddOrUpdateAsync(needUpdateData.DailyUniqueAddressCountIndex);
             await _activeAddressRepository.AddOrUpdateAsync(needUpdateData.DailyActiveAddressCountIndex);
             await _dailyTotalContractCallRepository.AddOrUpdateAsync(needUpdateData.DailyTotalContractCallIndex);
-            await _dailyMarketCapIndexRepository.AddOrUpdateAsync(needUpdateData.DailyMarketCapIndex);
             await _dailySupplyGrowthIndexRepository.AddOrUpdateAsync(needUpdateData.DailySupplyGrowthIndex);
             await _dailyStakedIndexRepository.AddOrUpdateAsync(needUpdateData.DailyStakedIndex);
             await _dailyTVLIndexRepository.AddOrUpdateAsync(needUpdateData.DailyTVLIndex);
@@ -1172,12 +1163,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 dailyCycleCountIndex.MissedBlockCount = blockProduceIndex.MissedBlockCount;
                 dailyBlockProduceDurationIndex.AvgBlockDuration =
-                    (totalDuration*1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
-                dailyBlockProduceDurationIndex.LongestBlockDuration = (longestBlockDuration/1000).ToString("F2");
-                dailyBlockProduceDurationIndex.ShortestBlockDuration = (shortestBlockDuration/1000).ToString("F2");
+                    (totalDuration * 1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
+                dailyBlockProduceDurationIndex.LongestBlockDuration = (longestBlockDuration / 1000).ToString("F2");
+                dailyBlockProduceDurationIndex.ShortestBlockDuration = (shortestBlockDuration / 1000).ToString("F2");
 
                 decimal result = blockProduceIndex.BlockCount /
-                                 (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount)*100;
+                    (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount) * 100;
                 blockProduceIndex.BlockProductionRate = result.ToString("F2");
 
                 await _blockProduceRepository.AddOrUpdateAsync(blockProduceIndex);

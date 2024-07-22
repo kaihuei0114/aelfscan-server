@@ -83,7 +83,6 @@ public class AElfScanCommonModule : AbpModule
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTotalContractCallIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyContractCallIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailySupplyGrowthIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyMarketCapIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyStakedIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyVotedIndex)); });
         Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailySupplyChange)); });
