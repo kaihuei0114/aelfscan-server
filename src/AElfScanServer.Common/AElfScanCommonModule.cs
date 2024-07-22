@@ -41,6 +41,7 @@ public class AElfScanCommonModule : AbpModule
         Configure<CoinGeckoOptions>(configuration.GetSection("CoinGecko"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfoOptions"));
         Configure<AssetsInfoOptions>(configuration.GetSection("AssetsInfoOptions"));
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(AElfScanCommonModule)); });
         context.Services.AddSingleton<IHttpProvider, HttpProvider>();
         context.Services.AddSingleton<IGraphQlFactory, GraphQlFactory>();
         context.Services.AddTransient<IExchangeProvider, OkxProvider>();
@@ -55,63 +56,29 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<INftInfoProvider, NftInfoProvider>();
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
 
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(NodeBlockProduceIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(RoundIndex)); });
-
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockProduceCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockProduceDurationIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyCycleCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(HourNodeBlockProduceIndex)); });
-
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockRewardIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgBlockSizeIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgTransactionFeeIndex)); });
-
-
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTotalBurntIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyDeployContractIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(ElfPriceIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTransactionCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyUniqueAddressCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyActiveAddressCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgBlockSizeIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(BlockSizeErrInfoIndex)); });
-
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTransactionRecordIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(AddressIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyHasFeeTransactionIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTotalContractCallIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyContractCallIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailySupplyGrowthIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyMarketCapIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyStakedIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyVotedIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailySupplyChange)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(TransactionErrInfoIndex)); });
-
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();
 
-        AddOpenTelemetry(context);
+      //  AddOpenTelemetry(context);
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
-        app.UseOpenTelemetryPrometheusScrapingEndpoint();
+     //  app.UseOpenTelemetryPrometheusScrapingEndpoint();
     }
 
     private void AddOpenTelemetry(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        services.OnRegistred(options =>
+        services.OnRegistered(options =>
         {
             if (options.ImplementationType.IsDefined(typeof(UmpAttribute), true))
             {
                 options.Interceptors.TryAdd<UmpInterceptor>();
             }
         });
-        services.AddOpenTelemetry()
+        /*services.AddOpenTelemetry()
             .WithTracing(builder =>
             {
                 builder
@@ -124,6 +91,6 @@ public class AElfScanCommonModule : AbpModule
                 builder
                     .AddMeter("AElf");
                 builder.AddPrometheusExporter();
-            });
+            });*/
     }
 }

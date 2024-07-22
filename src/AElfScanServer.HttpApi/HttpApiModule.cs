@@ -1,5 +1,6 @@
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
+using AElf.OpenTelemetry;
 using AElfScanServer.HttpApi.Options;
 using AElfScanServer.HttpApi.Provider;
 using AElfScanServer.HttpApi.DataStrategy;
@@ -29,6 +30,8 @@ using Volo.Abp.TenantManagement;
 namespace AElfScanServer.HttpApi;
 
 [DependsOn(
+
+    typeof(OpenTelemetryModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpAccountHttpApiModule),
     typeof(AElfIndexingElasticsearchModule),
@@ -37,11 +40,8 @@ namespace AElfScanServer.HttpApi;
     typeof(AbpFeatureManagementHttpApiModule),
     typeof(AbpSettingManagementHttpApiModule),
     typeof(AbpAspNetCoreSignalRModule),
-    typeof(AElfEntityMappingElasticsearchModule),
-    typeof(AElfScanCommonModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(AbpAspNetCoreMvcModule),
-    typeof(AbpAutofacModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBackgroundWorkersModule),
     typeof(AElfScanCommonModule)
