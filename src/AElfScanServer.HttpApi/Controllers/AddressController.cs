@@ -1,12 +1,15 @@
 using System.Threading.Tasks;
+using AElf.OpenTelemetry.ExecutionTime;
 using AElfScanServer.HttpApi.Dtos.address;
 using AElfScanServer.HttpApi.Service;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
 namespace AElfScanServer.HttpApi.Controllers;
 
+[AggregateExecutionTime]
 [RemoteService]
 [Area("app")]
 [ControllerName("Address")]

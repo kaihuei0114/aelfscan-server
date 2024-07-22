@@ -1,14 +1,17 @@
 ﻿using System.Threading.Tasks;
+using AElf.OpenTelemetry.ExecutionTime;
 using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.HttpApi.Service;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
 namespace AElfScanServer.HttpApi.Controllers;
 
+[AggregateExecutionTime]
 [RemoteService]
 [Area("app")]
 [ControllerName("Token")]

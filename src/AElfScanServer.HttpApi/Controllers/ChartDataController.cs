@@ -1,13 +1,16 @@
 using System.Threading.Tasks;
 using AElfScanServer.Common.Dtos.ChartData;
+using AElf.OpenTelemetry.ExecutionTime;
 using AElfScanServer.HttpApi.Dtos.ChartData;
 using AElfScanServer.HttpApi.Service;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
 namespace AElfScanServer.HttpApi.Controllers;
 
+[AggregateExecutionTime]
 [RemoteService]
 [Area("app")]
 [ControllerName("statistics")]

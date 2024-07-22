@@ -1,14 +1,17 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.OpenTelemetry.ExecutionTime;
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.Service;
 using AElfScanServer.Common.Dtos;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 
 namespace AElfScanServer.HttpApi.Controllers;
 
+[AggregateExecutionTime]
 [RemoteService]
 [ControllerName("Block")]
 [Route("api/app/blockchain")]

@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Dtos.Input;
-
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
