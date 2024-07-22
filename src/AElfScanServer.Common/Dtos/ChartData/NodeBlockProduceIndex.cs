@@ -150,7 +150,6 @@ public class DailyTransactionsChartSet
     public DailyUniqueAddressCountIndex DailyUniqueAddressCountIndex { get; set; }
     public DailyActiveAddressCountIndex DailyActiveAddressCountIndex { get; set; }
     public DailyHasFeeTransactionIndex DailyHasFeeTransactionIndex { get; set; }
-    public DailyMarketCapIndex DailyMarketCapIndex { get; set; }
     public DailySupplyGrowthIndex DailySupplyGrowthIndex { get; set; }
     public DailyTVLIndex DailyTVLIndex { get; set; }
 
@@ -256,12 +255,6 @@ public class DailyTransactionsChartSet
             TransactionIds = new List<string>()
         };
 
-        DailyMarketCapIndex = new DailyMarketCapIndex()
-        {
-            ChainId = chainId,
-            Date = totalMilliseconds,
-            DateStr = date,
-        };
 
         DailySupplyGrowthIndex = new DailySupplyGrowthIndex()
         {
@@ -584,25 +577,6 @@ public class DailyTransactionRecordIndex : AElfIndexerEntity<string>, IEntityMap
     public long EndBlockHeight { get; set; }
 }
 
-public class DailyMarketCapIndex : AElfIndexerEntity<string>, IEntityMappingEntity
-{
-    [Keyword]
-    public override string Id
-    {
-        get { return DateStr + "_" + ChainId; }
-    }
-
-    public long Date { get; set; }
-    [Keyword] public string DateStr { get; set; }
-
-    [Keyword] public string IncrMarketCap { get; set; }
-
-    [Keyword] public string Price { get; set; }
-
-    [Keyword] public string FDV { get; set; }
-
-    [Keyword] public string ChainId { get; set; }
-}
 
 public class DailySupplyGrowthIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {

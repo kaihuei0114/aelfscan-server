@@ -116,7 +116,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailyContractCallIndex, string> _dailyContractCallRepository;
     private readonly IEntityMappingRepository<DailyTotalContractCallIndex, string> _dailyTotalContractCallRepository;
 
-    private readonly IEntityMappingRepository<DailyMarketCapIndex, string> _dailyMarketCapIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyGrowthIndex, string> _dailySupplyGrowthIndexRepository;
     private readonly IEntityMappingRepository<DailyStakedIndex, string> _dailyStakedIndexRepository;
     private readonly IEntityMappingRepository<DailyVotedIndex, string> _dailyVotedIndexRepository;
@@ -170,7 +169,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyHasFeeTransactionIndex, string> hasFeeTransactionRepository,
         IEntityMappingRepository<DailyContractCallIndex, string> dailyContractCallRepository,
         IEntityMappingRepository<DailyTotalContractCallIndex, string> dailyTotalContractCallRepository,
-        IEntityMappingRepository<DailyMarketCapIndex, string> dailyMarketCapIndexRepository,
         IEntityMappingRepository<DailySupplyGrowthIndex, string> dailySupplyGrowthIndexRepository,
         IEntityMappingRepository<DailyStakedIndex, string> dailyStakedIndexRepository,
         IEntityMappingRepository<DailyVotedIndex, string> dailyVotedIndexRepository,
@@ -218,7 +216,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _hasFeeTransactionRepository = hasFeeTransactionRepository;
         _dailyContractCallRepository = dailyContractCallRepository;
         _dailyTotalContractCallRepository = dailyTotalContractCallRepository;
-        _dailyMarketCapIndexRepository = dailyMarketCapIndexRepository;
         _dailySupplyGrowthIndexRepository = dailySupplyGrowthIndexRepository;
         _awakenIndexerProvider = awakenIndexerProvider;
         _priceServerProvider = priceServerProvider;
@@ -873,12 +870,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             needUpdateData.DailyActiveAddressCountIndex.ReceiveAddressCount = needUpdateData.AddressToSet.Count;
 
             needUpdateData.DailyTotalContractCallIndex.CallAddressCount = needUpdateData.AddressFromSet.Count;
-            needUpdateData.DailyMarketCapIndex.IncrMarketCap =
-                (dailyElfPrice * needUpdateData.TotalSupply).ToString("F6");
-            needUpdateData.DailyMarketCapIndex.FDV =
-                (dailyElfPrice * 1000000000).ToString("F6");
-            needUpdateData.DailyMarketCapIndex.Price = dailyElfPrice.ToString("F6");
-
 
             needUpdateData.DailySupplyGrowthIndex.DailyBurnt = needUpdateData.TotalBurnt;
             needUpdateData.DailySupplyGrowthIndex.DailyReward = needUpdateData.TotalReward;
@@ -973,7 +964,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             await _uniqueAddressRepository.AddOrUpdateAsync(needUpdateData.DailyUniqueAddressCountIndex);
             await _activeAddressRepository.AddOrUpdateAsync(needUpdateData.DailyActiveAddressCountIndex);
             await _dailyTotalContractCallRepository.AddOrUpdateAsync(needUpdateData.DailyTotalContractCallIndex);
-            await _dailyMarketCapIndexRepository.AddOrUpdateAsync(needUpdateData.DailyMarketCapIndex);
             await _dailySupplyGrowthIndexRepository.AddOrUpdateAsync(needUpdateData.DailySupplyGrowthIndex);
             await _dailyStakedIndexRepository.AddOrUpdateAsync(needUpdateData.DailyStakedIndex);
             await _dailyTVLIndexRepository.AddOrUpdateAsync(needUpdateData.DailyTVLIndex);
