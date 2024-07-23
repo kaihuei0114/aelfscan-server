@@ -40,6 +40,8 @@ public class Program
             Log.Information("Starting BlockChainDataFunction Host.");
             var builder = WebApplication.CreateBuilder(args);
             builder.Configuration.AddJsonFile("apollo.appsettings.json");
+            builder.Services.AddSerilog(loggerConfiguration => {},
+                true, writeToProviders: true);
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseApollo()
@@ -60,7 +62,7 @@ public class Program
             }
 
             builder.Services.AddSignalR();
-
+           
             var app = builder.Build();
             app.MapHub<ExploreHub>("api/app/blockchain/explore");
 
