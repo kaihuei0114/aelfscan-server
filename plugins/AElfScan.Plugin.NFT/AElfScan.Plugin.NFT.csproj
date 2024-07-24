@@ -9,6 +9,7 @@
     
     <ItemGroup>
         <ProjectReference Include="..\..\src\AElfScanServer.Common\AElfScanServer.Common.csproj" />
+        <ProjectReference Include="..\..\src\AElfScanServer.Common\AElfScanServer.Common.csproj" />
     </ItemGroup>
     
     <ItemGroup>

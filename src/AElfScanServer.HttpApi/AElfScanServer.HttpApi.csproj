@@ -17,30 +17,26 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-        <PackageReference Include="Volo.Abp.AutoMapper" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.Caching" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="8.1.4"/>
-        <PackageReference Include="AElf.OpenTelemetry" Version="1.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Portable.BouncyCastle" Version="1.9.0"/>
-        <PackageReference Include="Volo.Abp.BackgroundWorkers" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.Caching" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.AutoMapper" Version="8.1.4"/>
+        <PackageReference Include="Volo.Abp.BackgroundWorkers" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.Caching" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.AutoMapper" Version="8.2.0"/>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="HotChocolate.Abstractions" Version="13.8.1" />
-        <PackageReference Include="Volo.Abp.Account.HttpApi" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.AspNetCore.SignalR" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.Identity.HttpApi" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.PermissionManagement.HttpApi" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.TenantManagement.HttpApi" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.FeatureManagement.HttpApi" Version="8.1.4"/>
-        <PackageReference Include="Volo.Abp.SettingManagement.HttpApi" Version="8.1.4"/>
+        <PackageReference Include="Volo.Abp.Account.HttpApi" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.AspNetCore.SignalR" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.Identity.HttpApi" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.PermissionManagement.HttpApi" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.TenantManagement.HttpApi" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.FeatureManagement.HttpApi" Version="8.2.0"/>
+        <PackageReference Include="Volo.Abp.SettingManagement.HttpApi" Version="8.2.0"/>
         <PackageReference Include="Binance.Spot" Version="4.0.1"/>
     </ItemGroup>
 

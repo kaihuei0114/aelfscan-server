@@ -1,4 +1,5 @@
 using AElf.EntityMapping.Options;
+using AElf.OpenTelemetry;
 using AElfScanServer.Common.Address.Provider;
 using AElfScanServer.Common.Contract.Provider;
 using AElfScanServer.Common.Core;
@@ -11,10 +12,7 @@ using AElfScanServer.Common.ThirdPart.Exchange;
 using AElfScanServer.Common.Token.Provider;
 using Aetherlink.PriceServer;
 using AutoResponseWrapper;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 using Volo.Abp;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Caching.StackExchangeRedis;
@@ -23,6 +21,8 @@ using Volo.Abp.Modularity;
 namespace AElfScanServer.Common;
 
 [DependsOn(
+    typeof(OpenTelemetryModule),
+    typeof(AbpAutoMapperModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(AetherlinkPriceServerModule)
@@ -57,15 +57,12 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
 
         context.Services.AddHttpClient();
-        context.Services.AddAutoResponseWrapper();
-
-      //  AddOpenTelemetry(context);
+        // context.Services.AddAutoResponseWrapper();
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
-     //  app.UseOpenTelemetryPrometheusScrapingEndpoint();
     }
 
     private void AddOpenTelemetry(ServiceConfigurationContext context)
@@ -78,19 +75,5 @@ public class AElfScanCommonModule : AbpModule
                 options.Interceptors.TryAdd<UmpInterceptor>();
             }
         });
-        /*services.AddOpenTelemetry()
-            .WithTracing(builder =>
-            {
-                builder
-                    .AddSource("AElf")
-                    .SetSampler(new AlwaysOnSampler())
-                    ;
-            })
-            .WithMetrics(builder =>
-            {
-                builder
-                    .AddMeter("AElf");
-                builder.AddPrometheusExporter();
-            });*/
     }
 }

@@ -31,7 +31,6 @@ namespace AElfScanServer.HttpApi;
 
 [DependsOn(
 
-    typeof(OpenTelemetryModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpAccountHttpApiModule),
     typeof(AElfIndexingElasticsearchModule),

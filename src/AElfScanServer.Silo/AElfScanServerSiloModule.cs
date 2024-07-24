@@ -1,3 +1,4 @@
+using AElf.OpenTelemetry;
 using AElfScanServer.Grains;
 using AElfScanServer.Common;
 // using AElfScanServer.MongoDb;
@@ -16,10 +17,9 @@ namespace AElfScanServer.Silo;
 
 [DependsOn(typeof(AbpAutofacModule),
     typeof(AbpAspNetCoreSerilogModule),
-     // typeof(AeFinderMongoDbModule),
+    typeof(OpenTelemetryModule),
      typeof(AElfScanCommonModule),
      typeof(AElfScanServerGrainsModule),
-    typeof(AbpEventBusRabbitMqModule),
     typeof(AbpCachingStackExchangeRedisModule))]
 public class AeFinderOrleansSiloModule : AbpModule
 {

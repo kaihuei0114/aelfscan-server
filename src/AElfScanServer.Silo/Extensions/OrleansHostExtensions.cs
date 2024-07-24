@@ -126,32 +126,8 @@ public static class OrleansHostExtensions
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
-                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); })
-                .AddKafka(Common.AElfScanServerConstants.MessageStreamName)
-                .WithOptions(options =>
-                {
-                    // options.BrokerList = configuration.GetSection("Kafka:Brokers").Get<List<string>>();
-                    // options.ConsumerGroupId = "AElfScan";
-                    // options.ConsumeMode = ConsumeMode.LastCommittedMessage;
-                    //
-                    // var partitions = configuration.GetSection("Kafka:Partitions").Get<int>();
-                    // var replicationFactor = configuration.GetSection("Kafka:ReplicationFactor").Get<short>();
-                    //
-                    // foreach (var n in configuration.GetSection("BlockPush:MessageStreamNamespaces").Get<List<string>>())
-                    // {
-                    //     options.AddTopic(n, new TopicCreationConfig
-                    //     {
-                    //         AutoCreate = true,
-                    //         Partitions = partitions,
-                    //         ReplicationFactor = replicationFactor
-                    //     });
-                    // }
-                    //
-                    // options.MessageMaxBytes = configuration.GetSection("Kafka:MessageMaxBytes").Get<int>();
-                })
-                .AddJson()
-                .AddLoggingTracker()
-                .Build();
+                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
+
         });
     }
 }

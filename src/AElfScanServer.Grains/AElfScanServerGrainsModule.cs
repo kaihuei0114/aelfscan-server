@@ -11,8 +11,5 @@ public class AElfScanServerGrainsModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var configuration = context.Services.GetConfiguration();
-
-
-        context.Services.AddSingleton<IAdsGrain, AdsGain>();
     }
 }
