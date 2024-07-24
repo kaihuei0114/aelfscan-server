@@ -598,7 +598,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 }
 
                 lastBlockHeight += PullTransactioninterval + 1;
-                Thread.Sleep(1000);
+                await Task.Delay(1000);
             }
 
             catch (Exception e)
@@ -1172,12 +1172,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 dailyCycleCountIndex.MissedBlockCount = blockProduceIndex.MissedBlockCount;
                 dailyBlockProduceDurationIndex.AvgBlockDuration =
-                    (totalDuration*1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
-                dailyBlockProduceDurationIndex.LongestBlockDuration = (longestBlockDuration/1000).ToString("F2");
-                dailyBlockProduceDurationIndex.ShortestBlockDuration = (shortestBlockDuration/1000).ToString("F2");
+                    (totalDuration * 1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
+                dailyBlockProduceDurationIndex.LongestBlockDuration = (longestBlockDuration / 1000).ToString("F2");
+                dailyBlockProduceDurationIndex.ShortestBlockDuration = (shortestBlockDuration / 1000).ToString("F2");
 
                 decimal result = blockProduceIndex.BlockCount /
-                                 (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount)*100;
+                    (decimal)(blockProduceIndex.BlockCount + blockProduceIndex.MissedBlockCount) * 100;
                 blockProduceIndex.BlockProductionRate = result.ToString("F2");
 
                 await _blockProduceRepository.AddOrUpdateAsync(blockProduceIndex);
@@ -1243,7 +1243,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 {
                     _logger.LogInformation("BatchUpdateNetwork Stop update round:{c},{r}", chainId, startRoundNumber);
                     currentRound = await GetCurrentRound(chainId);
-                    Thread.Sleep(1000 * 60 * 5);
+                    await Task.Delay(1000 * 60 * 5);
                     continue;
                 }
 
@@ -1298,7 +1298,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             catch (Exception e)
             {
                 _logger.LogError("BatchUpdateNetwork err:{c},{e}", chainId, e);
-                Thread.Sleep(1000 * 10);
+                await Task.Delay(1000 * 10);
             }
         }
     }
