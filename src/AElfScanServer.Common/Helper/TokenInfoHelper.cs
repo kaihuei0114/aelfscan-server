@@ -55,6 +55,7 @@ public class TokenInfoHelper
         {
             TokenCreatedExternalInfoEnum.NFTLogoImageUrl,
             TokenCreatedExternalInfoEnum.SpecialInscriptionImage,
+            TokenCreatedExternalInfoEnum.InscriptionImage,
             TokenCreatedExternalInfoEnum.NFTImageUri,
             TokenCreatedExternalInfoEnum.NFTImageUrl
         };
