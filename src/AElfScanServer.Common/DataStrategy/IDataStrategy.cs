@@ -51,10 +51,7 @@ public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataSt
         await SaveData(queryData, input);
     }
 
-    public virtual Task<TOutPut> QueryData(TInput input)
-    {
-        return default;
-    }
+    public abstract Task<TOutPut> QueryData(TInput input);
 
     public async Task SaveData(TOutPut data, TInput input)
     {
@@ -79,7 +76,6 @@ public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataSt
             await ConnectAsync();
             var key = DisplayKey(input);
             var redisValue = RedisDatabase.StringGet(key);
-
 
             return JsonConvert.DeserializeObject<TOutPut>(redisValue);
         }
