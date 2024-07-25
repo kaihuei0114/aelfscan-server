@@ -21,7 +21,6 @@ public static class OrleansHostExtensions
     {
         return hostBuilder.UseOrleans((context, siloBuilder) =>
         {
-            var configuration = context.Configuration;
             var configSection = context.Configuration.GetSection("Orleans");
             if (configSection == null)
                 throw new ArgumentNullException(nameof(configSection), "The OrleansServer node is missing");
@@ -54,26 +53,8 @@ public static class OrleansHostExtensions
                     })
                 .ConfigureServices(services =>
                     services.AddSingleton<IGrainStateSerializer, AeFinderJsonGrainStateSerializer>())
-                // .AddAeFinderMongoDBGrainStorage("Default", (MongoDBGrainStorageOptions op) =>
-                // {
-                //     op.CollectionPrefix = "GrainStorage";
-                //     op.DatabaseName = configSection.GetValue<string>("DataBase");
-                //
-                //     var grainIdPrefix = configSection
-                //         .GetSection("GrainSpecificIdPrefix").GetChildren()
-                //         .ToDictionary(o => o.Key.ToLower(), o => o.Value);
-                //     op.KeyGenerator = id =>
-                //     {
-                //         var grainType = id.Type.ToString();
-                //         if (grainIdPrefix.TryGetValue(grainType, out var prefix))
-                //         {
-                //             return $"{prefix}+{id.Key}";
-                //         }
-                //
-                //         return id.ToString();
-                //     };
-                //     op.CreateShardKeyForCosmos = configSection.GetValue<bool>("CreateShardKeyForMongoDB", false);
-                // })
+                .AddMemoryGrainStorage("OrleansStorage")
+                .AddMemoryGrainStorageAsDefault()
                 .Configure<GrainCollectionOptions>(options =>
                 {
                     // Override the value of CollectionAge to
@@ -127,7 +108,6 @@ public static class OrleansHostExtensions
                     options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
-
         });
     }
 }

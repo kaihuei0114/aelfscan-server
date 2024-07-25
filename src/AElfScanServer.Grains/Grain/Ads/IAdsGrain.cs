@@ -4,8 +4,7 @@ namespace AElfScanServer.Grains.Grain.Ads;
 
 public interface IAdsGrain : IGrainWithStringKey
 {
-    Task UpdateAsync(AdsIndex dto);
+    Task<AdsDto> UpdateAsync(AdsDto dto);
 
-    Task CreateAsync(AdsIndex dto);
     Task<AdsDto> GetAsync();
 }

@@ -43,6 +43,7 @@ public class Program
             builder.Services.AddSerilog(loggerConfiguration => {},
                 true, writeToProviders: true);
             builder.Host.AddAppSettingsSecretsJson()
+                .UseOrleansClient()
                 .UseAutofac()
                 .UseApollo()
                 .UseSerilog();

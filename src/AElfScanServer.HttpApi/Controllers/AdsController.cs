@@ -14,13 +14,11 @@ using Volo.Abp.AspNetCore.Mvc;
 
 namespace AElfScanServer.HttpApi.Controllers;
 
-[AggregateExecutionTime]
 [RemoteService]
 [ControllerName("Block")]
 [Route("api/app/ads")]
 public class AdsController : AbpController
 {
-    
     private readonly IAdsService _adsService;
 
     public AdsController(IAdsService adsService)
@@ -28,10 +26,9 @@ public class AdsController : AbpController
         _adsService = adsService;
     }
     
-    
     [HttpGet]
     [Route("detail")]
-    public async Task<AdsDto> GetAdsDetailAsync(AdsReq req)
+    public async Task<AdsResp> GetAdsDetailAsync(AdsReq req)
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
@@ -40,4 +37,28 @@ public class AdsController : AbpController
         return await _adsService.GetAds(req);
     }
 
+
+    [HttpPost]
+    [Route("detail")]
+    public async Task<AdsIndex> UpdateAdsDetailAsync(UpdateAdsReq req)
+    {
+        return await _adsService.UpdateAds(req);
+    }
+
+
+    [HttpDelete]
+    [Route("detail")]
+    public async Task<AdsIndex> DeleteAdsDetailAsync(DeleteAdsReq req)
+    {
+      
+        return await _adsService.DeleteAds(req);
+    }
+    
+    
+    [HttpGet]
+    [Route("list")]
+    public async Task<AdsListResp> GetAdsListAsync(GetAdsListReq req)
+    {
+        return await _adsService.GetAdsList(req);
+    }
 }

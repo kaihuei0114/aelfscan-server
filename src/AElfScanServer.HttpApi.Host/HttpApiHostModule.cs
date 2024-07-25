@@ -1,5 +1,6 @@
 using AElf.EntityMapping.Elasticsearch;
 using AElfScanServer.Common;
+using AutoResponseWrapper;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -37,7 +38,7 @@ public class HttpApiHostModule : AbpModule
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "BlockChainDataFunctionServer:"; });
         ConfigureGraphQl(context, configuration);
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<HttpApiHostModule>(); });
-
+        context.Services.AddAutoResponseWrapper();
 
         Configure<AbpAspNetCoreMvcOptions>(options =>
         {

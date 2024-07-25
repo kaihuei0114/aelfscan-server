@@ -1,6 +1,5 @@
 using AElfScanServer.Common.Dtos.Ads;
 using AElfScanServer.Grains.State.Ads;
-using Orleans.Core;
 using Volo.Abp.ObjectMapping;
 
 namespace AElfScanServer.Grains.Grain.Ads;
@@ -9,26 +8,27 @@ public class AdsGain : Grain<AdsState>, IAdsGrain
 {
     private readonly IObjectMapper _objectMapper;
 
-    protected AdsGain(IObjectMapper objectMapper)
+    public AdsGain(IObjectMapper objectMapper)
     {
         _objectMapper = objectMapper;
     }
 
-    public async Task CreateAsync(AdsIndex dto)
+    public async Task<AdsDto> UpdateAsync(AdsDto dto)
     {
-        State = _objectMapper.Map<AdsIndex, AdsState>(dto);
+        State.Records = dto.Records;
+        State.CurAds = dto.CurAds;
         await WriteStateAsync();
+        return dto;
     }
 
-    public async Task UpdateAsync(AdsIndex dto)
-    {
-        State.VisitCount--;
-        await WriteStateAsync();
-    }
 
-    public Task<AdsDto> GetAsync()
+    public async Task<AdsDto> GetAsync()
     {
-        return Task.FromResult(_objectMapper.Map<AdsState, AdsDto>(State));
+        return new AdsDto()
+        {
+            CurAds = State.CurAds,
+            Records = State.Records
+        };
     }
 
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
