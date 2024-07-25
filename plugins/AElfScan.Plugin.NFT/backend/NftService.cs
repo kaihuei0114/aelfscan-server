@@ -498,7 +498,6 @@ public class NftService : INftService, ISingletonDependency
     private  async Task SetCollectionItemAsync(string chainId,string symbol)
     {
         var exist = _memoryCache.TryGetValue(GetCollectionItemsTimeKey(chainId, symbol),out var time);
-        _logger.LogInformation("TryGetValue {chainId} {symbol} value {exist}",chainId, symbol,exist);
         if (exist)
         {
             return;
@@ -506,7 +505,6 @@ public class NftService : INftService, ISingletonDependency
         var sumSupply =  await  QueryCollectionItem(chainId,symbol);
         _logger.LogInformation("QueryCollectionItem {chainId} {symbol} value {exist}",chainId, symbol,exist);
         await _distributedCache.SetAsync(GetCollectionItemsKey(chainId, symbol),sumSupply.ToString(CultureInfo.InvariantCulture));
-        _logger.LogInformation("SetAsync {chainId} {symbol} value {exist}",chainId, symbol,exist);
         await _memoryCache.GetOrCreateAsync<string>(
             GetCollectionItemsTimeKey(chainId, symbol), entry =>
             {
@@ -514,7 +512,7 @@ public class NftService : INftService, ISingletonDependency
                 return  Task.FromResult(DateTime.Now.ToString(CultureInfo.InvariantCulture));
             }
            );
-        _logger.LogInformation("GetOrCreateAsync");
+        _logger.LogInformation("GetOrCreateAsync {chainId} {symbol}",chainId, symbol);
     }
     
     
@@ -524,15 +522,20 @@ public class NftService : INftService, ISingletonDependency
         decimal sumSupply = 0;
         var nftInput = new TokenListInput()
         {
-            ChainId = chainId, Types = new List<SymbolType> { SymbolType.Nft },
-            CollectionSymbols = new List<string>{symbol}, MaxResultCount = 1000
+            ChainId = chainId, Types = [SymbolType.Nft],
+            CollectionSymbols = [symbol], MaxResultCount = 1000,
+            OrderBy = "Symbol",Sort = "Desc"
         };
         int count;
         do
         {
             var nftListDto = await _tokenIndexerProvider.GetTokenListAsync(nftInput);
-            sumSupply += nftListDto.Items.Sum(token => DecimalHelper.Divide(token.Supply, token.Decimals));
             count = nftListDto.Items.Count;
+            if (!nftListDto.Items.IsNullOrEmpty())
+            {
+                sumSupply += nftListDto.Items.Sum(token => DecimalHelper.Divide(token.Supply, token.Decimals));
+                nftInput.SearchAfter = [nftListDto.Items[count-1].Symbol];
+            }
         } while (count == MaxResultCount);
         
         return sumSupply;
