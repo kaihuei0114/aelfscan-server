@@ -82,10 +82,7 @@ public class HttpApiModule : AbpModule
         Configure<AELFIndexerOptions>(configuration.GetSection("AELFIndexer"));
         Configure<GlobalOptions>(configuration.GetSection("BlockChain"));
         Configure<ElasticsearchOptions>(configuration.GetSection("Elasticsearch"));
-
         Configure<WorkerOptions>(configuration.GetSection("Worker"));
-        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "TokenDataFunctionServer:"; });
-
         ConfigureGraphQl(context, configuration);
 
 
