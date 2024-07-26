@@ -41,8 +41,7 @@ namespace AElfScanServer.Worker;
     typeof(AbpIdentityHttpApiModule),
     typeof(AbpAspNetCoreSignalRModule),
     typeof(AElfEntityMappingElasticsearchModule),
-    typeof(AElfIndexingElasticsearchModule),
-    typeof(AElfScanCommonModule)
+    typeof(AElfIndexingElasticsearchModule)
 )]
 public class AElfScanServerWorkerModule : AbpModule
 {

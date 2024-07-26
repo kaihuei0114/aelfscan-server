@@ -1,4 +1,3 @@
-using AElfScanServer;
 using AElfScanServer.Common;
 using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.IndexerPluginProvider;
@@ -6,9 +5,9 @@ using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
 using Microsoft.Extensions.DependencyInjection;
 using NFT.backend;
-using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.Caching;
 using Volo.Abp.Modularity;
 
 namespace NFT;
@@ -34,6 +33,7 @@ public class AElfScanPluginNFTModule : AElfScanPluginBaseModule<AElfScanPluginNF
         Configure<CoinGeckoOptions>(configuration.GetSection("CoinGecko"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfoOptions"));
         Configure<AssetsInfoOptions>(configuration.GetSection("AssetsInfoOptions"));
+        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "BlockChainDataFunctionServer:"; });
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
         context.Services.AddSingleton<IGraphQlFactory, GraphQlFactory>();
         context.Services.AddSingleton<NftController, NftController>();

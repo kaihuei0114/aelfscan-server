@@ -121,10 +121,10 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             Query =
                 @"query($chainId:String!,$skipCount:Int!,$maxResultCount:Int!,$search:String,
                         $types:[SymbolType!],$symbols:[String!],$collectionSymbols:[String!],
-                        $sort:String,$orderBy:String,$exactSearch:String,$fuzzySearch:String){
+                        $sort:String,$orderBy:String,$exactSearch:String,$fuzzySearch:String,$searchAfter:[String]){
                     tokenInfo(input: {chainId:$chainId,skipCount:$skipCount,maxResultCount:$maxResultCount,search:$search,types:$types,
                         symbols:$symbols,collectionSymbols:$collectionSymbols,sort:$sort,orderBy:$orderBy,
-                        exactSearch:$exactSearch,fuzzySearch:$fuzzySearch})
+                        exactSearch:$exactSearch,fuzzySearch:$fuzzySearch,searchAfter:$searchAfter})
                 {
                    totalCount,
                    items{
@@ -152,7 +152,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                 chainId = input.ChainId, types = input.Types, symbols = input.Symbols, skipCount = input.SkipCount,
                 maxResultCount = input.MaxResultCount, collectionSymbols = input.CollectionSymbols,
                 search = input.Search, sort = input.Sort, orderBy = input.OrderBy,
-                exactSearch = input.ExactSearch, fuzzySearch = input.FuzzySearch
+                exactSearch = input.ExactSearch, fuzzySearch = input.FuzzySearch,searchAfter = input.SearchAfter
             }
         });
         return indexerResult?.TokenInfo ?? new IndexerTokenInfoListDto();

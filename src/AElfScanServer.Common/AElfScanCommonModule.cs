@@ -1,4 +1,5 @@
 using AElf.EntityMapping.Options;
+using AElf.OpenTelemetry;
 using AElfScanServer.Common.Address.Provider;
 using AElfScanServer.Common.Contract.Provider;
 using AElfScanServer.Common.Core;
@@ -11,10 +12,7 @@ using AElfScanServer.Common.ThirdPart.Exchange;
 using AElfScanServer.Common.Token.Provider;
 using Aetherlink.PriceServer;
 using AutoResponseWrapper;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 using Volo.Abp;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Caching.StackExchangeRedis;
@@ -23,6 +21,8 @@ using Volo.Abp.Modularity;
 namespace AElfScanServer.Common;
 
 [DependsOn(
+    typeof(OpenTelemetryModule),
+    typeof(AbpAutoMapperModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(AetherlinkPriceServerModule)
@@ -41,6 +41,7 @@ public class AElfScanCommonModule : AbpModule
         Configure<CoinGeckoOptions>(configuration.GetSection("CoinGecko"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfoOptions"));
         Configure<AssetsInfoOptions>(configuration.GetSection("AssetsInfoOptions"));
+        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(AElfScanCommonModule)); });
         context.Services.AddSingleton<IHttpProvider, HttpProvider>();
         context.Services.AddSingleton<IGraphQlFactory, GraphQlFactory>();
         context.Services.AddTransient<IExchangeProvider, OkxProvider>();
@@ -55,74 +56,24 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<INftInfoProvider, NftInfoProvider>();
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
 
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(NodeBlockProduceIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(RoundIndex)); });
-
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockProduceCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockProduceDurationIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyCycleCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(HourNodeBlockProduceIndex)); });
-
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyBlockRewardIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgBlockSizeIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgTransactionFeeIndex)); });
-
-
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTotalBurntIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyDeployContractIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(ElfPriceIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTransactionCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyUniqueAddressCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyActiveAddressCountIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyAvgBlockSizeIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(BlockSizeErrInfoIndex)); });
-
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTransactionRecordIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(AddressIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyHasFeeTransactionIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyTotalContractCallIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyContractCallIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailySupplyGrowthIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyStakedIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailyVotedIndex)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(DailySupplyChange)); });
-        Configure<CollectionCreateOptions>(x => { x.AddModule(typeof(TransactionErrInfoIndex)); });
-
         context.Services.AddHttpClient();
         context.Services.AddAutoResponseWrapper();
-
-        AddOpenTelemetry(context);
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
-        app.UseOpenTelemetryPrometheusScrapingEndpoint();
     }
 
     private void AddOpenTelemetry(ServiceConfigurationContext context)
     {
         var services = context.Services;
-        services.OnRegistred(options =>
+        services.OnRegistered(options =>
         {
             if (options.ImplementationType.IsDefined(typeof(UmpAttribute), true))
             {
                 options.Interceptors.TryAdd<UmpInterceptor>();
             }
         });
-        services.AddOpenTelemetry()
-            .WithTracing(builder =>
-            {
-                builder
-                    .AddSource("AElf")
-                    .SetSampler(new AlwaysOnSampler())
-                    ;
-            })
-            .WithMetrics(builder =>
-            {
-                builder
-                    .AddMeter("AElf");
-                builder.AddPrometheusExporter();
-            });
     }
 }

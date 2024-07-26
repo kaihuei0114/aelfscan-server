@@ -1,5 +1,6 @@
 using AElf.EntityMapping.Elasticsearch;
 using AElf.Indexing.Elasticsearch;
+using AElf.OpenTelemetry;
 using AElfScanServer.HttpApi.Options;
 using AElfScanServer.HttpApi.Provider;
 using AElfScanServer.HttpApi.DataStrategy;
@@ -30,6 +31,7 @@ using Volo.Abp.TenantManagement;
 namespace AElfScanServer.HttpApi;
 
 [DependsOn(
+
     typeof(AbpAutoMapperModule),
     typeof(AbpAccountHttpApiModule),
     typeof(AElfIndexingElasticsearchModule),
@@ -38,11 +40,8 @@ namespace AElfScanServer.HttpApi;
     typeof(AbpFeatureManagementHttpApiModule),
     typeof(AbpSettingManagementHttpApiModule),
     typeof(AbpAspNetCoreSignalRModule),
-    typeof(AElfEntityMappingElasticsearchModule),
-    typeof(AElfScanCommonModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(AbpAspNetCoreMvcModule),
-    typeof(AbpAutofacModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBackgroundWorkersModule),
     typeof(AElfScanCommonModule),
@@ -83,10 +82,7 @@ public class HttpApiModule : AbpModule
         Configure<AELFIndexerOptions>(configuration.GetSection("AELFIndexer"));
         Configure<GlobalOptions>(configuration.GetSection("BlockChain"));
         Configure<ElasticsearchOptions>(configuration.GetSection("Elasticsearch"));
-
         Configure<WorkerOptions>(configuration.GetSection("Worker"));
-        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "TokenDataFunctionServer:"; });
-
         ConfigureGraphQl(context, configuration);
 
 

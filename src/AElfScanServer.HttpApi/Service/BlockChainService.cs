@@ -22,6 +22,8 @@ using Nest;
 using AElf.Contracts.MultiToken;
 using AElf.CSharp.Core;
 using AElf.CSharp.Core.Extension;
+using AElf.OpenTelemetry;
+using AElf.OpenTelemetry.ExecutionTime;
 using AElfScanServer.HttpApi.Dtos.Indexer;
 using AElfScanServer.Common.Core;
 using AElfScanServer.Common.Dtos;
@@ -57,7 +59,8 @@ public interface IBlockChainService
     public Task<LogEventResponseDto> GetLogEventsAsync(GetLogEventRequestDto request);
 }
 
-[Ump]
+
+[AggregateExecutionTime]
 public class BlockChainService : IBlockChainService, ITransientDependency
 {
     private readonly INESTRepository<BlockExtraIndex, string> _blockExtraIndexRepository;

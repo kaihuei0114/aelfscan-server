@@ -16,7 +16,6 @@ namespace AElfScanServer.Domain.Shared;
 
 [DependsOn(
     typeof(AbpAuditLoggingDomainSharedModule),
-    // typeof(AbpBackgroundJobsDomainSharedModule),
     typeof(AbpFeatureManagementDomainSharedModule),
     typeof(AbpIdentityDomainSharedModule),
     typeof(AbpOpenIddictDomainSharedModule),
