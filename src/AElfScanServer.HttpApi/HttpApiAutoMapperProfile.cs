@@ -35,10 +35,6 @@ public class BlockChainAutoMapperProfile : Profile
         CreateMap<DailySupplyGrowthIndex, DailySupplyGrowth>()
             .ReverseMap();
 
-        CreateMap<DailyMarketCapIndex, DailyMarketCap>()
-            .ReverseMap();
-
-
         CreateMap<DailyTotalContractCallIndex, DailyTotalContractCall>()
             .ReverseMap();
 

@@ -92,9 +92,9 @@ public class ChartDataController : AbpController
 
 
     [HttpGet("dailyElfPrice")]
-    public async Task<ElfPriceIndexResp> GetElfPriceIndexRespAsync(ChartDataRequest request)
+    public async Task<ElfPriceIndexResp> GetElfPriceIndexRespAsync()
     {
-        return await _chartDataService.GetElfPriceIndexRespAsync(request);
+        return await _chartDataService.GetElfPriceIndexRespAsync();
     }
 
 
@@ -134,15 +134,15 @@ public class ChartDataController : AbpController
 
 
     [HttpGet("dailySupplyGrowth")]
-    public async Task<DailySupplyGrowthResp> GetDailySupplyGrowthRespAsync(ChartDataRequest request)
+    public async Task<DailySupplyGrowthResp> GetDailySupplyGrowthRespAsync()
     {
-        return await _chartDataService.GetDailySupplyGrowthRespAsync(request);
+        return await _chartDataService.GetDailySupplyGrowthRespAsync();
     }
 
     [HttpGet("dailyMarketCap")]
-    public async Task<DailyMarketCapResp> GetDailyMarketCapRespAsync(ChartDataRequest request)
+    public async Task<DailyMarketCapResp> GetDailyMarketCapRespAsync()
     {
-        return await _chartDataService.GetDailyMarketCapRespAsync(request);
+        return await _chartDataService.GetDailyMarketCapRespAsync();
     }
 
 

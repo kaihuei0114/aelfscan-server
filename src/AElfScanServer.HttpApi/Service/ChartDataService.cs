@@ -21,6 +21,8 @@ using AElfScanServer.HttpApi.Dtos.ChartData;
 using AElfScanServer.HttpApi.Helper;
 using AElfScanServer.HttpApi.Options;
 using AElfScanServer.HttpApi.Provider;
+using Aetherlink.PriceServer;
+using Aetherlink.PriceServer.Dtos;
 using Elasticsearch.Net;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -35,6 +37,7 @@ using Newtonsoft.Json;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
+using DailyMarketCap = AElfScanServer.HttpApi.Dtos.ChartData.DailyMarketCap;
 
 namespace AElfScanServer.HttpApi.Service;
 
@@ -64,7 +67,7 @@ public interface IChartDataService
 
     public Task<DailyDeployContractResp> GetDailyDeployContractRespAsync(ChartDataRequest request);
 
-    public Task<ElfPriceIndexResp> GetElfPriceIndexRespAsync(ChartDataRequest request);
+    public Task<ElfPriceIndexResp> GetElfPriceIndexRespAsync();
 
 
     public Task<DailyBlockRewardResp> GetDailyBlockRewardRespAsync(ChartDataRequest request);
@@ -76,9 +79,9 @@ public interface IChartDataService
 
     public Task<TopContractCallResp> GetTopContractCallRespAsync(ChartDataRequest request);
 
-    public Task<DailyMarketCapResp> GetDailyMarketCapRespAsync(ChartDataRequest request);
+    public Task<DailyMarketCapResp> GetDailyMarketCapRespAsync();
 
-    public Task<DailySupplyGrowthResp> GetDailySupplyGrowthRespAsync(ChartDataRequest request);
+    public Task<DailySupplyGrowthResp> GetDailySupplyGrowthRespAsync();
 
     public Task<DailyStakedResp> GetDailyStakedRespAsync(ChartDataRequest request);
 
@@ -119,11 +122,11 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IEntityMappingRepository<DailyActiveAddressCountIndex, string> _activeAddressRepository;
     private readonly IEntityMappingRepository<DailyContractCallIndex, string> _dailyContractCallRepository;
     private readonly IEntityMappingRepository<DailyTotalContractCallIndex, string> _dailyTotalContractCallRepository;
-    private readonly IEntityMappingRepository<DailyMarketCapIndex, string> _dailyMarketCapIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyGrowthIndex, string> _dailySupplyGrowthIndexRepository;
     private readonly IEntityMappingRepository<DailyStakedIndex, string> _dailyStakedIndexRepository;
     private readonly IEntityMappingRepository<DailyTVLIndex, string> _dailyTVLRepository;
     private readonly IDailyHolderProvider _dailyHolderProvider;
+    private readonly IPriceServerProvider _priceServerProvider;
     private readonly IEntityMappingRepository<DailyTransactionRecordIndex, string> _transactionRecordIndexRepository;
 
 
@@ -152,11 +155,11 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         IEntityMappingRepository<TransactionIndex, string> transactionsRepository,
         IEntityMappingRepository<DailyContractCallIndex, string> dailyContractCallRepository,
         IEntityMappingRepository<DailyTotalContractCallIndex, string> dailyTotalContractCallRepository,
-        IEntityMappingRepository<DailyMarketCapIndex, string> dailyMarketCapIndexRepository,
         IEntityMappingRepository<DailySupplyGrowthIndex, string> dailySupplyGrowthIndexRepository,
         IEntityMappingRepository<DailyStakedIndex, string> dailyStakedIndexRepository,
         IEntityMappingRepository<DailyTransactionRecordIndex, string> transactionRecordIndexRepository,
         IEntityMappingRepository<DailyTVLIndex, string> dailyTVLRepository,
+        IPriceServerProvider priceServerProvider,
         OverviewDataStrategy overviewDataStrategy,
         IDailyHolderProvider dailyHolderProvider,
         IOptionsMonitor<ElasticsearchOptions> options) : base(
@@ -188,12 +191,12 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _transactionsRepository = transactionsRepository;
         _dailyContractCallRepository = dailyContractCallRepository;
         _dailyTotalContractCallRepository = dailyTotalContractCallRepository;
-        _dailyMarketCapIndexRepository = dailyMarketCapIndexRepository;
         _dailySupplyGrowthIndexRepository = dailySupplyGrowthIndexRepository;
         _dailyStakedIndexRepository = dailyStakedIndexRepository;
         _transactionRecordIndexRepository = transactionRecordIndexRepository;
         _dailyHolderProvider = dailyHolderProvider;
         _dailyTVLRepository = dailyTVLRepository;
+        _priceServerProvider = priceServerProvider;
         _overviewDataStrategy = new DataStrategyContext<string, HomeOverviewResponseDto>(overviewDataStrategy);
     }
 
@@ -358,7 +361,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyTVLResp()
         {
-            List = dailyTvls.OrderBy(c => c.DateStr).ToList(),
+            List = dailyTvls.ToList(),
             Total = dailyTvls.Count,
             Highest = dailyTvls.MaxBy(c => double.Parse(c.TVL)),
             Lowest = dailyTvls.MinBy(c => double.Parse(c.TVL)),
@@ -410,34 +413,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         };
     }
 
-    public async Task<DailyMarketCapResp> GetDailyMarketCapRespAsync(ChartDataRequest request)
-    {
-        var queryable = await _dailyMarketCapIndexRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000)
-            .ToList();
-
-        var datList = _objectMapper.Map<List<DailyMarketCapIndex>, List<DailyMarketCap>>(indexList);
-
-        datList[0].TotalMarketCap = datList[0].IncrMarketCap;
-        for (var i = 1; i < datList.Count; i++)
-        {
-            var supply1 = double.Parse(datList[i].IncrMarketCap);
-            var supply2 = double.Parse(datList[i - 1].TotalMarketCap);
-            datList[i].TotalMarketCap = (supply1 + supply2).ToString("F6");
-        }
-
-
-        var resp = new DailyMarketCapResp()
-        {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
-            Total = datList.Count,
-            Highest = datList.MaxBy(c => double.Parse(c.IncrMarketCap)),
-            Lowest = datList.MinBy(c => double.Parse(c.IncrMarketCap)),
-        };
-
-        return resp;
-    }
-
 
     public async Task<DailyStakedResp> GetDailyStakedRespAsync(ChartDataRequest request)
     {
@@ -481,14 +456,59 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyStakedResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
+            List = datList,
             Total = datList.Count,
         };
 
         return resp;
     }
 
-    public async Task<DailySupplyGrowthResp> GetDailySupplyGrowthRespAsync(ChartDataRequest request)
+    public async Task<DailyMarketCapResp> GetDailyMarketCapRespAsync()
+    {
+        var dailySupplyGrowthRespAsync = await GetDailySupplyGrowthRespAsync();
+        var priceList = await GetElfPriceIndexRespAsync();
+
+        var marketList = new List<DailyMarketCap>();
+
+        var priceDic = priceList.List.ToDictionary(c => c.DateStr, c => c);
+        foreach (var dailySupplyGrowth in dailySupplyGrowthRespAsync.List)
+        {
+            var marketCap = new DailyMarketCap()
+            {
+                DateStr = dailySupplyGrowth.DateStr,
+                Date = dailySupplyGrowth.Date,
+            };
+
+            double curDatePrice = 0;
+            if (priceDic.TryGetValue(dailySupplyGrowth.DateStr, out var priceData))
+            {
+                curDatePrice = double.Parse(priceData.Price);
+            }
+            else
+            {
+                curDatePrice = await GetElfPrice(dailySupplyGrowth.DateStr);
+            }
+
+
+            marketCap.TotalMarketCap = (double.Parse(dailySupplyGrowth.TotalSupply) * curDatePrice).ToString("F4");
+            marketCap.FDV = (1000000000 * curDatePrice).ToString("F4");
+            marketList.Add(marketCap);
+        }
+
+
+        var resp = new DailyMarketCapResp()
+        {
+            List = marketList,
+            Total = marketList.Count,
+            Highest = marketList.MaxBy(c => double.Parse(c.TotalMarketCap)),
+            Lowest = marketList.MinBy(c => double.Parse(c.TotalMarketCap)),
+        };
+
+        return resp;
+    }
+
+
+    public async Task<DailySupplyGrowthResp> GetDailySupplyGrowthRespAsync()
     {
         var queryable = await _dailySupplyGrowthIndexRepository.GetQueryableAsync();
         var mainIndexList = queryable.Where(c => c.ChainId == "AELF").OrderBy(c => c.Date).Take(10000).ToList();
@@ -568,7 +588,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyAvgBlockSizeResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
+            List = datList.ToList(),
             Total = datList.Count,
             Highest = datList.MaxBy(c => double.Parse(c.AvgBlockSize)),
             Lowest = datList.MinBy(c => double.Parse(c.AvgBlockSize)),
@@ -587,7 +607,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyTotalContractCallResp()
         {
-            List = dataList.OrderBy(c => c.DateStr).ToList(),
+            List = dataList.ToList(),
             Total = dataList.Count,
             Highest = dataList.MaxBy(c => c.CallCount),
             Lowest = dataList.MinBy(c => c.CallCount),
@@ -674,7 +694,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyTransactionFeeResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
+            List = datList.ToList(),
             Total = datList.Count,
             Highest = datList.MaxBy(c => double.Parse(c.TotalFeeElf)),
             Lowest = datList.MinBy(c => double.Parse(c.TotalFeeElf)),
@@ -700,7 +720,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyAvgTransactionFeeResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
+            List = datList.ToList(),
             Total = datList.Count,
             Highest = datList.MaxBy(c => double.Parse(c.AvgFeeElf)),
             Lowest = datList.MinBy(c => double.Parse(c.AvgFeeElf)),
@@ -724,7 +744,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyTotalBurntResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
+            List = datList.ToList(),
             Total = datList.Count,
             Highest = datList.MaxBy(c => double.Parse(c.Burnt)),
             Lowest = datList.MinBy(c => double.Parse(c.Burnt)),
@@ -764,7 +784,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         return resp;
     }
 
-    public async Task<ElfPriceIndexResp> GetElfPriceIndexRespAsync(ChartDataRequest request)
+    public async Task<ElfPriceIndexResp> GetElfPriceIndexRespAsync()
     {
         var queryable = await _elfPriceRepository.GetQueryableAsync();
         var indexList = queryable.Take(10000).ToList();
@@ -806,7 +826,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new DailyBlockRewardResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
+            List = datList.ToList(),
             Total = datList.Count,
             Highest = datList.MaxBy(c => double.Parse(c.BlockReward)),
             Lowest = datList.MinBy(c => double.Parse(c.BlockReward)),
@@ -1248,13 +1268,13 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyTransactionCountResp> GetDailyTransactionCountAsync(ChartDataRequest request)
     {
         var queryable = await _transactionCountRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).OrderBy(c => c.Date).ToList();
 
         var datList = _objectMapper.Map<List<DailyTransactionCountIndex>, List<DailyTransactionCount>>(indexList);
 
         var resp = new DailyTransactionCountResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList().GetRange(1, datList.Count - 1),
+            List = datList.GetRange(1, datList.Count - 1),
             Total = datList.Count,
             HighestTransactionCount = datList.MaxBy(c => c.TransactionCount),
             LowesTransactionCount = datList.MinBy(c => c.TransactionCount),
@@ -1266,7 +1286,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<UniqueAddressCountResp> GetUniqueAddressCountAsync(ChartDataRequest request)
     {
         var queryable = await _uniqueAddressRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
 
         var dataList = _objectMapper.Map<List<DailyUniqueAddressCountIndex>, List<DailyUniqueAddressCount>>(indexList);
 
@@ -1281,7 +1301,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var resp = new UniqueAddressCountResp()
         {
-            List = dataList.OrderBy(c => c.DateStr).ToList(),
+            List = dataList,
             Total = dataList.Count,
             HighestIncrease = dataList.MaxBy(c => c.AddressCount),
             LowestIncrease = dataList.MinBy(c => c.AddressCount),
@@ -1293,13 +1313,13 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<ActiveAddressCountResp> GetActiveAddressCountAsync(ChartDataRequest request)
     {
         var queryable = await _activeAddressRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == request.ChainId).Take(10000).OrderBy(c => c.Date).ToList();
 
         var datList = _objectMapper.Map<List<DailyActiveAddressCountIndex>, List<DailyActiveAddressCount>>(indexList);
 
         var resp = new ActiveAddressCountResp()
         {
-            List = datList.OrderBy(c => c.DateStr).ToList(),
+            List = datList,
             Total = datList.Count,
             HighestActiveCount = datList.MaxBy(c => c.AddressCount),
             LowestActiveCount = datList.MinBy(c => c.AddressCount),
@@ -1386,5 +1406,32 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var round = Round.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
         return round;
+    }
+
+    public async Task<double> GetElfPrice(string date)
+    {
+        try
+        {
+            var res = await _priceServerProvider.GetDailyPriceAsync(new GetDailyPriceRequestDto()
+            {
+                TokenPair = "elf-usdt",
+                TimeStamp = date.Replace("-", "")
+            });
+
+            var s = ((double)res.Data.Price / 1e8).ToString();
+            _elfPriceRepository.AddOrUpdateAsync(new ElfPriceIndex()
+            {
+                DateStr = date,
+                Close = s
+            });
+
+            _logger.LogInformation("GetElfPrice date:{d},price{e}", date, s);
+            return (double)res.Data.Price / 1e8;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("GetElfPrice err:{e},date:{d}", e, date.Replace("-", ""));
+            return 0;
+        }
     }
 }

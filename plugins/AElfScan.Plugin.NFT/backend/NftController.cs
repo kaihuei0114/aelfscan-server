@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
 namespace NFT.backend;
-[AggregateExecutionTime]
 [RemoteService]
 [Area("app")]
 [ControllerName("Nft")]

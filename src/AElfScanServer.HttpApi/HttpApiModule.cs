@@ -10,6 +10,7 @@ using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
+using Aetherlink.PriceServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -43,7 +44,8 @@ namespace AElfScanServer.HttpApi;
     typeof(AbpAspNetCoreMvcModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBackgroundWorkersModule),
-    typeof(AElfScanCommonModule)
+    typeof(AElfScanCommonModule),
+    typeof(AetherlinkPriceServerModule)
 )]
 public class HttpApiModule : AbpModule
 {
@@ -80,10 +82,7 @@ public class HttpApiModule : AbpModule
         Configure<AELFIndexerOptions>(configuration.GetSection("AELFIndexer"));
         Configure<GlobalOptions>(configuration.GetSection("BlockChain"));
         Configure<ElasticsearchOptions>(configuration.GetSection("Elasticsearch"));
-
         Configure<WorkerOptions>(configuration.GetSection("Worker"));
-        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "TokenDataFunctionServer:"; });
-
         ConfigureGraphQl(context, configuration);
 
 
