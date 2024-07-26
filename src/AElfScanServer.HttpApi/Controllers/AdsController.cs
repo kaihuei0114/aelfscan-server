@@ -55,7 +55,7 @@ public class AdsController : AbpController
     }
     
     
-    [HttpGet]
+    [HttpPost]
     [Route("list")]
     public async Task<AdsListResp> GetAdsListAsync(GetAdsListReq req)
     {

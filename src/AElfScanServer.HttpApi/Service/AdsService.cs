@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AeFinder.Grains;
 using AElf.EntityMapping.Repositories;
@@ -10,11 +13,16 @@ using AElfScanServer.Common.Options;
 using AElfScanServer.Grains.Grain.Ads;
 using AElfScanServer.Grains.State.Ads;
 using AElfScanServer.HttpApi.Dtos.AdsData;
+using AElfScanServer.HttpApi.Options;
+using Elasticsearch.Net;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Nest;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -32,142 +40,157 @@ public interface IAdsService
     public Task<AdsListResp> GetAdsList(GetAdsListReq req);
 }
 
-public class AdsService : IAdsService, ITransientDependency
+public class AdsService : AbpRedisCache, IAdsService, ITransientDependency
 {
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly ILogger<AdsService> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IEntityMappingRepository<AdsIndex, string> _adsRepository;
     private readonly IObjectMapper _objectMapper;
+    private readonly IElasticClient _elasticClient;
 
-    public AdsService(IOptionsMonitor<GlobalOptions> globalOptions, ILogger<AdsService> logger,
+    public AdsService(IOptions<RedisCacheOptions> optionsAccessor, IOptionsMonitor<GlobalOptions> globalOptions,
+        ILogger<AdsService> logger,
         IClusterClient clusterClient, IEntityMappingRepository<AdsIndex, string> adsRepository,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper, IOptionsMonitor<ElasticsearchOptions> options) : base(
+        optionsAccessor)
     {
         _globalOptions = globalOptions;
         _logger = logger;
         _clusterClient = clusterClient;
         _objectMapper = objectMapper;
         _adsRepository = adsRepository;
+        var uris = options.CurrentValue.Url.ConvertAll(x => new Uri(x));
+        var connectionPool = new StaticConnectionPool(uris);
+        var settings = new ConnectionSettings(connectionPool);
+        _elasticClient = new ElasticClient(settings);
     }
 
 
     public async Task<AdsListResp> GetAdsList(GetAdsListReq req)
     {
-        var queryableAsync = await _adsRepository.GetQueryableAsync();
-        if (!req.Label.IsNullOrEmpty())
-        {
-            queryableAsync = queryableAsync.Where(c => c.Label == req.Label);
-        }
+        var result = new AdsListResp();
+        var searchResponse = _elasticClient.Search<AdsIndex>(s => s
+            .Index("adsindex")
+            .Query(q => q
+                .Bool(b => b
+                    .Must(m =>
+                    {
+                        if (req.Labels == null || !req.Labels.Any())
+                            return m.MatchAll();
+                        else
+                            return m.Terms(t => t
+                                .Field(f => f.Labels.Suffix("keyword"))
+                                .Terms(req.Labels)
+                            );
+                    })
+                )
+            )
+            .Sort(sort => sort
+                .Field(f => f
+                    .Field(c => c.CreateTime)
+                    .Order(SortOrder.Descending)
+                )
+            )
+            .Size(1000)
+        );
 
-        var adsIndices = queryableAsync.Take(10000).ToList();
-
-        var result = new AdsListResp()
-        {
-            List = adsIndices,
-            Total = adsIndices.Count
-        };
+        var adsIndexes = searchResponse.Documents.ToList();
+        result.List = adsIndexes;
+        result.Total = adsIndexes.Count;
         return result;
     }
 
     public async Task<AdsResp> GetAds(AdsReq req)
     {
-        var grainKey = GrainIdHelper.GenerateGrainId(req.Ip, req.Device, req.Label);
-        var adsGrain = _clusterClient.GetGrain<IAdsGrain>(grainKey);
-        var ads = await adsGrain.GetAsync();
-        var curTime = DateTime.UtcNow;
-        var queryable = await _adsRepository.GetQueryableAsync();
+        var dateStr = DateTimeHelper.GetDateStr(DateTime.UtcNow);
+        var key = GrainIdHelper.GenerateAdsKey(req.Ip, req.Device, req.Label, dateStr);
+        await ConnectAsync();
+        var adsVisitCount = RedisDatabase.StringGet(key);
+        var adsList = new List<AdsIndex>();
         var adsResp = new AdsResp();
-        if (ads == null || ads.CurAds == null)
-        {
-            var adsList = queryable.Where(c => c.Label == req.Label).Where(c => c.StartTime <= curTime)
-                .Where(c => c.EndTime >= curTime).OrderBy(c => c.CreateTime).Take(1).ToList();
-            if (adsList.IsNullOrEmpty())
-            {
-                return adsResp;
-            }
 
+        adsList = await QueryAdsList(req.Label, "", 1000);
+        if (adsList.IsNullOrEmpty())
+        {
+            return adsResp;
+        }
+
+        if (adsVisitCount.IsNullOrEmpty)
+        {
             var adsIndex = adsList.First();
-
-
-            var adsInfoDto = _objectMapper.Map<AdsIndex, AdsInfoDto>(adsIndex);
             adsResp = _objectMapper.Map<AdsIndex, AdsResp>(adsIndex);
-            adsInfoDto.VisitCount++;
 
-            var adsDto = new AdsDto()
-            {
-                CurAds = adsInfoDto,
-                Records = new Dictionary<string, AdsVisitFinishedRecordDto>()
-            };
-            await adsGrain.UpdateAsync(adsDto);
-
-
+            RedisDatabase.StringIncrement(key);
+            RedisDatabase.KeyExpire(key, TimeSpan.FromDays(7));
             return adsResp;
         }
 
-        if (ads.CurAds.VisitCount == ads.CurAds.TotalVisitCount || ads.CurAds.EndTime <= curTime)
+        var count = long.Parse(adsVisitCount);
+
+        var totalVisitCount = 0;
+        foreach (var ads in adsList)
         {
-            ads.Records[ads.CurAds.AdsId] = new AdsVisitFinishedRecordDto()
+            totalVisitCount += ads.TotalVisitCount;
+            if (count < totalVisitCount)
             {
-                AdsId = ads.CurAds.AdsId,
-                VisitCount = ads.CurAds.VisitCount,
-                TotalVisitCount = ads.CurAds.TotalVisitCount,
-                FinishedTime = curTime,
-            };
-            var adsList = queryable.Where(c => c.Label == req.Label).Where(c => c.StartTime <= curTime)
-                .Where(c => c.EndTime >= curTime).OrderBy(c => c.CreateTime).Take(1000).ToList();
-            if (adsList.IsNullOrEmpty())
-            {
-                return adsResp;
+                RedisDatabase.StringIncrement(key);
+                return _objectMapper.Map<AdsIndex, AdsResp>(ads);
             }
-
-            foreach (var adsIndex in adsList)
-            {
-                if (!ads.Records.ContainsKey(adsIndex.AdsId))
-                {
-                    var adsInfoDto = _objectMapper.Map<AdsIndex, AdsInfoDto>(adsIndex);
-                    adsResp = _objectMapper.Map<AdsIndex, AdsResp>(adsIndex);
-                    adsInfoDto.VisitCount++;
-                    ads.CurAds = adsInfoDto;
-                    await adsGrain.UpdateAsync(ads);
-                    return adsResp;
-                }
-            }
-
-            return adsResp;
         }
 
 
-        var adsIndexList = queryable.Where(c => c.Label == req.Label).Where(c => c.AdsId == ads.CurAds.AdsId).Take(1);
-        if (adsIndexList.IsNullOrEmpty())
-        {
-            var adsList = queryable.Where(c => c.Label == req.Label).Where(c => c.StartTime <= curTime)
-                .Where(c => c.EndTime >= curTime).OrderBy(c => c.CreateTime).Take(1000).ToList();
-            if (adsList.IsNullOrEmpty())
-            {
-                return adsResp;
-            }
+        RedisDatabase.StringSet(key, 1);
+        return _objectMapper.Map<AdsIndex, AdsResp>(adsList.First());
+    }
 
-            foreach (var adsIndex in adsList)
-            {
-                if (!ads.Records.ContainsKey(adsIndex.AdsId))
-                {
-                    var adsInfoDto = _objectMapper.Map<AdsIndex, AdsInfoDto>(adsIndex);
-                    adsResp = _objectMapper.Map<AdsIndex, AdsResp>(adsIndex);
-                    adsInfoDto.VisitCount++;
-                    ads.CurAds = adsInfoDto;
-                    await adsGrain.UpdateAsync(ads);
-                    return adsResp;
-                }
-            }
 
-            return adsResp;
-        }
+    public async Task<List<AdsIndex>> QueryAdsList(string label, string adsId, int size)
+    {
+        var utcMilliSeconds = DateTime.UtcNow.ToUtcMilliSeconds();
+        var searchResponse = _elasticClient.Search<AdsIndex>(s => s
+            .Index("adsindex")
+            .Query(q => q
+                .Bool(b => b
+                    .Must(
+                        m =>
+                        {
+                            if (label.IsNullOrEmpty())
+                                return m.MatchAll();
+                            return m.Terms(t => t
+                                .Field(f => f.Labels.Suffix("keyword"))
+                                .Terms(label)
+                            );
+                        },
+                        m => m.Range(r => r
+                            .Field(f => f.StartTime)
+                            .LessThanOrEquals(utcMilliSeconds)
+                        ),
+                        m => m.Range(r => r
+                            .Field(f => f.EndTime)
+                            .GreaterThanOrEquals(utcMilliSeconds)
+                        ),
+                        m =>
+                        {
+                            if (adsId.IsNullOrEmpty())
+                                return m.MatchAll();
+                            return m.Term(t => t
+                                .Field(f => f.AdsId)
+                                .Value(adsId)
+                            );
+                        }
+                    )
+                )
+            ).Sort(sort => sort
+                .Field(f => f
+                    .Field(c => c.CreateTime)
+                    .Order(SortOrder.Ascending)
+                )
+            )
+            .Size(size)
+        );
 
-        ads.CurAds.VisitCount++;
-
-        await adsGrain.UpdateAsync(ads);
-        return _objectMapper.Map<AdsInfoDto, AdsResp>(ads.CurAds);
+        return searchResponse.Documents.ToList();
     }
 
     public async Task<AdsIndex> UpdateAds(UpdateAdsReq req)
@@ -181,6 +204,11 @@ public class AdsService : IAdsService, ITransientDependency
             adsIndex.CreateTime = DateTime.UtcNow;
             adsIndex.UpdateTime = DateTime.UtcNow;
         }
+        else
+        {
+            adsIndex.Id = adsIndex.AdsId;
+        }
+
 
         adsIndex.UpdateTime = DateTime.UtcNow;
         await _adsRepository.AddOrUpdateAsync(adsIndex);

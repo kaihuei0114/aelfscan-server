@@ -57,7 +57,6 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
 
         context.Services.AddHttpClient();
-        // context.Services.AddAutoResponseWrapper();
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)

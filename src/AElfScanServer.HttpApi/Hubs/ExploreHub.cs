@@ -79,26 +79,25 @@ public class ExploreHub : AbpHub
             return;
         }
 
-
-        while (true)
+        try
         {
-            await Task.Delay(2000);
-
-            try
+            while (true)
             {
+                await Task.Delay(2000);
+
                 var resp = await _bpDataStrategy.DisplayData(chainId);
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetBpProduceGroupName(chainId))
                     .SendAsync("ReceiveBpProduce", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("push bp produce error: {error}", e);
-            }
-            finally
-            {
-                _isPushRunning.TryRemove(key, out var v);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("push bp produce error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 
@@ -131,25 +130,23 @@ public class ExploreHub : AbpHub
         }
 
 
-        while (true)
+        try
         {
-            await Task.Delay(2000);
-
-            try
+            while (true)
             {
+                await Task.Delay(2000);
                 var resp = await _latestTransactionsDataStrategy.DisplayData(chainId);
-
                 await _hubContext.Clients.Groups(HubGroupHelper.GetLatestTransactionsGroupName(chainId))
                     .SendAsync("ReceiveLatestTransactions", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("push transaction error: {error}", e);
-            }
-            finally
-            {
-                _isPushRunning.TryRemove(key, out var v);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("push transaction error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 
@@ -180,26 +177,23 @@ public class ExploreHub : AbpHub
         }
 
 
-        while (true)
+        try
         {
-            await Task.Delay(2000);
-
-            try
+            while (true)
             {
+                await Task.Delay(2000);
                 var resp = await _overviewDataStrategy.DisplayData(chainId);
-
-
                 await _hubContext.Clients.Groups(HubGroupHelper.GetBlockOverviewGroupName(chainId))
                     .SendAsync("ReceiveBlockchainOverview", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("push block overview error: {error}", e);
-            }
-            finally
-            {
-                _isPushRunning.TryRemove(key, out var v);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("push block overview error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 
@@ -233,14 +227,12 @@ public class ExploreHub : AbpHub
         }
 
 
-        while (true)
+        try
         {
-            await Task.Delay(2000);
-
-            try
+            while (true)
             {
+                await Task.Delay(2000);
                 var resp = await _latestBlocksDataStrategy.DisplayData(chainId);
-
                 if (resp.Blocks.Count > 6)
                 {
                     resp.Blocks = resp.Blocks.GetRange(0, 6);
@@ -249,14 +241,14 @@ public class ExploreHub : AbpHub
                 await _hubContext.Clients.Groups(HubGroupHelper.GetLatestBlocksGroupName(chainId))
                     .SendAsync("ReceiveLatestBlocks", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("Push blocks error: {error}", e);
-            }
-            finally
-            {
-                _isPushRunning.TryRemove(key, out var v);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Push blocks error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 
@@ -289,26 +281,24 @@ public class ExploreHub : AbpHub
             return;
         }
 
-
-        while (true)
+        try
         {
-            await Task.Delay(60 * 1000);
-
-            try
+            while (true)
             {
+                await Task.Delay(60 * 1000);
                 var resp = await _HomePageService.GetTransactionPerMinuteAsync(chainId);
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetTransactionCountPerMinuteGroupName(chainId))
                     .SendAsync("ReceiveTransactionDataChart", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("Push transaction count per minute error: {error}", e);
-            }
-            finally
-            {
-                _isPushRunning.TryRemove(key, out var v);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Push transaction count per minute error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 }

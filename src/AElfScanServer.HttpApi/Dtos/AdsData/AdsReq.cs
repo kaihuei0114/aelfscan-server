@@ -11,7 +11,6 @@ public class AdsReq
     public string Ip { get; set; } = "";
 }
 
-
 public class UpdateAdsReq
 {
     public string AdsId { get; set; } = "";
@@ -20,9 +19,10 @@ public class UpdateAdsReq
     public string AdsText { get; set; }
     public string ClickText { get; set; }
     public string ClickLink { get; set; }
-    public string Label { get; set; }
-    public DateTime StartTime { get; set; }
-    public DateTime EndTime { get; set; }
+    public List<string> Labels { get; set; }
+    public DateTime Createtime { get; set; }
+    public long StartTime { get; set; }
+    public long EndTime { get; set; }
     public int TotalVisitCount { get; set; }
 }
 
@@ -39,6 +39,6 @@ public class DeleteAdsReq
 
 public class GetAdsListReq
 {
-    public string Label { get; set; } = "";
+    // public List<string> Labels { get; set; } = new();
+    public List<string> Labels { get; set; } = new List<string>();
 }
-
