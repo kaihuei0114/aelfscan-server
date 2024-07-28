@@ -15,7 +15,7 @@ using Volo.Abp.AspNetCore.Mvc;
 namespace AElfScanServer.HttpApi.Controllers;
 
 [RemoteService]
-[ControllerName("Block")]
+[ControllerName("Ads")]
 [Route("api/app/ads")]
 public class AdsController : AbpController
 {
