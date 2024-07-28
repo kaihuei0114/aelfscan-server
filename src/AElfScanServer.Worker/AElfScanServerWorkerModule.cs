@@ -63,6 +63,12 @@ public class AElfScanServerWorkerModule : AbpModule
         Configure<BlockChainProducerInfoSyncWorkerOptions>(configuration.GetSection("BlockChainProducer"));
         Configure<ContractInfoSyncWorkerOptions>(configuration.GetSection("Contract"));
         Configure<WorkerOptions>(configuration.GetSection("Worker"));
+
+        context.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration["Redis:Configuration"];
+        });
+
         context.Services.AddHostedService<AElfScanServerHostedService>();
         context.Services.AddHttpClient();
     }
