@@ -22,6 +22,7 @@ using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;

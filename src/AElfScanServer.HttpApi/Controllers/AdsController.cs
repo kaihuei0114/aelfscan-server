@@ -11,6 +11,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
+using Volo.Abp.Caching;
 
 namespace AElfScanServer.HttpApi.Controllers;
 
@@ -21,11 +22,12 @@ public class AdsController : AbpController
 {
     private readonly IAdsService _adsService;
 
+
     public AdsController(IAdsService adsService)
     {
         _adsService = adsService;
     }
-    
+
     [HttpGet]
     [Route("detail")]
     public async Task<AdsResp> GetAdsDetailAsync(AdsReq req)
@@ -48,11 +50,10 @@ public class AdsController : AbpController
     [Route("detail")]
     public async Task<AdsIndex> DeleteAdsDetailAsync(DeleteAdsReq req)
     {
-      
         return await _adsService.DeleteAds(req);
     }
-    
-    
+
+
     [HttpPost]
     [Route("list")]
     public async Task<AdsListResp> GetAdsListAsync(GetAdsListReq req)

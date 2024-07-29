@@ -31,7 +31,6 @@ using Volo.Abp.TenantManagement;
 namespace AElfScanServer.HttpApi;
 
 [DependsOn(
-
     typeof(AbpAutoMapperModule),
     typeof(AbpAccountHttpApiModule),
     typeof(AElfIndexingElasticsearchModule),
@@ -85,10 +84,7 @@ public class HttpApiModule : AbpModule
         Configure<ElasticsearchOptions>(configuration.GetSection("Elasticsearch"));
         Configure<WorkerOptions>(configuration.GetSection("Worker"));
         ConfigureGraphQl(context, configuration);
-        context.Services.AddStackExchangeRedisCache(options =>
-        {
-            options.Configuration = configuration["Redis:Configuration"];
-        });
+
 
         context.Services.AddSingleton<AELFIndexerProvider, AELFIndexerProvider>();
         context.Services.AddSingleton<HomePageProvider, HomePageProvider>();
