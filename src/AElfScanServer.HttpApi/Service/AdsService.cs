@@ -113,6 +113,7 @@ public class AdsService : AbpRedisCache, IAdsService, ITransientDependency
         adsList = await QueryAdsList(req.Label, "", 1000);
         if (adsList.IsNullOrEmpty())
         {
+            adsResp.SearchKey = key;
             return adsResp;
         }
 
@@ -123,6 +124,7 @@ public class AdsService : AbpRedisCache, IAdsService, ITransientDependency
 
             RedisDatabase.StringIncrement(key);
             RedisDatabase.KeyExpire(key, TimeSpan.FromDays(7));
+            adsResp.SearchKey = key;
             return adsResp;
         }
 
@@ -135,11 +137,13 @@ public class AdsService : AbpRedisCache, IAdsService, ITransientDependency
             if (count < totalVisitCount)
             {
                 RedisDatabase.StringIncrement(key);
-                return _objectMapper.Map<AdsIndex, AdsResp>(ads);
+                var resp = _objectMapper.Map<AdsIndex, AdsResp>(ads);
+                resp.SearchKey = key;
+                return resp;
             }
         }
 
-
+        adsResp.SearchKey = key;
         RedisDatabase.StringSet(key, 1);
         return _objectMapper.Map<AdsIndex, AdsResp>(adsList.First());
     }

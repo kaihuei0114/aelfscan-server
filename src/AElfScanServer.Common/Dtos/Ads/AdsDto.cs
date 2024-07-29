@@ -16,6 +16,7 @@ public class AdsResp
     public string AdsText { get; set; }
     public string ClickText { get; set; }
     public string ClickLink { get; set; }
+    public string SearchKey { get; set; }
 }
 
 [GenerateSerializer]
@@ -53,7 +54,6 @@ public class AdsInfoDto
 
 public class AdsIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {
-    
     [Keyword] public string AdsId { get; set; }
     [Keyword] public string Head { get; set; }
     [Keyword] public string Logo { get; set; }
