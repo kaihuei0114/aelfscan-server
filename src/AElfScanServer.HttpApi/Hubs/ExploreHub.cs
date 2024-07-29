@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,8 +27,9 @@ public class ExploreHub : AbpHub
     private readonly DataStrategyContext<string, TransactionsResponseDto> _latestTransactionsDataStrategy;
     private readonly DataStrategyContext<string, BlocksResponseDto> _latestBlocksDataStrategy;
     private readonly DataStrategyContext<string, BlockProduceInfoDto> _bpDataStrategy;
-    private static readonly object _lock = new object();
-    private static readonly HashSet<string> _isPushRunning = new HashSet<string>();
+
+    private static readonly ConcurrentDictionary<string, bool>
+        _isPushRunning = new ConcurrentDictionary<string, bool>();
 
 
     public ExploreHub(IHomePageService homePageService, ILogger<ExploreHub> logger,
@@ -70,32 +72,32 @@ public class ExploreHub : AbpHub
 
     public async Task PushRequestBpProduceAsync(string chainId)
     {
-        lock (_lock)
-        {
-            var key = "bpProduce" + chainId;
-            if (_isPushRunning.Contains(key))
-            {
-                return;
-            }
+        var key = "bpProduce" + chainId;
 
-            _isPushRunning.Add(key);
+        if (!_isPushRunning.TryAdd(key, true))
+        {
+            return;
         }
 
-        while (true)
+        try
         {
-            Thread.Sleep(2000);
-
-            try
+            while (true)
             {
+                await Task.Delay(2000);
+
                 var resp = await _bpDataStrategy.DisplayData(chainId);
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetBpProduceGroupName(chainId))
                     .SendAsync("ReceiveBpProduce", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("push bp produce error: {error}", e);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("push bp produce error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 
@@ -121,32 +123,30 @@ public class ExploreHub : AbpHub
 
     public async Task PushLatestTransactionsAsync(string chainId)
     {
-        lock (_lock)
+        var key = "transaction" + chainId;
+        if (!_isPushRunning.TryAdd(key, true))
         {
-            var key = "transaction" + chainId;
-            if (_isPushRunning.Contains(key))
-            {
-                return;
-            }
-
-            _isPushRunning.Add(key);
+            return;
         }
 
-        while (true)
+
+        try
         {
-            Thread.Sleep(2000);
-
-            try
+            while (true)
             {
+                await Task.Delay(2000);
                 var resp = await _latestTransactionsDataStrategy.DisplayData(chainId);
-
                 await _hubContext.Clients.Groups(HubGroupHelper.GetLatestTransactionsGroupName(chainId))
                     .SendAsync("ReceiveLatestTransactions", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("push transaction error: {error}", e);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("push transaction error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 
@@ -170,34 +170,30 @@ public class ExploreHub : AbpHub
 
     public async Task PushBlockOverViewAsync(string chainId)
     {
-        lock (_lock)
+        var key = "overview" + chainId;
+        if (!_isPushRunning.TryAdd(key, true))
         {
-            var key = "overview" + chainId;
-            if (_isPushRunning.Contains(key))
-            {
-                return;
-            }
-
-            _isPushRunning.Add(key);
+            return;
         }
 
 
-        while (true)
+        try
         {
-            Thread.Sleep(3000);
-
-            try
+            while (true)
             {
+                await Task.Delay(2000);
                 var resp = await _overviewDataStrategy.DisplayData(chainId);
-
-
                 await _hubContext.Clients.Groups(HubGroupHelper.GetBlockOverviewGroupName(chainId))
                     .SendAsync("ReceiveBlockchainOverview", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("push block overview error: {error}", e);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("push block overview error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 
@@ -224,25 +220,19 @@ public class ExploreHub : AbpHub
 
     public async Task PushLatestBlocksAsync(string chainId)
     {
-        lock (_lock)
+        var key = "block" + chainId;
+        if (!_isPushRunning.TryAdd(key, true))
         {
-            var key = "block" + chainId;
-            if (_isPushRunning.Contains(key))
-            {
-                return;
-            }
-
-            _isPushRunning.Add(key);
+            return;
         }
 
-        while (true)
+
+        try
         {
-            Thread.Sleep(2000);
-
-            try
+            while (true)
             {
+                await Task.Delay(2000);
                 var resp = await _latestBlocksDataStrategy.DisplayData(chainId);
-
                 if (resp.Blocks.Count > 6)
                 {
                     resp.Blocks = resp.Blocks.GetRange(0, 6);
@@ -251,10 +241,14 @@ public class ExploreHub : AbpHub
                 await _hubContext.Clients.Groups(HubGroupHelper.GetLatestBlocksGroupName(chainId))
                     .SendAsync("ReceiveLatestBlocks", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("Push blocks error: {error}", e);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Push blocks error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 
@@ -281,33 +275,30 @@ public class ExploreHub : AbpHub
 
     public async Task PushTransactionCountPerMinuteAsync(string chainId)
     {
-        lock (_lock)
+        var key = "transactionCountPerMinute" + chainId;
+        if (!_isPushRunning.TryAdd(key, true))
         {
-            var key = "transactionCountPerMinute" + chainId;
-            if (_isPushRunning.Contains(key))
-            {
-                return;
-            }
-
-            _isPushRunning.Add(key);
+            return;
         }
 
-
-        while (true)
+        try
         {
-            Thread.Sleep(60 * 1000);
-
-            try
+            while (true)
             {
+                await Task.Delay(60 * 1000);
                 var resp = await _HomePageService.GetTransactionPerMinuteAsync(chainId);
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetTransactionCountPerMinuteGroupName(chainId))
                     .SendAsync("ReceiveTransactionDataChart", resp);
             }
-            catch (Exception e)
-            {
-                _logger.LogError("Push transaction count per minute error: {error}", e);
-            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Push transaction count per minute error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
         }
     }
 }

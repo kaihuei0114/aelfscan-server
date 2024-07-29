@@ -31,7 +31,6 @@ using Volo.Abp.TenantManagement;
 namespace AElfScanServer.HttpApi;
 
 [DependsOn(
-
     typeof(AbpAutoMapperModule),
     typeof(AbpAccountHttpApiModule),
     typeof(AElfIndexingElasticsearchModule),
@@ -70,6 +69,7 @@ public class HttpApiModule : AbpModule
         context.Services.AddSingleton<INftInfoProvider, NftInfoProvider>();
         context.Services.AddSingleton<ITokenAssetProvider, TokenAssetProvider>();
         context.Services.AddSingleton<ITokenPriceService, TokenPriceService>();
+        context.Services.AddSingleton<IAdsService, AdsService>();
         context.Services.AddSingleton<ITokenHolderPercentProvider, TokenHolderPercentProvider>();
         context.Services.AddSingleton<INftCollectionHolderProvider, NftCollectionHolderProvider>();
         context.Services.AddTransient<ITokenService, TokenService>();

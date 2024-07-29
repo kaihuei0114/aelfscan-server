@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Common.Dtos.ChartData;
 using AElf.OpenTelemetry.ExecutionTime;
@@ -183,6 +184,8 @@ public class ChartDataController : AbpController
     [HttpGet("getJob")]
     public async Task<JonInfoResp> GetJobInfo(SetJob request)
     {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
         return await _chartDataService.GetJobInfo(request);
     }
 

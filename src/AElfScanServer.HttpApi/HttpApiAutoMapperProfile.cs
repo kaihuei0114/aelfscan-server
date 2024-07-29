@@ -5,10 +5,13 @@ using AElf.Contracts.MultiToken;
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.Dtos.address;
 using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Ads;
 using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.Helper;
+using AElfScanServer.Grains.State.Ads;
+using AElfScanServer.HttpApi.Dtos.AdsData;
 using AElfScanServer.HttpApi.Dtos.ChartData;
 using AutoMapper;
 using AddressIndex = AElfScanServer.HttpApi.Dtos.AddressIndex;
@@ -19,6 +22,10 @@ public class BlockChainAutoMapperProfile : Profile
 {
     public BlockChainAutoMapperProfile()
     {
+        CreateMap<AdsInfoDto, AdsResp>().ReverseMap();
+        CreateMap<AdsIndex, AdsResp>().ReverseMap();
+        CreateMap<UpdateAdsReq, AdsIndex>().ReverseMap();
+        CreateMap<AdsInfoDto, AdsIndex>().ReverseMap();
         CreateMap<DailyHolderDto, DailyHolder>()
             .ReverseMap();
 

@@ -377,7 +377,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var dailyHolders = new List<DailyHolder>();
 
-        dailyHolderDtos = dailyHolderDtos.OrderBy(c => c.DateStr).ToList();
+        dailyHolderDtos = dailyHolderDtos.OrderBy(c => DateTimeHelper.ConvertYYMMDD(c.DateStr)).ToList();
 
 
         for (var i = 0; i < dailyHolderDtos.Count; i++)
@@ -391,15 +391,18 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
             var curCount = dailyHolderDtos[i].Count;
             var nextDate = DateTimeHelper.GetNextDayDate(dailyHolderDtos[i].DateStr);
-
-            while (i < dailyHolderDtos.Count - 1 && nextDate != dailyHolderDtos[i + 1].DateStr)
+            var t = 0;
+            while (i < dailyHolderDtos.Count - 1 && DateTimeHelper.ConvertYYMMDD(nextDate) <=
+                   DateTimeHelper.ConvertYYMMDD(dailyHolderDtos[i + 1].DateStr))
             {
+           
                 dailyHolders.Add(new DailyHolder()
                 {
                     Date = DateTimeHelper.ConvertYYMMDD(nextDate),
                     DateStr = nextDate,
                     Count = curCount
                 });
+
                 nextDate = DateTimeHelper.GetNextDayDate(nextDate);
             }
         }

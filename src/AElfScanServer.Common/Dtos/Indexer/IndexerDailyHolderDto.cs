@@ -10,5 +10,6 @@ public class IndexerDailyHolderDto
 public class DailyHolderDto
 {
     public string DateStr { get; set; }
+    public long Date { get; set; }
     public long Count { get; set; }
 }

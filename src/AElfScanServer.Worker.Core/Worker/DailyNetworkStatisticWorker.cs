@@ -26,6 +26,7 @@ public class DailyNetworkStatisticWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        await Task.Delay(1000  * 5);
         await _transactionService.UpdateDailyNetwork();
     }
 }

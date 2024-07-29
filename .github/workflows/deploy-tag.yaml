@@ -16,6 +16,7 @@ jobs:
           [
             AElfScanServer.Worker,
             AElfScanServer.HttpApi.Host,
+            AElfScanServer.Silo,
           ]
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +39,7 @@ jobs:
           [
             AElfScanServer.Worker,
             AElfScanServer.HttpApi.Host,
+            AElfScanServer.Silo,
           ]
     permissions:
       contents: read
