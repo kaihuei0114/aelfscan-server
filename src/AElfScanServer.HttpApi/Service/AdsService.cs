@@ -103,8 +103,7 @@ public class AdsService : AbpRedisCache, IAdsService, ITransientDependency
 
     public async Task<AdsResp> GetAds(AdsReq req)
     {
-        var dateStr = DateTimeHelper.GetDateStr(DateTime.UtcNow);
-        var key = GrainIdHelper.GenerateAdsKey(req.Ip, req.Device, req.Label, dateStr);
+        var key = GrainIdHelper.GenerateAdsKey(req.SearchKey, req.Label);
         await ConnectAsync();
         var adsVisitCount = RedisDatabase.StringGet(key);
         var adsList = new List<AdsIndex>();

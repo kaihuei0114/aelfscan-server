@@ -30,10 +30,8 @@ public class AdsController : AbpController
     [Route("detail")]
     public async Task<AdsResp> GetAdsDetailAsync(AdsReq req)
     {
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
-        req.Device = userAgent;
-        req.Ip = ip;
+        var searchKey = HttpContext.Request.Headers["SearchKey"].FirstOrDefault();
+        req.SearchKey = searchKey;
         return await _adsService.GetAds(req);
     }
 
