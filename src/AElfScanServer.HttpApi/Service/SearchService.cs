@@ -116,17 +116,17 @@ public class SearchService : ISearchService, ISingletonDependency
     private async Task AssemblySearchAddressAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
         TokenHolderInput holderInput;
-        if (request.SearchType == SearchTypes.ExactSearch)
+        /*if (request.SearchType == SearchTypes.ExactSearch)
         {
             holderInput = new TokenHolderInput { ChainId = request.ChainId, Address = request.Keyword };
         }
-        else
+        else*/
         {
             if (request.Keyword.Length <= CommonConstant.KeyWordAddressMinSize)
             {
                 return;
             }
-
+            
             holderInput = new TokenHolderInput { ChainId = request.ChainId, FuzzySearch = request.Keyword.ToLower() };
         }
 
