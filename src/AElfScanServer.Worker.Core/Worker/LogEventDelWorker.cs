@@ -18,7 +18,7 @@ public class LogEventDelWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<LogEventDelWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 1000 * 3;
+        timer.Period = 1000 * 60 * 15;
         timer.RunOnStart = true;
         _logger = logger;
         _transactionService = transactionService;

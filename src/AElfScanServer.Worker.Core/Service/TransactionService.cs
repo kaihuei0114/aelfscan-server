@@ -331,7 +331,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         )
                     )
                 )
-            )
+            ).Size(4000)
         );
         if (resp.Deleted > 0)
         {
@@ -761,6 +761,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var logEventIndices = new List<LogEventIndex>();
         foreach (var txn in transactionList)
         {
+            if (_globalOptions.CurrentValue.SkipContractAddress[chainId].Contains(txn.To) && txn.BlockHeight <
+                _globalOptions.CurrentValue.SkipContractAddressStartBlockHeight[chainId])
+            {
+                continue;
+            }
+
             for (var i = 0; i < txn.LogEvents.Count; i++)
             {
                 var curEvent = txn.LogEvents[i];
