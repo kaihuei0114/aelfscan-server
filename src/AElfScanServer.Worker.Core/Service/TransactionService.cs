@@ -1351,7 +1351,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 dailyCycleCountIndex.MissedBlockCount = blockProduceIndex.MissedBlockCount;
                 dailyBlockProduceDurationIndex.AvgBlockDuration =
-                    (totalDuration * 1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
+                    (totalDuration / 1000 / (decimal)blockProduceIndex.BlockCount).ToString("F2");
                 dailyBlockProduceDurationIndex.LongestBlockDuration = (longestBlockDuration / 1000).ToString("F2");
                 dailyBlockProduceDurationIndex.ShortestBlockDuration = (shortestBlockDuration / 1000).ToString("F2");
 
