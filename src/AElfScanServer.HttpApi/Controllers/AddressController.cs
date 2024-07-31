@@ -58,8 +58,8 @@ public class AddressController : AbpController
         GetContractFileInput input) => await _contractAppService.GetContractFileAsync(input);
 
     [HttpGet("contract/events")]
-    public async Task<GetContractEventListResultDto> GetContractEventsAsync(
-        GetContractEventContractsInput input) => await _contractAppService.GetContractEventsAsync(input);
+    public async Task<GetContractEventResp> GetContractEventsAsync(
+        GetContractEventReq input) => await _contractAppService.GetContractEventsAsync(input);
 
 
     [HttpGet("contract/history")]

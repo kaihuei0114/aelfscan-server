@@ -134,51 +134,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
     }
 
 
-    public async void GetTokenImage()
-    {
-        var tokenImageBlockHeight = await ParseTokenImageBlockHeight();
 
-
-        var dictionary = new Dictionary<string, string>();
-
-        foreach (var height in tokenImageBlockHeight)
-        {
-            var logEventAsync = await _aelfIndexerProvider.GetLogEventAsync("AELF", height, height);
-            foreach (var indexerLogEventDto in logEventAsync)
-            {
-                if (indexerLogEventDto.EventName == "TokenCreated")
-                {
-                    indexerLogEventDto.ExtraProperties.TryGetValue("Indexed", out var indexed);
-                    indexerLogEventDto.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
-
-                    var indexedList = indexed != null
-                        ? JsonConvert.DeserializeObject<List<string>>(indexed)
-                        : new List<string>();
-                    var logEvent = new LogEvent
-                    {
-                        Indexed = { indexedList?.Select(ByteString.FromBase64) },
-                    };
-
-                    if (nonIndexed != null)
-                    {
-                        logEvent.NonIndexed = ByteString.FromBase64(nonIndexed);
-                    }
-
-                    var tokenCreated = new TokenCreated();
-                    tokenCreated.MergeFrom(logEvent);
-
-                    if (TokenSymbolHelper.GetSymbolType(tokenCreated.Symbol) == SymbolType.Nft)
-                    {
-                        if (indexerLogEventDto.ExtraProperties.TryGetValue(CommomHelper.GetNftImageKey(),
-                                out var nftImageUrl))
-                        {
-                            dictionary[tokenCreated.Symbol] = nftImageUrl;
-                        }
-                    }
-                }
-            }
-        }
-    }
 
 
     public async Task<List<long>> ParseTokenImageBlockHeight()

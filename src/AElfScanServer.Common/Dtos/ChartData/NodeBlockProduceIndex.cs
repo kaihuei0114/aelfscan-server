@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using AElf.EntityMapping.Entities;
 using AElfScanServer.Domain.Common.Entities;
-using AElfScanServer.Domain.Shared.Common;
 using Nest;
 
 namespace AElfScanServer.Common.Dtos.ChartData;
@@ -171,6 +170,8 @@ public class DailyTransactionsChartSet
 
     public double TotalBpStaked { get; set; }
     public double TotalVotedStaked { get; set; }
+
+    public List<string> VoteRecords { get; set; } = new();
     public List<string> WithDrawVotedIds { get; set; } = new();
 
     public long StartBlockHeight { get; set; }
@@ -576,7 +577,6 @@ public class DailyTransactionRecordIndex : AElfIndexerEntity<string>, IEntityMap
     public long StartBlockHeight { get; set; }
     public long EndBlockHeight { get; set; }
 }
-
 
 public class DailySupplyGrowthIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 {

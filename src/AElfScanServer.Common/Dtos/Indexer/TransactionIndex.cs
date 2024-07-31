@@ -65,25 +65,20 @@ public class TransactionData
 
 public class IndexerLogEventDto
 {
-    // public string ChainId { get; set; }
+    [Keyword] public string ChainId { get; set; }
     // public string BlockHash { get; set; }
 
+    public long BlockHeight { get; set; }
 
-    // public long BlockHeight { get; set; }
+    [Keyword] public string TransactionId { get; set; }
 
-    // public string PreviousBlockHash { get; set; }
-
-    // public string TransactionId { get; set; }
-
-    // public DateTime BlockTime { get; set; }
+    public DateTime BlockTime { get; set; }
 
     [Keyword] public string ContractAddress { get; set; }
 
     [Keyword] public string EventName { get; set; }
 
     public int Index { get; set; }
-
-    // public bool Confirmed { get; set; }
 
     public Dictionary<string, string> ExtraProperties { get; set; }
 }

@@ -200,8 +200,8 @@ public class AELFIndexerProvider : ISingletonDependency
             return new List<TransactionIndex>();
         }
     }
-    
-    
+
+
     public async Task<List<TransactionData>> GetTransactionsDataAsync(string chainId, long startBlockHeight,
         long endBlockHeight, string transactionId)
     {
@@ -241,40 +241,31 @@ public class AELFIndexerProvider : ISingletonDependency
     public async Task<List<IndexerLogEventDto>> GetLogEventAsync(string chainId, long startBlockHeight,
         long endBlockHeight)
     {
-        var accessTokenAsync = GetAccessTokenAsync();
-        var response =
-            await _httpProvider.PostAsync<List<IndexerLogEventDto>>(
-                _aelfIndexerOptions.AELFIndexerHost + AELFIndexerApi.GetLogEvent.Path,
-                RequestMediaType.Json, new Dictionary<string, object>
-                {
-                    ["chainId"] = chainId,
-                    ["startBlockHeight"] = startBlockHeight,
-                    ["endBlockHeight"] = endBlockHeight,
-                    ["events"] = new List<Dictionary<string, object>>
+        try
+        {
+            var accessTokenAsync = GetAccessTokenAsync();
+            var response =
+                await _httpProvider.PostAsync<List<IndexerLogEventDto>>(
+                    _aelfIndexerOptions.AELFIndexerHost + AELFIndexerApi.GetLogEvent.Path,
+                    RequestMediaType.Json, new Dictionary<string, object>
                     {
-                        new()
-                        {
-                            ["eventNames"] = new List<string>()
-                            {
-                                "Burned"
-                            }
-                        }
-                    }
-                },
-                new Dictionary<string, string>
-                {
-                    ["content-type"] = "application/json",
-                    ["accept"] = "application/json",
-                    ["Authorization"] = $"Bearer {accessTokenAsync.Result}"
-                });
+                        ["chainId"] = chainId,
+                        ["startBlockHeight"] = startBlockHeight,
+                        ["endBlockHeight"] = endBlockHeight,
+                    },
+                    new Dictionary<string, string>
+                    {
+                        ["content-type"] = "application/json",
+                        ["accept"] = "application/json",
+                        ["Authorization"] = $"Bearer {accessTokenAsync.Result}"
+                    });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Get log err:{error}", e.ToString());
+        }
 
-
-        // _logger.LogInformation(
-        //     "get log event list from AELFIndexer success,total:{total},chainId:{chainId},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
-        //     response?.Count, chainId, response?.First()?.BlockHeight,
-        //     response?.Last()?.BlockHeight);
-
-        return response;
+        return null;
     }
 
     public async Task<List<IndexerLogEventDto>> GetTokenCreatedLogEventAsync(string chainId, long startBlockHeight,

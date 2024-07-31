@@ -2,16 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
+using AElf.EntityMapping.Repositories;
 using AElfScanServer.HttpApi.Provider;
 using AElfScanServer.Common.Constant;
 using AElfScanServer.Common.Core;
+using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Options;
 using AElfScanServer.HttpApi.Dtos.address;
 using AElfScanServer.HttpApi.Dtos.Indexer;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Org.BouncyCastle.Ocsp;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -22,7 +25,7 @@ public interface IContractAppService
     Task<GetContractListResultDto> GetContractListAsync(GetContractContracts input);
     Task<GetContractFileResultDto> GetContractFileAsync(GetContractFileInput input);
     Task<GetContractHistoryResultDto> GetContractHistoryAsync(GetContractHistoryInput input);
-    Task<GetContractEventListResultDto> GetContractEventsAsync(GetContractEventContractsInput input);
+    Task<GetContractEventResp> GetContractEventsAsync(GetContractEventReq input);
 }
 
 [Ump]
@@ -35,11 +38,13 @@ public class ContractAppService : IContractAppService
     private readonly IIndexerGenesisProvider _indexerGenesisProvider;
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
+    private readonly IEntityMappingRepository<LogEventIndex, string> _logEventIndexRepository;
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IDecompilerProvider decompilerProvider,
         IIndexerTokenProvider indexerTokenProvider, IIndexerGenesisProvider indexerGenesisProvider,
-        IOptionsMonitor<GlobalOptions> globalOptions, IBlockChainIndexerProvider blockChainIndexerProvider)
+        IOptionsMonitor<GlobalOptions> globalOptions, IBlockChainIndexerProvider blockChainIndexerProvider,
+        IEntityMappingRepository<LogEventIndex, string> logEventIndexRepository)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -48,6 +53,7 @@ public class ContractAppService : IContractAppService
         _indexerGenesisProvider = indexerGenesisProvider;
         _globalOptions = globalOptions;
         _blockChainIndexerProvider = blockChainIndexerProvider;
+        _logEventIndexRepository = logEventIndexRepository;
     }
 
     public async Task<GetContractListResultDto> GetContractListAsync(GetContractContracts input)
@@ -164,7 +170,6 @@ public class ContractAppService : IContractAppService
     public async Task<GetContractHistoryResultDto> GetContractHistoryAsync(
         GetContractHistoryInput input)
     {
-
         var result = new GetContractHistoryResultDto();
         var getContractRecordResult =
             await _indexerGenesisProvider.GetContractRecordAsync(input.ChainId, input.Address);
@@ -182,8 +187,28 @@ public class ContractAppService : IContractAppService
         return result;
     }
 
-    public async Task<GetContractEventListResultDto> GetContractEventsAsync(GetContractEventContractsInput input)
+    public async Task<GetContractEventResp> GetContractEventsAsync(GetContractEventReq req)
     {
-        return null;
+        var queryable = _logEventIndexRepository.GetQueryableAsync().Result.Where(c => c.ChainId == req.ChainId)
+            .Where(c => c.ContractAddress == req.ContractAddress);
+
+        if (req.BlockHeight > 0)
+        {
+            queryable = queryable.Where(c => c.BlockHeight == req.BlockHeight);
+        }
+
+
+        var count = queryable.Count();
+        var logEventIndices = queryable.Skip(req.SkipCount).Take(req.MaxResultCount).OrderByDescending(c => c.BlockTime)
+            .ToList();
+
+        var result = new GetContractEventResp()
+        {
+            Total = count > 10000 ? 10000 : count,
+            List = logEventIndices
+        };
+
+
+        return result;
     }
 }

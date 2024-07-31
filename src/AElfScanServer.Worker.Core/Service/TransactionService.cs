@@ -51,6 +51,7 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 using AddressIndex = AElfScanServer.Common.Dtos.ChartData.AddressIndex;
 using Interval = Binance.Spot.Models.Interval;
+using LogEventIndex = AElfScanServer.Common.Dtos.LogEventIndex;
 using Math = System.Math;
 using Timer = System.Timers.Timer;
 using VotedItems = AElf.Client.Vote.VotedItems;
@@ -72,6 +73,10 @@ public interface ITransactionService
 
     public Task BatchPullTransactionTask();
 
+
+    public Task BatchPullLogEventTask();
+
+    public Task DelLogEventTask();
 
     public Task FixDailyData();
 
@@ -122,8 +127,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<TransactionErrInfoIndex, string> _transactionErrInfoIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyChange, string> _dailySupplyChangeRepository;
     private readonly IEntityMappingRepository<DailyTVLIndex, string> _dailyTVLIndexRepository;
+
+    private readonly IEntityMappingRepository<LogEventIndex, string> _logEventRepository;
     private readonly IPriceServerProvider _priceServerProvider;
     private readonly IAwakenIndexerProvider _awakenIndexerProvider;
+    private readonly IIndexerGenesisProvider _indexerGenesisProvider;
 
 
     private readonly IEntityMappingRepository<AddressIndex, string> _addressRepository;
@@ -132,12 +140,14 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly ILogger<TransactionService> _logger;
     private static bool FinishInitChartData = false;
     private static int BatchPullRoundCount = 5;
+    private static int ContractListMax = 10000;
     private static int BlockSizeInterval = 1;
     private static long BpStakedAmount = 100000;
     private static object _lock = new object();
 
     private static Timer timer;
     private static long PullTransactioninterval = 4000 - 1;
+    private static long PullLogEventTransactioninterval = 100 - 1;
 
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
@@ -176,6 +186,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailySupplyChange, string> dailySupplyChangeRepository,
         IEntityMappingRepository<DailyTVLIndex, string> dailyTVLIndexRepository,
         IAwakenIndexerProvider awakenIndexerProvider,
+        IIndexerGenesisProvider indexerGenesisProvider,
+        IEntityMappingRepository<LogEventIndex, string> logEventRepository,
         IPriceServerProvider priceServerProvider) :
         base(optionsAccessor)
     {
@@ -200,6 +212,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _cycleCountRepository = cycleCountRepository;
         _transactionIndexRepository = transactionIndexRepository;
         _priceRepository = priceRepository;
+        _logEventRepository = logEventRepository;
         EsIndex.SetElasticClient(_elasticClient);
         _avgTransactionFeeRepository = avgTransactionFeeRepository;
         _avgBlockSizeRepository = avgBlockSizeRepository;
@@ -224,7 +237,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _transactionErrInfoIndexRepository = transactionErrInfoIndexRepository;
         _dailySupplyChangeRepository = dailySupplyChangeRepository;
         _dailyTVLIndexRepository = dailyTVLIndexRepository;
+        _indexerGenesisProvider = indexerGenesisProvider;
+        _logEventRepository = logEventRepository;
     }
+
 
     public async Task BlockSizeTask()
     {
@@ -240,6 +256,89 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         await tasks.WhenAll();
     }
 
+
+    public async Task BatchPullLogEventTask()
+    {
+        var tasks = new List<Task>();
+        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        {
+            tasks.Add(BatchParseLogEventJob(chainId));
+        }
+
+        await tasks.WhenAll();
+    }
+
+    public async Task DelLogEventTask()
+    {
+        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        {
+            var getContractListResult =
+                await _indexerGenesisProvider.GetContractListAsync(chainId,
+                    0, 100, "", "", "");
+            var list = getContractListResult.ContractList.Items.Select(s => s.Address).ToList();
+            foreach (var address in list)
+            {
+                await DeleteManyEvent(chainId, address);
+                _logger.LogInformation("DelLogEventTask:{address}", address);
+            }
+        }
+    }
+
+    public async Task DeleteManyEvent(string chainId, string contractAddress)
+    {
+        var searchResponse = _elasticClient.Search<LogEventIndex>(s => s
+                .Index("logeventindex").Query(q => q
+                    .Bool(b => b
+                        .Must(
+                            m => m.Term("chainId", chainId),
+                            m => m.Term("contractAddress", contractAddress)
+                        )
+                    )
+                )
+                .Sort(ss => ss
+                    .Descending("timeStamp")
+                )
+                .From(ContractListMax + 1)
+                .Size(1) // 
+        );
+
+        long starblockTime;
+        if (searchResponse.IsValid)
+        {
+            if (searchResponse.Documents.Count > 0)
+            {
+                starblockTime = searchResponse.Documents.ToList().First().TimeStamp;
+            }
+            else
+            {
+                return;
+            }
+        }
+        else
+        {
+            _logger.LogError("Error: {e}", searchResponse.ServerError.Error.Reason);
+            return;
+        }
+
+
+        var resp = await _elasticClient.DeleteByQueryAsync<LogEventIndex>(q => q
+            .Index("logeventindex")
+            .Query(qb => qb
+                .Bool(bb => bb
+                    .Must(
+                        m => m.Term("chainId", chainId),
+                        m => m.Term("contractAddress", contractAddress),
+                        m => m.Range(r => r.Field(f => f.TimeStamp).LessThanOrEquals(starblockTime)
+                        )
+                    )
+                )
+            )
+        );
+        if (resp.Deleted > 0)
+        {
+            _logger.LogInformation("delete contract event:{p1},{p2},{p3}", chainId, contractAddress, resp.Deleted);
+        }
+    }
 
     public async Task BatchPullBlockSize(string chainId)
     {
@@ -516,6 +615,48 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
     }
 
+    public async Task BatchParseLogEventJob(string chainId)
+    {
+        var lastBlockHeight = 0l;
+        await ConnectAsync();
+        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId));
+        lastBlockHeight = redisValue.IsNullOrEmpty ? 2 : long.Parse(redisValue) + 1;
+
+        while (true)
+        {
+            try
+            {
+                var batchTransactionList =
+                    await GetBatchTransactionList(chainId, lastBlockHeight,
+                        lastBlockHeight + PullLogEventTransactioninterval);
+
+                if (batchTransactionList.IsNullOrEmpty())
+                {
+                    continue;
+                }
+
+                await ParseLogEventList(batchTransactionList, chainId);
+                lastBlockHeight += PullLogEventTransactioninterval + 1;
+            }
+
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    "BatchPullTransactionTask err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
+                    chainId,
+                    e, lastBlockHeight,
+                    lastBlockHeight + PullLogEventTransactioninterval);
+
+
+                await ConnectAsync();
+                redisValue = RedisDatabase.StringGet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId));
+                lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
+                await Task.Delay(1000 * 2);
+            }
+        }
+    }
+
+
     public async Task BatchPullTransactionJob(string chainId)
     {
         var dic = new Dictionary<string, DailyTransactionsChartSet>();
@@ -616,6 +757,51 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
     }
 
+    public async Task ParseLogEventList(List<TransactionData> transactionList, string chainId)
+    {
+        var logEventIndices = new List<LogEventIndex>();
+        foreach (var txn in transactionList)
+        {
+            for (var i = 0; i < txn.LogEvents.Count; i++)
+            {
+                var curEvent = txn.LogEvents[i];
+
+                curEvent.ExtraProperties.TryGetValue("Indexed", out var indexed);
+                curEvent.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
+                var logEvent = new LogEventIndex()
+                {
+                    TransactionId = txn.TransactionId,
+                    ChainId = chainId,
+                    BlockHeight = txn.BlockHeight,
+                    MethodName = txn.MethodName,
+                    BlockTime = txn.BlockTime,
+                    TimeStamp = txn.BlockTime.ToUtcMilliSeconds(),
+                    ContractAddress = txn.To,
+                    EventName = curEvent.EventName,
+                    NonIndexed = nonIndexed,
+                    Indexed = indexed,
+                    Index = i
+                };
+                logEventIndices.Add(logEvent);
+            }
+        }
+
+        var total = logEventIndices.Count;
+
+        while (logEventIndices.Count > 10000)
+        {
+            var eventIndices = logEventIndices.Take(10000).ToList();
+            await _logEventRepository.AddOrUpdateManyAsync(eventIndices);
+            logEventIndices = logEventIndices.Skip(10000).ToList();
+        }
+
+        if (!logEventIndices.IsNullOrEmpty())
+        {
+            await _logEventRepository.AddOrUpdateManyAsync(logEventIndices);
+        }
+
+        _logger.LogInformation("ParseLogEventList,insert:{c},{c1}", chainId, total);
+    }
 
     public async Task<DailyTransactionsChartSet> UpdateDailyTransactionData(List<TransactionData> transactionList,
         string chainId,
@@ -690,7 +876,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                         break;
                     case nameof(Transferred):
-
                         var transferred = new Transferred();
                         transferred.MergeFrom(logEvent);
                         if (chainId == "AELF" && transferred.Symbol == "ELF")
@@ -753,7 +938,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         }
 
                         break;
-
                     case nameof(Voted):
                         if (_globalOptions.CurrentValue.ContractAddressElection != transaction.To)
                         {
@@ -772,6 +956,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                             VoteId = voted.VoteId.ToString(),
                             VoteAmount = votedAmount
                         };
+                        var voteRecord = transaction.TransactionId + "_" + "voteId:" +
+                                         voted.VoteId.ToString() +
+                                         "_" + votedAmount;
+                        dailyData.VoteRecords.Add(voteRecord);
                         break;
                     case nameof(Withdrawn):
                         var withdrawn = new Withdrawn();
@@ -1497,6 +1685,48 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
 
     public async Task<List<TransactionData>> GetBatchTransactionList(string chainId, long startBlockHeight,
+        long endBlockHeight)
+    {
+        object _lock = new object();
+        var batchList = new List<TransactionData>();
+
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
+        var tasks = new List<Task>();
+        for (long i = startBlockHeight; i <= endBlockHeight; i += 100)
+        {
+            var start = i;
+            var end = start + 99 > endBlockHeight ? endBlockHeight : start + 99;
+            var findTsk = _aelfIndexerProvider.GetTransactionsDataAsync(chainId, start, end, "")
+                .ContinueWith(task =>
+                {
+                    lock (_lock)
+                    {
+                        if (task.Result.IsNullOrEmpty())
+                        {
+                            _logger.LogError("Get batch transaction list is null,chainId:{0},start:{1},end:{2}",
+                                chainId, start, end);
+                            return;
+                        }
+
+                        batchList.AddRange(task.Result);
+                    }
+                });
+            tasks.Add(findTsk);
+        }
+
+        await tasks.WhenAll();
+
+        stopwatch.Stop();
+        _logger.LogInformation("Get batch transaction list from chainId:{0},start:{1},end:{2},count:{3},time:{4}",
+            chainId, startBlockHeight, endBlockHeight, batchList.Count, stopwatch.Elapsed.TotalSeconds);
+
+
+        return batchList;
+    }
+
+
+    public async Task<List<TransactionData>> GetBatchLogEventList(string chainId, long startBlockHeight,
         long endBlockHeight)
     {
         object _lock = new object();
