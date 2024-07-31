@@ -1,17 +1,16 @@
+using AElf.Client.Service;
 using AElf.EntityMapping.Options;
 using AElf.OpenTelemetry;
 using AElfScanServer.Common.Address.Provider;
 using AElfScanServer.Common.Contract.Provider;
-using AElfScanServer.Common.Core;
-using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.HttpClient;
 using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.NodeProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.ThirdPart.Exchange;
 using AElfScanServer.Common.Token.Provider;
 using Aetherlink.PriceServer;
-using AutoResponseWrapper;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp;
 using Volo.Abp.AutoMapper;
@@ -55,24 +54,12 @@ public class AElfScanCommonModule : AbpModule
         context.Services.AddTransient<INftCollectionHolderProvider, NftCollectionHolderProvider>();
         context.Services.AddTransient<INftInfoProvider, NftInfoProvider>();
         context.Services.AddTransient<ITokenInfoProvider, TokenInfoProvider>();
-
+        context.Services.AddSingleton<IBlockchainClientFactory<AElfClient>, AElfClientFactory>();
         context.Services.AddHttpClient();
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
-    }
-
-    private void AddOpenTelemetry(ServiceConfigurationContext context)
-    {
-        var services = context.Services;
-        services.OnRegistered(options =>
-        {
-            if (options.ImplementationType.IsDefined(typeof(UmpAttribute), true))
-            {
-                options.Interceptors.TryAdd<UmpInterceptor>();
-            }
-        });
     }
 }
