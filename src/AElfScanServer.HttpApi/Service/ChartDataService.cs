@@ -395,7 +395,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             while (i < dailyHolderDtos.Count - 1 && DateTimeHelper.ConvertYYMMDD(nextDate) <=
                    DateTimeHelper.ConvertYYMMDD(dailyHolderDtos[i + 1].DateStr))
             {
-           
                 dailyHolders.Add(new DailyHolder()
                 {
                     Date = DateTimeHelper.ConvertYYMMDD(nextDate),
@@ -476,12 +475,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var priceDic = priceList.List.ToDictionary(c => c.DateStr, c => c);
         foreach (var dailySupplyGrowth in dailySupplyGrowthRespAsync.List)
         {
-            var marketCap = new DailyMarketCap()
-            {
-                DateStr = dailySupplyGrowth.DateStr,
-                Date = dailySupplyGrowth.Date,
-            };
-
             double curDatePrice = 0;
             if (priceDic.TryGetValue(dailySupplyGrowth.DateStr, out var priceData))
             {
@@ -491,6 +484,13 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             {
                 curDatePrice = await GetElfPrice(dailySupplyGrowth.DateStr);
             }
+
+            var marketCap = new DailyMarketCap()
+            {
+                DateStr = dailySupplyGrowth.DateStr,
+                Date = dailySupplyGrowth.Date,
+                Price = curDatePrice.ToString("F4")
+            };
 
 
             marketCap.TotalMarketCap = (double.Parse(dailySupplyGrowth.TotalSupply) * curDatePrice).ToString("F4");

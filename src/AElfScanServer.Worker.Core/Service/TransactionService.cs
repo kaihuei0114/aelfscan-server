@@ -79,8 +79,7 @@ public interface ITransactionService
     public Task DelLogEventTask();
 
     public Task FixDailyData();
-
-
+    
     public Task BlockSizeTask();
 }
 
