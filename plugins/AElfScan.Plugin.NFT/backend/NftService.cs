@@ -504,8 +504,6 @@ public class NftService : INftService, ISingletonDependency
         var sumSupply = await QueryCollectionItem(chainId, symbol);
         _logger.LogInformation("QueryCollectionItem {chainId} {symbol} value {exist}", chainId, symbol, exist);
         await _distributedCache.SetAsync(GetCollectionItemsKey(chainId, symbol),
-            sumSupply.ToString(CultureInfo.InvariantCulture));
-        await _distributedCache.SetAsync(GetCollectionItemsKey(chainId, symbol),
             sumSupply.ToString(CultureInfo.InvariantCulture),
             new DistributedCacheEntryOptions
                 { SlidingExpiration = null, AbsoluteExpiration = DateTimeOffset.MaxValue });

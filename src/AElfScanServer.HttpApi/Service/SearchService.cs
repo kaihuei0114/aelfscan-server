@@ -14,6 +14,7 @@ using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.IndexerPluginProvider;
+using AElfScanServer.Common.NodeProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
 using AElfScanServer.Common.Token.Provider;
@@ -40,12 +41,14 @@ public class SearchService : ISearchService, ISingletonDependency
     private readonly ITokenInfoProvider _tokenInfoProvider;
     private readonly IGenesisPluginProvider _genesisPluginProvider;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
+    private readonly IBlockchainClientFactory<AElfClient> _blockchainClientFactory;
 
     public SearchService(ILogger<SearchService> logger, ITokenIndexerProvider tokenIndexerProvider,
         IOptionsMonitor<GlobalOptions> globalOptions, INftInfoProvider nftInfoProvider,
         ITokenPriceService tokenPriceService, ITokenInfoProvider tokenInfoProvider,
         IGenesisPluginProvider genesisPluginProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
-        AELFIndexerProvider aelfIndexerProvider)
+        AELFIndexerProvider aelfIndexerProvider,
+        IBlockchainClientFactory<AElfClient> blockchainClientFactory)
     {
         _logger = logger;
         _tokenIndexerProvider = tokenIndexerProvider;
@@ -56,6 +59,7 @@ public class SearchService : ISearchService, ISingletonDependency
         _genesisPluginProvider = genesisPluginProvider;
         _tokenInfoOptions = tokenInfoOptions;
         _aelfIndexerProvider = aelfIndexerProvider;
+        _blockchainClientFactory = blockchainClientFactory;
     }
 
     public async Task<SearchResponseDto> SearchAsync(SearchRequestDto request)
@@ -87,13 +91,13 @@ public class SearchService : ISearchService, ISingletonDependency
                         new List<SymbolType> { SymbolType.Nft, SymbolType.Nft_Collection });
                     break;
                 case FilterTypes.AllFilter:
-                    var types = new List<SymbolType> { SymbolType.Token, SymbolType.Nft, SymbolType.Nft_Collection };
-                    var tokenTask = AssemblySearchTokenAsync(searchResp, request, types);
+                    var tokenTask = AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Token});
+                    var nftTask = AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Nft, SymbolType.Nft_Collection});
                     var addressTask = AssemblySearchAddressAsync(searchResp, request);
                     // var contractAddressTask = AssemblySearchContractAddressAsync(searchResp, request);
                     var txTask = AssemblySearchTransactionAsync(searchResp, request);
                     var blockTask = AssemblySearchBlockAsync(searchResp, request);
-                    await Task.WhenAll(tokenTask, addressTask, txTask, blockTask);
+                    await Task.WhenAll(tokenTask,nftTask, addressTask, txTask, blockTask);
                     break;
             }
 
@@ -116,17 +120,17 @@ public class SearchService : ISearchService, ISingletonDependency
     private async Task AssemblySearchAddressAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
         TokenHolderInput holderInput;
-        if (request.SearchType == SearchTypes.ExactSearch)
+        /*if (request.SearchType == SearchTypes.ExactSearch)
         {
             holderInput = new TokenHolderInput { ChainId = request.ChainId, Address = request.Keyword };
         }
-        else
+        else*/
         {
             if (request.Keyword.Length <= CommonConstant.KeyWordAddressMinSize)
             {
                 return;
             }
-
+            
             holderInput = new TokenHolderInput { ChainId = request.ChainId, FuzzySearch = request.Keyword.ToLower() };
         }
 
@@ -164,7 +168,7 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             input.FuzzySearch = request.Keyword.ToLower();
         }
-
+        input.SetDefaultSort();
         var indexerTokenInfoList = await _tokenIndexerProvider.GetTokenListAsync(input);
         if (indexerTokenInfoList.Items.IsNullOrEmpty())
         {
@@ -248,10 +252,7 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             return;
         }
-
-        var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[request.ChainId]);
-
-        var transactionResult = await aElfClient.GetTransactionResultAsync(request.Keyword);
+        var transactionResult = await  _blockchainClientFactory.GetClient(request.ChainId).GetTransactionResultAsync(request.Keyword);
 
         if (transactionResult.Status is "MINED" or "PENDING")
         {
