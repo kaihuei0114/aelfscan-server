@@ -217,25 +217,28 @@ public class ContractAppService : IContractAppService
                     continue;
                 }
 
-                var curEvent = txn.LogEvents[i];
-                curEvent.ExtraProperties.TryGetValue("Indexed", out var indexed);
-                curEvent.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
-                var logEvent = new LogEventIndex()
+                for (var i1 = 0; i1 < txn.LogEvents.Count; i1++)
                 {
-                    TransactionId = txn.TransactionId,
-                    ChainId = req.ChainId,
-                    BlockHeight = txn.BlockHeight,
-                    MethodName = txn.MethodName,
-                    BlockTime = txn.BlockTime,
-                    TimeStamp = txn.BlockTime.ToUtcMilliSeconds(),
-                    ToAddress = txn.To,
-                    ContractAddress = curEvent.ContractAddress,
-                    EventName = curEvent.EventName,
-                    NonIndexed = nonIndexed,
-                    Indexed = indexed,
-                    Index = i
-                };
-                result.List.Add(logEvent);
+                    var curEvent = txn.LogEvents[i1];
+                    curEvent.ExtraProperties.TryGetValue("Indexed", out var indexed);
+                    curEvent.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
+                    var logEvent = new LogEventIndex()
+                    {
+                        TransactionId = txn.TransactionId,
+                        ChainId = req.ChainId,
+                        BlockHeight = txn.BlockHeight,
+                        MethodName = txn.MethodName,
+                        BlockTime = txn.BlockTime,
+                        TimeStamp = txn.BlockTime.ToUtcMilliSeconds(),
+                        ToAddress = txn.To,
+                        ContractAddress = curEvent.ContractAddress,
+                        EventName = curEvent.EventName,
+                        NonIndexed = nonIndexed,
+                        Indexed = indexed,
+                        Index = i1
+                    };
+                    result.List.Add(logEvent);
+                }
             }
 
             result.List = result.List.Skip(req.SkipCount).Take(req.MaxResultCount).ToList();
