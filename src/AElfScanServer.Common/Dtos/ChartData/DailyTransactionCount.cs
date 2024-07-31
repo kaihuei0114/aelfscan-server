@@ -59,5 +59,3 @@ public class DailyCycleCount
 
     public string DateStr { get; set; }
 }
-
-

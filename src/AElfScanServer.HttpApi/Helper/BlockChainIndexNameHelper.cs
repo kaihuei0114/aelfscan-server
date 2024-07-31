@@ -88,6 +88,13 @@ public class RedisKeyHelper
         return $"explore_FixDailyDaya";
     }
 
+    
+    public static string LogEventTransactionLastBlockHeight(string chainId)
+    {
+        return $"explore_{chainId}_LogEventTransactionLastBlockHeight";
+    }
+
+    
 
     public static string RewardKey(string chainId)
     {

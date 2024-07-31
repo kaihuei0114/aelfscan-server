@@ -27,6 +27,9 @@ public class GlobalOptions
 
     public List<string> ChainIds { get; set; }
 
+    public Dictionary<string, List<string>> SkipContractAddress { get; set; }
+    public Dictionary<string, long> SkipContractAddressStartBlockHeight { get; set; }
+
     public Dictionary<string, string> OneBlockTime { get; set; }
 
     public Dictionary<string, string> TokenImageUrls { get; set; }
