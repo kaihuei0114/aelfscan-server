@@ -716,9 +716,10 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         foreach (var dailyAvgTransactionFee in datList)
         {
-            dailyAvgTransactionFee.AvgFeeElf = double.Parse(dailyAvgTransactionFee.AvgFeeElf).ToString("F6");
-            dailyAvgTransactionFee.TotalFeeElf = double.Parse(dailyAvgTransactionFee.TotalFeeElf).ToString("F6");
-            dailyAvgTransactionFee.AvgFeeUsdt = double.Parse(dailyAvgTransactionFee.AvgFeeUsdt).ToString("F6");
+            dailyAvgTransactionFee.AvgFeeElf = (double.Parse(dailyAvgTransactionFee.AvgFeeElf) / 1e8).ToString("F6");
+            dailyAvgTransactionFee.TotalFeeElf =
+                (double.Parse(dailyAvgTransactionFee.TotalFeeElf) / 1e8).ToString("F6");
+            dailyAvgTransactionFee.AvgFeeUsdt = (double.Parse(dailyAvgTransactionFee.AvgFeeUsdt) / 1e8).ToString("F6");
         }
 
         var resp = new DailyAvgTransactionFeeResp()

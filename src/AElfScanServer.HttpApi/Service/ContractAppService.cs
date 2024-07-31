@@ -190,7 +190,7 @@ public class ContractAppService : IContractAppService
     public async Task<GetContractEventResp> GetContractEventsAsync(GetContractEventReq req)
     {
         var queryable = _logEventIndexRepository.GetQueryableAsync().Result.Where(c => c.ChainId == req.ChainId)
-            .Where(c => c.ContractAddress == req.ContractAddress);
+            .Where(c => c.ToAddress == req.ContractAddress);
 
         if (req.BlockHeight > 0)
         {

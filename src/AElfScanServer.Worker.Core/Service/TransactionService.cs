@@ -79,7 +79,7 @@ public interface ITransactionService
     public Task DelLogEventTask();
 
     public Task FixDailyData();
-    
+
     public Task BlockSizeTask();
 }
 
@@ -290,7 +290,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     .Bool(b => b
                         .Must(
                             m => m.Term("chainId", chainId),
-                            m => m.Term("contractAddress", contractAddress)
+                            m => m.Term("toAddress", contractAddress)
                         )
                     )
                 )
@@ -326,7 +326,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 .Bool(bb => bb
                     .Must(
                         m => m.Term("chainId", chainId),
-                        m => m.Term("contractAddress", contractAddress),
+                        m => m.Term("toAddress", contractAddress),
                         m => m.Range(r => r.Field(f => f.TimeStamp).LessThanOrEquals(starblockTime)
                         )
                     )
@@ -764,7 +764,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             for (var i = 0; i < txn.LogEvents.Count; i++)
             {
                 var curEvent = txn.LogEvents[i];
-
                 curEvent.ExtraProperties.TryGetValue("Indexed", out var indexed);
                 curEvent.ExtraProperties.TryGetValue("NonIndexed", out var nonIndexed);
                 var logEvent = new LogEventIndex()
@@ -775,7 +774,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     MethodName = txn.MethodName,
                     BlockTime = txn.BlockTime,
                     TimeStamp = txn.BlockTime.ToUtcMilliSeconds(),
-                    ContractAddress = txn.To,
+                    ToAddress = txn.To,
+                    ContractAddress = curEvent.ContractAddress,
                     EventName = curEvent.EventName,
                     NonIndexed = nonIndexed,
                     Indexed = indexed,
@@ -836,7 +836,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             var transactionFees = LogEventHelper.ParseTransactionFees(transaction.ExtraProperties);
             if (transactionFees > 0)
             {
-                dailyData.TotalFee += LogEventHelper.ParseTransactionFees(transaction.ExtraProperties);
+                dailyData.TransactionFeeRecords.Add(transaction.TransactionId + "_" + transactionFees);
+                dailyData.TotalFee += transactionFees;
                 dailyData.DailyAvgTransactionFeeIndex.HasFeeTransactionCount++;
             }
 

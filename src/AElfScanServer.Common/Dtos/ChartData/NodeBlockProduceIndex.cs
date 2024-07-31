@@ -150,6 +150,8 @@ public class DailyTransactionsChartSet
     public DailyActiveAddressCountIndex DailyActiveAddressCountIndex { get; set; }
     public DailyHasFeeTransactionIndex DailyHasFeeTransactionIndex { get; set; }
     public DailySupplyGrowthIndex DailySupplyGrowthIndex { get; set; }
+
+    public List<string> TransactionFeeRecords { get; set; } = new();
     public DailyTVLIndex DailyTVLIndex { get; set; }
 
     public Dictionary<string, DailyVotedIndex> DailyVotedIndexDic { get; set; }

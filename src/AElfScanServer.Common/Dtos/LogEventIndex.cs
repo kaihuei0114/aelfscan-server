@@ -23,6 +23,8 @@ public class LogEventIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 
     public long TimeStamp { get; set; }
 
+
+    [Keyword] public string ToAddress { get; set; }
     [Keyword] public string ContractAddress { get; set; }
 
     [Keyword] public string MethodName { get; set; }
