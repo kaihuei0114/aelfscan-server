@@ -29,6 +29,7 @@ public class GetAddressDetailResultDto
     // only address type is contract
     public string ContractName { get; set; }
     public string Author { get; set; }
+    public string CodeHash { get; set; }
     public string ContractTransactionHash { get; set; }
 }
 
