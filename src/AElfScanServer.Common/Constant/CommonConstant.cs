@@ -7,7 +7,7 @@ public static class CommonConstant
     public const long LongError = -1;
     public const string Comma = ",";
     public const string Underline = "_";
-    public const int UsdValueDecimals = 2;
+    public const int UsdValueDecimals = 4;
     public const int UsdPriceValueDecimals = 8;
     public const int ElfValueDecimals = 8;
     public const int LargerPercentageValueDecimals = 8;
