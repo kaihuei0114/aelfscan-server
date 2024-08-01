@@ -123,9 +123,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailySupplyGrowthIndex, string> _dailySupplyGrowthIndexRepository;
     private readonly IEntityMappingRepository<DailyStakedIndex, string> _dailyStakedIndexRepository;
     private readonly IEntityMappingRepository<DailyVotedIndex, string> _dailyVotedIndexRepository;
+    private readonly IEntityMappingRepository<DailyWithDrawnIndex, string> _dailyWithDrawnIndexRepository;
     private readonly IEntityMappingRepository<TransactionErrInfoIndex, string> _transactionErrInfoIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyChange, string> _dailySupplyChangeRepository;
     private readonly IEntityMappingRepository<DailyTVLIndex, string> _dailyTVLIndexRepository;
+
 
     private readonly IEntityMappingRepository<LogEventIndex, string> _logEventRepository;
     private readonly IPriceServerProvider _priceServerProvider;
@@ -186,6 +188,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyTVLIndex, string> dailyTVLIndexRepository,
         IAwakenIndexerProvider awakenIndexerProvider,
         IIndexerGenesisProvider indexerGenesisProvider,
+        IEntityMappingRepository<DailyWithDrawnIndex, string> dailyWithDrawnIndexRepository,
         IEntityMappingRepository<LogEventIndex, string> logEventRepository,
         IPriceServerProvider priceServerProvider) :
         base(optionsAccessor)
@@ -238,6 +241,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _dailyTVLIndexRepository = dailyTVLIndexRepository;
         _indexerGenesisProvider = indexerGenesisProvider;
         _logEventRepository = logEventRepository;
+        _dailyWithDrawnIndexRepository = dailyWithDrawnIndexRepository;
     }
 
 
@@ -828,6 +832,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             var hasBurntBlockCount = 0;
             var totalBurnt = 0l;
 
+            if (transaction.TransactionId == "70cd87e65335c9c9698ce9e888830dcc7e60ed85e5390d68c9a4cf39d9f47707")
+            {
+                _logger.LogInformation("");
+            }
+
             if (!dic.ContainsKey(date))
             {
                 var dailyTransactionsChartSet =
@@ -959,19 +968,24 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                             ChainId = chainId,
                             Date = totalMilliseconds,
                             DateStr = date,
+                            TransactionId = transaction.TransactionId,
                             VoteId = voted.VoteId.ToString(),
                             VoteAmount = votedAmount
                         };
-                        var voteRecord = transaction.TransactionId + "_" + "voteId:" +
-                                         voted.VoteId.ToString() +
-                                         "_" + votedAmount;
-                        dailyData.VoteRecords.Add(voteRecord);
                         break;
                     case nameof(Withdrawn):
                         var withdrawn = new Withdrawn();
                         withdrawn.MergeFrom(logEvent);
-
                         dailyData.WithDrawVotedIds.Add(withdrawn.VoteId.ToString());
+                        dailyData.DailyWithDrawnList.Add(
+                            new DailyWithDrawnIndex()
+                            {
+                                ChainId = chainId,
+                                Date = totalMilliseconds,
+                                DateStr = date,
+                                TransactionId = transaction.TransactionId,
+                                VoteId = withdrawn.VoteId.ToString(),
+                            });
                         break;
                 }
             }
@@ -1019,7 +1033,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
 
 
-        if (dic.Count == 2)
+        if (dic.Count == 1)
         {
             var firstDate = _globalOptions.CurrentValue.OneBlockTime[chainId];
             var minDate = dic.Keys.Min();
@@ -1175,6 +1189,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             {
                 var dailyVotedIndices = needUpdateData.DailyVotedIndexDic.Values.ToList();
                 await _dailyVotedIndexRepository.AddOrUpdateManyAsync(dailyVotedIndices);
+            }
+
+
+            if (!needUpdateData.DailyWithDrawnList.IsNullOrEmpty())
+            {
+                await _dailyWithDrawnIndexRepository.AddOrUpdateManyAsync(needUpdateData.DailyWithDrawnList);
             }
 
             await _dailySupplyChangeRepository.AddOrUpdateAsync(needUpdateData.DailySupplyChange);

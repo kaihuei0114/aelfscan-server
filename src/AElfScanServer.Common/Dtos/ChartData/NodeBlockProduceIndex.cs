@@ -155,7 +155,7 @@ public class DailyTransactionsChartSet
     public DailyTVLIndex DailyTVLIndex { get; set; }
 
     public Dictionary<string, DailyVotedIndex> DailyVotedIndexDic { get; set; }
-
+    public List<DailyWithDrawnIndex> DailyWithDrawnList { get; set; } = new();
     public DailyStakedIndex DailyStakedIndex { get; set; }
     public Dictionary<string, DailyContractCallIndex> DailyContractCallIndexDic { get; set; }
     public DailyTotalContractCallIndex DailyTotalContractCallIndex { get; set; }
@@ -645,7 +645,7 @@ public class DailyVotedIndex : AElfIndexerEntity<string>, IEntityMappingEntity
     [Keyword]
     public override string Id
     {
-        get { return DateStr + "_" + ChainId; }
+        get { return DateStr + "_" + ChainId + "_" + VoteId; }
     }
 
     public long Date { get; set; }
@@ -655,6 +655,27 @@ public class DailyVotedIndex : AElfIndexerEntity<string>, IEntityMappingEntity
 
     public double VoteAmount { get; set; }
 
+    [Keyword] public string TransactionId { get; set; }
+
+    [Keyword] public string ChainId { get; set; }
+}
+
+public class DailyWithDrawnIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateStr + "_" + ChainId + "_" + VoteId; }
+    }
+
+    public long Date { get; set; }
+    [Keyword] public string DateStr { get; set; }
+
+    [Keyword] public string VoteId { get; set; }
+
+    public double VoteAmount { get; set; }
+
+    [Keyword] public string TransactionId { get; set; }
 
     [Keyword] public string ChainId { get; set; }
 }
