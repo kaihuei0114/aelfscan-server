@@ -148,7 +148,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     private static Timer timer;
     private static long PullTransactioninterval = 4000 - 1;
-    private static long PullLogEventTransactioninterval = 100 - 1;
 
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
@@ -504,6 +503,22 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task BatchPullTransactionTask()
     {
+        try
+        {
+            _logger.LogInformation("_priceServerProvider start ");
+            var res = await _priceServerProvider.GetDailyPriceAsync(new GetDailyPriceRequestDto()
+            {
+                TokenPair = "elf-usdt",
+                TimeStamp = "20240821"
+            });
+
+            _logger.LogInformation("_priceServerProvider end {e}", res.ToString());
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("_priceServerProvider err:{e}");
+        }
+
         await ConnectAsync();
 
         if (_globalOptions.CurrentValue.NeedInitLastHeight && !FinishInitChartData)
@@ -631,7 +646,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             {
                 var batchTransactionList =
                     await GetBatchTransactionList(chainId, lastBlockHeight,
-                        lastBlockHeight + PullLogEventTransactioninterval);
+                        lastBlockHeight + _globalOptions.CurrentValue.PullLogEventTransactionInterval);
 
                 if (batchTransactionList.IsNullOrEmpty())
                 {
@@ -639,7 +654,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 }
 
                 await ParseLogEventList(batchTransactionList, chainId);
-                lastBlockHeight += PullLogEventTransactioninterval + 1;
+                lastBlockHeight += _globalOptions.CurrentValue.PullLogEventTransactionInterval + 1;
             }
 
             catch (Exception e)
@@ -648,7 +663,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     "BatchPullTransactionTask err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
                     chainId,
                     e, lastBlockHeight,
-                    lastBlockHeight + PullLogEventTransactioninterval);
+                    lastBlockHeight + _globalOptions.CurrentValue.PullLogEventTransactionInterval);
 
 
                 await ConnectAsync();

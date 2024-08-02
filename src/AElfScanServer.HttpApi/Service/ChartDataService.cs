@@ -308,7 +308,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         }
 
         sideIndexList[0].BPLockedAmount = 500000;
- 
+
 
         var sideDic = sideIndexList.ToDictionary(c => c.DateStr, c => c);
 
@@ -320,9 +320,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             Date = dailyTvlIndex.Date,
             DateStr = dailyTvlIndex.DateStr,
-            VoteLockedAmount = dailyTvlIndex.VoteLockedAmount,
-            BPLockedAmount = dailyTvlIndex.BPLockedAmount,
-            TotalBPLocked = dailyTvlIndex.BPLockedAmount,
+            TotalBPLockedAmount = dailyTvlIndex.BPLockedAmount,
             BPLocked = (dailyTvlIndex.BPLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
             VoteLocked = (dailyTvlIndex.VoteLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
             AwakenLocked = (dailyTvlIndex.AwakenLocked * dailyTvlIndex.DailyPrice).ToString("F2"),
@@ -334,8 +332,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         for (var i = 1; i < mainIndexList.Count; i++)
         {
             var curMain = mainIndexList[i];
-            var voteLockedAmount = curMain.VoteLockedAmount;
-            var bPLockedAmount = curMain.BPLockedAmount;
             var svoteLockedAmount = 0D;
             var sbPLockedAmount = 0D;
 
@@ -343,8 +339,6 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             curMain.VoteLockedAmount += mainIndexList[i - 1].VoteLockedAmount;
             if (sideDic.TryGetValue(curMain.DateStr, out var v))
             {
-                svoteLockedAmount = v.VoteLockedAmount;
-                sbPLockedAmount = v.BPLockedAmount;
                 curMain.BPLockedAmount += v.BPLockedAmount;
                 curMain.VoteLockedAmount += v.VoteLockedAmount;
                 curMain.AwakenLocked = v.AwakenLocked;
@@ -354,14 +348,10 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             {
                 Date = curMain.Date,
                 DateStr = curMain.DateStr,
-                VoteLockedAmount = voteLockedAmount,
-                BPLockedAmount = bPLockedAmount,
-                SPLockedAmount = sbPLockedAmount,
-                SoteLockedAmount = svoteLockedAmount,
-                TotalBPLocked = curMain.BPLockedAmount,
+                TotalBPLockedAmount = curMain.BPLockedAmount,
                 BPLocked = (curMain.BPLockedAmount * curMain.DailyPrice).ToString("F2"),
                 VoteLocked = (curMain.VoteLockedAmount * curMain.DailyPrice).ToString("F2"),
-                AwakenLocked = (curMain.AwakenLocked * curMain.DailyPrice).ToString("F2"),
+                AwakenLocked = curMain.AwakenLocked.ToString("F2"),
                 TVL = (((curMain.BPLockedAmount + curMain.VoteLockedAmount) *
                         curMain.DailyPrice) + curMain.AwakenLocked).ToString("F2")
             });

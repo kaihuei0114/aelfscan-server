@@ -18,6 +18,8 @@ public class GlobalOptions
 
     public bool InitRound { get; set; }
 
+    public int PullLogEventTransactionInterval { get; set; } = 100;
+
     public int SupplyChartShowOffset { get; set; }
 
     public List<string> OrganizationAddressList { get; set; }
