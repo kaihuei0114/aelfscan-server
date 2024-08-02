@@ -503,22 +503,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task BatchPullTransactionTask()
     {
-        try
-        {
-            _logger.LogInformation("_priceServerProvider start ");
-            var res = await _priceServerProvider.GetDailyPriceAsync(new GetDailyPriceRequestDto()
-            {
-                TokenPair = "elf-usdt",
-                TimeStamp = "20240821"
-            });
-
-            _logger.LogInformation("_priceServerProvider end {e}", res.ToString());
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("_priceServerProvider err:{e}");
-        }
-
         await ConnectAsync();
 
         if (_globalOptions.CurrentValue.NeedInitLastHeight && !FinishInitChartData)
@@ -531,8 +515,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             FinishInitChartData = true;
         }
-
-
+        
         var tasks = new List<Task>();
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
