@@ -308,13 +308,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         }
 
         sideIndexList[0].BPLockedAmount = 500000;
-        for (var i = 1; i < sideIndexList.Count; i++)
-        {
-            var curSide = sideIndexList[i];
-            var previousSide = sideIndexList[i - 1];
-            curSide.VoteLockedAmount += previousSide.VoteLockedAmount;
-            curSide.BPLockedAmount += previousSide.BPLockedAmount;
-        }
+ 
 
         var sideDic = sideIndexList.ToDictionary(c => c.DateStr, c => c);
 
@@ -326,21 +320,31 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         {
             Date = dailyTvlIndex.Date,
             DateStr = dailyTvlIndex.DateStr,
+            VoteLockedAmount = dailyTvlIndex.VoteLockedAmount,
+            BPLockedAmount = dailyTvlIndex.BPLockedAmount,
+            TotalBPLocked = dailyTvlIndex.BPLockedAmount,
             BPLocked = (dailyTvlIndex.BPLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
             VoteLocked = (dailyTvlIndex.VoteLockedAmount * dailyTvlIndex.DailyPrice).ToString("F2"),
             AwakenLocked = (dailyTvlIndex.AwakenLocked * dailyTvlIndex.DailyPrice).ToString("F2"),
-            TVL = ((dailyTvlIndex.BPLockedAmount + dailyTvlIndex.VoteLockedAmount + dailyTvlIndex.AwakenLocked) *
-                   dailyTvlIndex.DailyPrice)
+            TVL = (((dailyTvlIndex.BPLockedAmount + dailyTvlIndex.VoteLockedAmount) *
+                    dailyTvlIndex.DailyPrice) + dailyTvlIndex.AwakenLocked)
                 .ToString("F2")
         });
 
         for (var i = 1; i < mainIndexList.Count; i++)
         {
             var curMain = mainIndexList[i];
+            var voteLockedAmount = curMain.VoteLockedAmount;
+            var bPLockedAmount = curMain.BPLockedAmount;
+            var svoteLockedAmount = 0D;
+            var sbPLockedAmount = 0D;
+
             curMain.BPLockedAmount += mainIndexList[i - 1].BPLockedAmount;
             curMain.VoteLockedAmount += mainIndexList[i - 1].VoteLockedAmount;
             if (sideDic.TryGetValue(curMain.DateStr, out var v))
             {
+                svoteLockedAmount = v.VoteLockedAmount;
+                sbPLockedAmount = v.BPLockedAmount;
                 curMain.BPLockedAmount += v.BPLockedAmount;
                 curMain.VoteLockedAmount += v.VoteLockedAmount;
                 curMain.AwakenLocked = v.AwakenLocked;
@@ -350,12 +354,16 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             {
                 Date = curMain.Date,
                 DateStr = curMain.DateStr,
+                VoteLockedAmount = voteLockedAmount,
+                BPLockedAmount = bPLockedAmount,
+                SPLockedAmount = sbPLockedAmount,
+                SoteLockedAmount = svoteLockedAmount,
+                TotalBPLocked = curMain.BPLockedAmount,
                 BPLocked = (curMain.BPLockedAmount * curMain.DailyPrice).ToString("F2"),
                 VoteLocked = (curMain.VoteLockedAmount * curMain.DailyPrice).ToString("F2"),
                 AwakenLocked = (curMain.AwakenLocked * curMain.DailyPrice).ToString("F2"),
-                TVL = ((curMain.BPLockedAmount + curMain.VoteLockedAmount +
-                        curMain.AwakenLocked) *
-                       curMain.DailyPrice).ToString("F2")
+                TVL = (((curMain.BPLockedAmount + curMain.VoteLockedAmount) *
+                        curMain.DailyPrice) + curMain.AwakenLocked).ToString("F2")
             });
         }
 
@@ -425,16 +433,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var datList = _objectMapper.Map<List<DailyStakedIndex>, List<DailyStaked>>(indexList);
 
 
-        if (_globalOptions.CurrentValue.IsMainNet)
-        {
-            datList[0].TotalStaked = "1700000";
-            datList[0].BpStaked = "1700000";
-        }
-        else
-        {
-            datList[0].TotalStaked = "500000";
-            datList[0].BpStaked = "500000";
-        }
+        datList[0].TotalStaked = "500000";
+        datList[0].BpStaked = "500000";
 
         var totalStaked = double.Parse(datList[0].BpStaked) + double.Parse(datList[0].VoteStaked);
 
@@ -692,7 +692,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         foreach (var dailyAvgTransactionFee in datList)
         {
-            dailyAvgTransactionFee.TotalFeeElf = (double.Parse(dailyAvgTransactionFee.TotalFeeElf)/1e8).ToString("F6");
+            dailyAvgTransactionFee.TotalFeeElf =
+                (double.Parse(dailyAvgTransactionFee.TotalFeeElf) / 1e8).ToString("F6");
         }
 
         var resp = new DailyTransactionFeeResp()

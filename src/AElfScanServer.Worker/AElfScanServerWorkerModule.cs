@@ -221,18 +221,18 @@ public class AElfScanServerWorkerModule : AbpModule
     {
        
         context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
-        // context.AddBackgroundWorkerAsync<LogEventWorker>();
-        // context.AddBackgroundWorkerAsync<LogEventDelWorker>();
-        // context.AddBackgroundWorkerAsync<RoundWorker>();
-        // context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
-        // context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
-        // context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
-        // context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
-        // context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
-        // context.AddBackgroundWorkerAsync<BnElfUsdtPriceWorker>();
-        // context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
-        // context.AddBackgroundWorkerAsync<BlockSizeWorker>();
-        // context.AddBackgroundWorkerAsync<CurrentBpProduceWorker>();
-        // context.AddBackgroundWorkerAsync<FixDailyTransactionWorker>();
+        context.AddBackgroundWorkerAsync<LogEventWorker>();
+        context.AddBackgroundWorkerAsync<LogEventDelWorker>();
+        context.AddBackgroundWorkerAsync<RoundWorker>();
+        context.AddBackgroundWorkerAsync<TransactionRatePerMinuteWorker>();
+        context.AddBackgroundWorkerAsync<AddressAssetCalcWorker>();
+        context.AddBackgroundWorkerAsync<HomePageOverviewWorker>();
+        context.AddBackgroundWorkerAsync<LatestTransactionsWorker>();
+        context.AddBackgroundWorkerAsync<LatestBlocksWorker>();
+        context.AddBackgroundWorkerAsync<BnElfUsdtPriceWorker>();
+        context.AddBackgroundWorkerAsync<DailyNetworkStatisticWorker>();
+        context.AddBackgroundWorkerAsync<BlockSizeWorker>();
+        context.AddBackgroundWorkerAsync<CurrentBpProduceWorker>();
+        context.AddBackgroundWorkerAsync<FixDailyTransactionWorker>();
     }
 }

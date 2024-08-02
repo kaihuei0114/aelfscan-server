@@ -368,6 +368,19 @@ public class DailyTVL
 
     public string VoteLocked { get; set; }
 
+    
+    public double TotalBPLocked { get; set; }
+    
+    public double BPLockedAmount { get; set; }
+
+    public double VoteLockedAmount { get; set; }
+
+    
+    public double SPLockedAmount { get; set; }
+
+    public double SoteLockedAmount { get; set; }
+
+    
     public string AwakenLocked { get; set; }
 }
 

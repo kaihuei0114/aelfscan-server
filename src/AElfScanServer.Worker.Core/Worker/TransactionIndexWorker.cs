@@ -27,6 +27,8 @@ public class TransactionIndexWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+
+  
         await _transactionService.BatchPullTransactionTask();
     }
 }
