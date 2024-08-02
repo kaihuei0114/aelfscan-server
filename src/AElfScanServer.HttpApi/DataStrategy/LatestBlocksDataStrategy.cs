@@ -79,7 +79,7 @@ public class LatestBlocksDataStrategy : DataStrategyBase<string, BlocksResponseD
             result.Blocks.Add(latestBlockDto);
             if (chainId == "AELF")
             {
-                latestBlockDto.Reward = "12500000";
+                latestBlockDto.Reward = _globalOptions.CurrentValue.BlockRewardAmountStr;
             }
             else
             {

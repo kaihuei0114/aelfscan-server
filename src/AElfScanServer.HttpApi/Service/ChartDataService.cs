@@ -315,7 +315,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var dailyTvls = new List<DailyTVL>();
         var dailyTvlIndex = mainIndexList.First();
-        dailyTvlIndex.BPLockedAmount = 500000;
+        dailyTvlIndex.BPLockedAmount = _globalOptions.CurrentValue.InitStaked;
         dailyTvls.Add(new DailyTVL()
         {
             Date = dailyTvlIndex.Date,
@@ -423,8 +423,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var datList = _objectMapper.Map<List<DailyStakedIndex>, List<DailyStaked>>(indexList);
 
 
-        datList[0].TotalStaked = "500000";
-        datList[0].BpStaked = "500000";
+        datList[0].TotalStaked = _globalOptions.CurrentValue.InitStakedStr;
+        datList[0].BpStaked = _globalOptions.CurrentValue.InitStakedStr;
 
         var totalStaked = double.Parse(datList[0].BpStaked) + double.Parse(datList[0].VoteStaked);
 

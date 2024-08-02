@@ -278,11 +278,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 await _indexerGenesisProvider.GetContractListAsync(chainId,
                     0, 100, "", "", "");
             var list = getContractListResult.ContractList.Items.Select(s => s.Address).ToList();
+            var tasks = new List<Task>();
             foreach (var address in list)
             {
-                await DeleteManyEvent(chainId, address);
-                _logger.LogInformation("DelLogEventTask:{address}", address);
+                tasks.Add(DeleteManyEvent(chainId, address));
             }
+
+            await tasks.WhenAll();
         }
     }
 
@@ -515,7 +517,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             FinishInitChartData = true;
         }
-        
+
         var tasks = new List<Task>();
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
@@ -830,10 +832,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             var hasBurntBlockCount = 0;
             var totalBurnt = 0l;
 
-            if (transaction.TransactionId == "70cd87e65335c9c9698ce9e888830dcc7e60ed85e5390d68c9a4cf39d9f47707")
-            {
-                _logger.LogInformation("");
-            }
 
             if (!dic.ContainsKey(date))
             {
@@ -1031,7 +1029,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
 
 
-        if (dic.Count == 1)
+        if (dic.Count == 2)
         {
             var firstDate = _globalOptions.CurrentValue.OneBlockTime[chainId];
             var minDate = dic.Keys.Min();

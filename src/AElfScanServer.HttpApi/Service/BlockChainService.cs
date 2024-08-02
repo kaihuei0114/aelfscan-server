@@ -214,7 +214,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         blockResponseDto.Reward = new RewardDto()
         {
-            ElfReward = "12500000",
+            ElfReward = _globalOptions.CurrentValue.BlockRewardAmountStr,
             UsdReward = (double.Parse(await _blockChainProvider.GetTokenUsdPriceAsync("ELF")) * 0.125)
                 .ToString()
         };
@@ -651,7 +651,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
 
                 result.Blocks.Add(latestBlockDto);
-                latestBlockDto.Reward = "12500000";
+                latestBlockDto.Reward = _globalOptions.CurrentValue.BlockRewardAmountStr;
             }
 
 

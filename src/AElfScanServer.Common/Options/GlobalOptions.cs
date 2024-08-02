@@ -18,6 +18,10 @@ public class GlobalOptions
 
     public bool InitRound { get; set; }
 
+    public string BlockRewardAmountStr { get; set; } = "12500000";
+    public string InitStakedStr { get; set; } = "500000";
+
+    public double InitStaked { get; set; } = 500000;
     public int PullLogEventTransactionInterval { get; set; } = 100;
 
     public int SupplyChartShowOffset { get; set; }
