@@ -261,6 +261,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task BatchPullLogEventTask()
     {
+        foreach (var v in _globalOptions.CurrentValue.LogEventStartBlockHeightInit)
+        {
+            await ConnectAsync();
+            RedisDatabase.StringSet(RedisKeyHelper.LogEventTransactionLastBlockHeight(v.Key), v.Value);
+        }
+
         var tasks = new List<Task>();
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
