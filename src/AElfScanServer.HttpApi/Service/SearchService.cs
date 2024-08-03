@@ -20,6 +20,7 @@ using AElfScanServer.Common.Token;
 using AElfScanServer.Common.Token.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nito.AsyncEx;
 using Volo.Abp.DependencyInjection;
 
 namespace AElfScanServer.HttpApi.Service;
@@ -122,17 +123,31 @@ public class SearchService : ISearchService, ISingletonDependency
 
     private async Task AssemblySearchAddressAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
-        TokenHolderInput holderInput;
-        if (request.Keyword.Length <= CommonConstant.KeyWordAddressMinSize)
+        try
         {
+            AElf.Types.Address.FromBase58(request.Keyword);
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning("address is invalid,{a},{e}", request.Keyword, e.ToString());
             return;
         }
 
+        var contractAddress = "";
+        var eoaAddress = "";
 
-        var contractListAsync =
-            await _indexerGenesisProvider.GetContractListAsync(request.ChainId, 0, 1, "", "",
-                request.Keyword);
-        if (!contractListAsync.ContractList.Items.IsNullOrEmpty())
+        var tasks = new List<Task>();
+
+        tasks.Add(FindContractAddress(request.ChainId, request.Keyword).ContinueWith(task =>
+        {
+            contractAddress = task.Result;
+        }));
+
+        tasks.Add(FindEoaAddress(request.ChainId, request.Keyword).ContinueWith(task => { eoaAddress = task.Result; }));
+
+        await tasks.WhenAll();
+
+        if (!contractAddress.IsNullOrEmpty())
         {
             searchResponseDto.Contracts.Add(new SearchContract
             {
@@ -142,17 +157,39 @@ public class SearchService : ISearchService, ISingletonDependency
             return;
         }
 
+        if (!eoaAddress.IsNullOrEmpty())
+        {
+            searchResponseDto.Accounts.Add(eoaAddress);
+        }
+    }
 
-        holderInput = new TokenHolderInput { ChainId = request.ChainId, Address = request.Keyword };
+    public async Task<string> FindContractAddress(string chainId, string contractAddress)
+    {
+        var contractListAsync =
+            await _indexerGenesisProvider.GetContractListAsync(chainId, 0, 1, "", "",
+                contractAddress);
+
+        if (!contractListAsync.ContractList.Items.IsNullOrEmpty())
+        {
+            return contractListAsync.ContractList.Items.First().Address;
+        }
+
+        return "";
+    }
+
+    public async Task<string> FindEoaAddress(string chainId, string address)
+    {
+        var holderInput = new TokenHolderInput { ChainId = chainId, Address = address };
         holderInput.SetDefaultSort();
         var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
 
         var list = tokenHolderInfos.Items.Select(i => i.Address).Distinct().ToList();
-
         if (!list.IsNullOrEmpty())
         {
-            searchResponseDto.Accounts.Add(list.First());
+            return list.First();
         }
+
+        return "";
     }
 
 
