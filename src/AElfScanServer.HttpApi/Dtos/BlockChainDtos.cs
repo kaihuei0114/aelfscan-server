@@ -226,6 +226,7 @@ public class NftsTransferredDto
 
     public string Name { get; set; }
     public long Amount { get; set; }
+    public string AmountString { get; set; }
     public string TradePrice { get; set; }
     public string NowPrice { get; set; }
     public string ImageUrl { get; set; }

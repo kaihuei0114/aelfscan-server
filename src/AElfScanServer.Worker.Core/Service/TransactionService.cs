@@ -123,9 +123,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailySupplyGrowthIndex, string> _dailySupplyGrowthIndexRepository;
     private readonly IEntityMappingRepository<DailyStakedIndex, string> _dailyStakedIndexRepository;
     private readonly IEntityMappingRepository<DailyVotedIndex, string> _dailyVotedIndexRepository;
+    private readonly IEntityMappingRepository<DailyWithDrawnIndex, string> _dailyWithDrawnIndexRepository;
     private readonly IEntityMappingRepository<TransactionErrInfoIndex, string> _transactionErrInfoIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyChange, string> _dailySupplyChangeRepository;
     private readonly IEntityMappingRepository<DailyTVLIndex, string> _dailyTVLIndexRepository;
+
 
     private readonly IEntityMappingRepository<LogEventIndex, string> _logEventRepository;
     private readonly IPriceServerProvider _priceServerProvider;
@@ -146,7 +148,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     private static Timer timer;
     private static long PullTransactioninterval = 4000 - 1;
-    private static long PullLogEventTransactioninterval = 100 - 1;
 
 
     public TransactionService(IOptions<RedisCacheOptions> optionsAccessor, AELFIndexerProvider aelfIndexerProvider,
@@ -186,6 +187,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyTVLIndex, string> dailyTVLIndexRepository,
         IAwakenIndexerProvider awakenIndexerProvider,
         IIndexerGenesisProvider indexerGenesisProvider,
+        IEntityMappingRepository<DailyWithDrawnIndex, string> dailyWithDrawnIndexRepository,
         IEntityMappingRepository<LogEventIndex, string> logEventRepository,
         IPriceServerProvider priceServerProvider) :
         base(optionsAccessor)
@@ -238,6 +240,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _dailyTVLIndexRepository = dailyTVLIndexRepository;
         _indexerGenesisProvider = indexerGenesisProvider;
         _logEventRepository = logEventRepository;
+        _dailyWithDrawnIndexRepository = dailyWithDrawnIndexRepository;
     }
 
 
@@ -258,6 +261,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task BatchPullLogEventTask()
     {
+        foreach (var v in _globalOptions.CurrentValue.LogEventStartBlockHeightInit)
+        {
+            await ConnectAsync();
+            RedisDatabase.StringSet(RedisKeyHelper.LogEventTransactionLastBlockHeight(v.Key), v.Value);
+        }
+
         var tasks = new List<Task>();
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
@@ -275,11 +284,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 await _indexerGenesisProvider.GetContractListAsync(chainId,
                     0, 100, "", "", "");
             var list = getContractListResult.ContractList.Items.Select(s => s.Address).ToList();
+            var tasks = new List<Task>();
             foreach (var address in list)
             {
-                await DeleteManyEvent(chainId, address);
-                _logger.LogInformation("DelLogEventTask:{address}", address);
+                tasks.Add(DeleteManyEvent(chainId, address));
             }
+
+            await tasks.WhenAll();
         }
     }
 
@@ -513,7 +524,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             FinishInitChartData = true;
         }
 
-
         var tasks = new List<Task>();
         foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
@@ -627,7 +637,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             {
                 var batchTransactionList =
                     await GetBatchTransactionList(chainId, lastBlockHeight,
-                        lastBlockHeight + PullLogEventTransactioninterval);
+                        lastBlockHeight + _globalOptions.CurrentValue.PullLogEventTransactionInterval);
 
                 if (batchTransactionList.IsNullOrEmpty())
                 {
@@ -635,7 +645,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 }
 
                 await ParseLogEventList(batchTransactionList, chainId);
-                lastBlockHeight += PullLogEventTransactioninterval + 1;
+                lastBlockHeight += _globalOptions.CurrentValue.PullLogEventTransactionInterval + 1;
             }
 
             catch (Exception e)
@@ -644,7 +654,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     "BatchPullTransactionTask err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
                     chainId,
                     e, lastBlockHeight,
-                    lastBlockHeight + PullLogEventTransactioninterval);
+                    lastBlockHeight + _globalOptions.CurrentValue.PullLogEventTransactionInterval);
 
 
                 await ConnectAsync();
@@ -828,6 +838,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             var hasBurntBlockCount = 0;
             var totalBurnt = 0l;
 
+
             if (!dic.ContainsKey(date))
             {
                 var dailyTransactionsChartSet =
@@ -959,19 +970,24 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                             ChainId = chainId,
                             Date = totalMilliseconds,
                             DateStr = date,
+                            TransactionId = transaction.TransactionId,
                             VoteId = voted.VoteId.ToString(),
                             VoteAmount = votedAmount
                         };
-                        var voteRecord = transaction.TransactionId + "_" + "voteId:" +
-                                         voted.VoteId.ToString() +
-                                         "_" + votedAmount;
-                        dailyData.VoteRecords.Add(voteRecord);
                         break;
                     case nameof(Withdrawn):
                         var withdrawn = new Withdrawn();
                         withdrawn.MergeFrom(logEvent);
-
                         dailyData.WithDrawVotedIds.Add(withdrawn.VoteId.ToString());
+                        dailyData.DailyWithDrawnList.Add(
+                            new DailyWithDrawnIndex()
+                            {
+                                ChainId = chainId,
+                                Date = totalMilliseconds,
+                                DateStr = date,
+                                TransactionId = transaction.TransactionId,
+                                VoteId = withdrawn.VoteId.ToString(),
+                            });
                         break;
                 }
             }
@@ -1175,6 +1191,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             {
                 var dailyVotedIndices = needUpdateData.DailyVotedIndexDic.Values.ToList();
                 await _dailyVotedIndexRepository.AddOrUpdateManyAsync(dailyVotedIndices);
+            }
+
+
+            if (!needUpdateData.DailyWithDrawnList.IsNullOrEmpty())
+            {
+                await _dailyWithDrawnIndexRepository.AddOrUpdateManyAsync(needUpdateData.DailyWithDrawnList);
             }
 
             await _dailySupplyChangeRepository.AddOrUpdateAsync(needUpdateData.DailySupplyChange);

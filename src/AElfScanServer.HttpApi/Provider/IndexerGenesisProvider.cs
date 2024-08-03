@@ -55,6 +55,7 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
                                  address
                                 contractVersion
                                 version
+                                author
                                 codeHash
                                 contractType
                                 metadata {

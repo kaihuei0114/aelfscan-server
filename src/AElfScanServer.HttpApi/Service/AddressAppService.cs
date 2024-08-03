@@ -162,6 +162,8 @@ public class AddressAppService : IAddressAppService
         {
             result = _objectMapper.Map<ContractInfoDto, GetAddressDetailResultDto>(contractInfo.ContractList.Items[0]);
             result.ContractName = _globalOptions.GetContractName(input.ChainId, input.Address);
+            result.Author = contractInfo.ContractList.Items[0].Author;
+            result.CodeHash = contractInfo.ContractList.Items[0].CodeHash;
         }
 
         result.ElfBalance = holderInfo.Balance;
@@ -231,7 +233,7 @@ public class AddressAppService : IAddressAppService
 
         var elfPriceDto =
             await _tokenPriceService.GetTokenPriceAsync(CurrencyConstant.ElfCurrency, CurrencyConstant.UsdCurrency);
-     
+
         var tokenInfoList = await GetTokenInfoListAsync(holderInfos.Items, tokenDict, elfPriceDto);
 
         return new GetAddressTokenListResultDto

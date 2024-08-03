@@ -4,7 +4,7 @@ namespace AElfScanServer.Common.Dtos.Indexer;
 
 public class IndexerContractListResultDto
 {
-    public IndexerContractListDto ContractList { get; set; }
+    public IndexerContractListDto ContractList { get; set; } = new();
 }
 
 public class IndexerContractListDto

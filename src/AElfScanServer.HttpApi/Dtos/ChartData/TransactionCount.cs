@@ -79,7 +79,6 @@ public class JonInfoResp
     public HomeOverviewResponseDto Overview { get; set; }
 }
 
-
 public class DailyTransactionCountResp
 {
     public long Total { get; set; }
@@ -367,6 +366,8 @@ public class DailyTVL
     public string BPLocked { get; set; }
 
     public string VoteLocked { get; set; }
+
+    public double TotalBPLockedAmount { get; set; }
 
     public string AwakenLocked { get; set; }
 }

@@ -20,6 +20,7 @@ using AElfScanServer.Common.Token;
 using AElfScanServer.Common.Token.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nito.AsyncEx;
 using Volo.Abp.DependencyInjection;
 
 namespace AElfScanServer.HttpApi.Service;
@@ -39,14 +40,15 @@ public class SearchService : ISearchService, ISingletonDependency
     private readonly INftInfoProvider _nftInfoProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
-    private readonly IGenesisPluginProvider _genesisPluginProvider;
+    private readonly IIndexerGenesisProvider _indexerGenesisProvider;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
     private readonly IBlockchainClientFactory<AElfClient> _blockchainClientFactory;
 
     public SearchService(ILogger<SearchService> logger, ITokenIndexerProvider tokenIndexerProvider,
         IOptionsMonitor<GlobalOptions> globalOptions, INftInfoProvider nftInfoProvider,
         ITokenPriceService tokenPriceService, ITokenInfoProvider tokenInfoProvider,
-        IGenesisPluginProvider genesisPluginProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
+        IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
+        IIndexerGenesisProvider indexerGenesisProvider,
         AELFIndexerProvider aelfIndexerProvider,
         IBlockchainClientFactory<AElfClient> blockchainClientFactory)
     {
@@ -56,10 +58,10 @@ public class SearchService : ISearchService, ISingletonDependency
         _nftInfoProvider = nftInfoProvider;
         _tokenPriceService = tokenPriceService;
         _tokenInfoProvider = tokenInfoProvider;
-        _genesisPluginProvider = genesisPluginProvider;
         _tokenInfoOptions = tokenInfoOptions;
         _aelfIndexerProvider = aelfIndexerProvider;
         _blockchainClientFactory = blockchainClientFactory;
+        _indexerGenesisProvider = indexerGenesisProvider;
     }
 
     public async Task<SearchResponseDto> SearchAsync(SearchRequestDto request)
@@ -91,13 +93,15 @@ public class SearchService : ISearchService, ISingletonDependency
                         new List<SymbolType> { SymbolType.Nft, SymbolType.Nft_Collection });
                     break;
                 case FilterTypes.AllFilter:
-                    var tokenTask = AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Token});
-                    var nftTask = AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Nft, SymbolType.Nft_Collection});
+                    var tokenTask =
+                        AssemblySearchTokenAsync(searchResp, request, new List<SymbolType> { SymbolType.Token });
+                    var nftTask = AssemblySearchTokenAsync(searchResp, request,
+                        new List<SymbolType> { SymbolType.Nft, SymbolType.Nft_Collection });
                     var addressTask = AssemblySearchAddressAsync(searchResp, request);
                     // var contractAddressTask = AssemblySearchContractAddressAsync(searchResp, request);
                     var txTask = AssemblySearchTransactionAsync(searchResp, request);
                     var blockTask = AssemblySearchBlockAsync(searchResp, request);
-                    await Task.WhenAll(tokenTask,nftTask, addressTask, txTask, blockTask);
+                    await Task.WhenAll(tokenTask, nftTask, addressTask, txTask, blockTask);
                     break;
             }
 
@@ -119,33 +123,75 @@ public class SearchService : ISearchService, ISingletonDependency
 
     private async Task AssemblySearchAddressAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
-        TokenHolderInput holderInput;
-        if (request.Keyword.Length <= CommonConstant.KeyWordAddressMinSize)
+        try
         {
+            AElf.Types.Address.FromBase58(request.Keyword);
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning("address is invalid,{a},{e}", request.Keyword, e.ToString());
             return;
         }
-        holderInput = new TokenHolderInput { ChainId = request.ChainId, Address = request.Keyword };
+
+        var contractAddress = "";
+        var eoaAddress = "";
+
+        var tasks = new List<Task>();
+
+        tasks.Add(FindContractAddress(request.ChainId, request.Keyword).ContinueWith(task =>
+        {
+            contractAddress = task.Result;
+        }));
+
+        tasks.Add(FindEoaAddress(request.ChainId, request.Keyword).ContinueWith(task => { eoaAddress = task.Result; }));
+
+        await tasks.WhenAll();
+
+        if (!contractAddress.IsNullOrEmpty())
+        {
+            searchResponseDto.Contracts.Add(new SearchContract
+            {
+                Address = request.Keyword,
+                Name = BlockHelper.GetContractName(_globalOptions.CurrentValue, request.ChainId, request.Keyword)
+            });
+            return;
+        }
+
+        if (!eoaAddress.IsNullOrEmpty())
+        {
+            searchResponseDto.Accounts.Add(eoaAddress);
+        }
+    }
+
+    public async Task<string> FindContractAddress(string chainId, string contractAddress)
+    {
+        var contractListAsync =
+            await _indexerGenesisProvider.GetContractListAsync(chainId, 0, 1, "", "",
+                contractAddress);
+
+        if (!contractListAsync.ContractList.Items.IsNullOrEmpty())
+        {
+            return contractListAsync.ContractList.Items.First().Address;
+        }
+
+        return "";
+    }
+
+    public async Task<string> FindEoaAddress(string chainId, string address)
+    {
+        var holderInput = new TokenHolderInput { ChainId = chainId, Address = address };
         holderInput.SetDefaultSort();
         var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
 
         var list = tokenHolderInfos.Items.Select(i => i.Address).Distinct().ToList();
-
-        foreach (var s in list)
+        if (!list.IsNullOrEmpty())
         {
-            if (await _genesisPluginProvider.IsContractAddressAsync(request.ChainId, s))
-            {
-                searchResponseDto.Contracts.Add(new SearchContract
-                {
-                    Address = s,
-                    Name = BlockHelper.GetContractName(_globalOptions.CurrentValue, request.ChainId, s)
-                });
-            }
-            else
-            {
-                searchResponseDto.Accounts.Add(s);
-            }
+            return list.First();
         }
+
+        return "";
     }
+
 
     private async Task AssemblySearchTokenAsync(SearchResponseDto searchResponseDto, SearchRequestDto request,
         List<SymbolType> types)
@@ -159,6 +205,7 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             input.FuzzySearch = request.Keyword.ToLower();
         }
+
         input.SetDefaultSort();
         var indexerTokenInfoList = await _tokenIndexerProvider.GetTokenListAsync(input);
         if (indexerTokenInfoList.Items.IsNullOrEmpty())
@@ -243,7 +290,9 @@ public class SearchService : ISearchService, ISingletonDependency
         {
             return;
         }
-        var transactionResult = await  _blockchainClientFactory.GetClient(request.ChainId).GetTransactionResultAsync(request.Keyword);
+
+        var transactionResult = await _blockchainClientFactory.GetClient(request.ChainId)
+            .GetTransactionResultAsync(request.Keyword);
 
         if (transactionResult.Status is "MINED" or "PENDING")
         {

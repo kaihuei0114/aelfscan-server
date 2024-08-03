@@ -59,7 +59,6 @@ public interface IBlockChainService
     public Task<LogEventResponseDto> GetLogEventsAsync(GetLogEventRequestDto request);
 }
 
-
 [AggregateExecutionTime]
 public class BlockChainService : IBlockChainService, ITransientDependency
 {
@@ -70,6 +69,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
     private readonly BlockChainDataProvider _blockChainProvider;
     private readonly LogEventProvider _logEventProvider;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
+    private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptionsMonitor;
 
     private readonly ILogger<HomePageService> _logger;
 
@@ -80,7 +80,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         INESTRepository<BlockExtraIndex, string> blockExtraIndexRepository,
         LogEventProvider logEventProvider, IObjectMapper objectMapper,
         BlockChainDataProvider blockChainProvider, IBlockChainIndexerProvider blockChainIndexerProvider,
-        ITokenIndexerProvider tokenIndexerProvider)
+        ITokenIndexerProvider tokenIndexerProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions)
     {
         _logger = logger;
         _globalOptions = blockChainOptions;
@@ -90,6 +90,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         _blockChainProvider = blockChainProvider;
         _blockChainIndexerProvider = blockChainIndexerProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
+        _tokenInfoOptionsMonitor = tokenInfoOptions;
     }
 
 
@@ -132,9 +133,6 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         return transactionDetailResponseDto;
     }
-
-
-
 
 
     public async Task<List<long>> ParseTokenImageBlockHeight()
@@ -210,16 +208,14 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         blockResponseDto.BurntFee = new BurntFee()
         {
             ElfFee = fee,
-
             UsdFee =
                 (double.Parse(await _blockChainProvider.GetTokenUsdPriceAsync("ELF")) * double.Parse(fee)).ToString()
         };
 
-        var reward = await _blockChainProvider.GetBlockRewardAsync(requestDto.BlockHeight, requestDto.ChainId);
         blockResponseDto.Reward = new RewardDto()
         {
-            ElfReward = reward,
-            UsdReward = (double.Parse(await _blockChainProvider.GetTokenUsdPriceAsync("ELF")) * double.Parse(reward))
+            ElfReward = _globalOptions.CurrentValue.BlockRewardAmountStr,
+            UsdReward = (double.Parse(await _blockChainProvider.GetTokenUsdPriceAsync("ELF")) * 0.125)
                 .ToString()
         };
 
@@ -287,7 +283,8 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         var detailDto = new TransactionDetailDto();
 
         var transactionDetailAsync =
-            await _blockChainProvider.GetTransactionDetailAsync(transactionIndex.ChainId, transactionIndex.TransactionId);
+            await _blockChainProvider.GetTransactionDetailAsync(transactionIndex.ChainId,
+                transactionIndex.TransactionId);
 
 
         ;
@@ -446,6 +443,13 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                             NowPrice = await _blockChainProvider.TransformTokenToUsdValueAsync(transferred.Symbol,
                                 transferred.Amount)
                         };
+
+                        if (_tokenInfoOptionsMonitor.CurrentValue.TokenInfos.TryGetValue(
+                                transferred.Symbol, out var info))
+                        {
+                            token.ImageUrl = info.ImageUrl;
+                        }
+
                         detailDto.TokenTransferreds.Add(token);
                     }
                     else
@@ -454,12 +458,18 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                         {
                             Symbol = transferred.Symbol,
                             Amount = transferred.Amount,
+                            AmountString = transferred.Amount.ToString(),
                             Name = transferred.Symbol,
                             From = ConvertAddress(transferred.From.ToBase58(), transactionIndex.ChainId),
                             To = ConvertAddress(transferred.To.ToBase58(), transactionIndex.ChainId),
                             IsCollection = TokenSymbolHelper.IsCollection(transferred.Symbol),
-                            ImageBase64 = await _blockChainProvider.GetTokenImageBase64Async(transferred.Symbol),
                         };
+                        if (_tokenInfoOptionsMonitor.CurrentValue.TokenInfos.TryGetValue(
+                                TokenSymbolHelper.GetCollectionSymbol(transferred.Symbol), out var info))
+                        {
+                            nft.ImageUrl = info.ImageUrl;
+                        }
+
                         detailDto.NftsTransferreds.Add(nft);
                     }
 
@@ -641,7 +651,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
 
                 result.Blocks.Add(latestBlockDto);
-                latestBlockDto.Reward = "12500000";
+                latestBlockDto.Reward = _globalOptions.CurrentValue.BlockRewardAmountStr;
             }
 
 
