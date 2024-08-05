@@ -417,7 +417,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyStakedResp> GetDailyStakedRespAsync(ChartDataRequest request)
     {
         var queryable = await _dailyStakedIndexRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
+        var indexList = queryable.Where(c => c.ChainId == "AELF").OrderBy(c => c.Date).Take(10000).ToList();
 
 
         var datList = _objectMapper.Map<List<DailyStakedIndex>, List<DailyStaked>>(indexList);
