@@ -15,6 +15,7 @@ using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
 using AElfScanServer.Common.Token.Provider;
 using AElfScanServer.HttpApi.Provider;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -42,13 +43,14 @@ public class TokenService : ITokenService, ISingletonDependency
     private readonly ITokenPriceService _tokenPriceService;
     private readonly ITokenInfoProvider _tokenInfoProvider;
     private readonly IGenesisPluginProvider _genesisPluginProvider;
+    private readonly ILogger<TokenService> _logger;
 
 
     public TokenService(ITokenIndexerProvider tokenIndexerProvider,
         ITokenHolderPercentProvider tokenHolderPercentProvider, IObjectMapper objectMapper,
         IOptionsMonitor<ChainOptions> chainOptions, ITokenPriceService tokenPriceService,
         IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenInfoProvider tokenInfoProvider,
-        IGenesisPluginProvider genesisPluginProvider)
+        IGenesisPluginProvider genesisPluginProvider, ILogger<TokenService> logger)
     {
         _objectMapper = objectMapper;
         _chainOptions = chainOptions;
@@ -58,6 +60,7 @@ public class TokenService : ITokenService, ISingletonDependency
         _genesisPluginProvider = genesisPluginProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenHolderPercentProvider = tokenHolderPercentProvider;
+        _logger = logger;
     }
 
     public async Task<ListResponseDto<TokenCommonDto>> GetTokenListAsync(TokenListInput input)
@@ -206,6 +209,8 @@ public class TokenService : ITokenService, ISingletonDependency
     {
         var tokenHolderCountDic =
             await _tokenHolderPercentProvider.GetTokenHolderCount(chainId, DateTime.Now.ToString("yyyyMMdd"));
+        _logger.LogInformation("tokenHolderCountDic {n}", tokenHolderCountDic.Count);
+
 
         var list = new List<TokenCommonDto>();
         foreach (var indexerTokenInfoDto in indexerTokenList)
@@ -217,8 +222,12 @@ public class TokenService : ITokenService, ISingletonDependency
             //handle image url
             tokenListDto.Token.ImageUrl = TokenInfoHelper.GetImageUrl(indexerTokenInfoDto.ExternalInfo,
                 () => _tokenInfoProvider.BuildImageUrl(indexerTokenInfoDto.Symbol));
+
+
             if (tokenHolderCountDic.TryGetValue(indexerTokenInfoDto.Symbol, out var beforeCount) && beforeCount != 0)
             {
+                _logger.LogInformation("tokenHolderCountDic {s}, now hodlers:{n}  beforeHolders{n1}",
+                    indexerTokenInfoDto.Symbol, tokenListDto.Holders, beforeCount);
                 tokenListDto.HolderPercentChange24H = Math.Round(
                     (double)(tokenListDto.Holders - beforeCount) / beforeCount * 100,
                     CommonConstant.PercentageValueDecimals);

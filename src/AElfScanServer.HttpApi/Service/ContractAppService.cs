@@ -165,7 +165,7 @@ public class ContractAppService : IContractAppService
         var getFilesResult = await _decompilerProvider.GetFilesAsync(getContractRegistrationResult[0].Code);
         return new GetContractFileResultDto
         {
-            ContractName = "ContractName", // todo blockChain provider
+            ContractName = await GetContractName(input.ChainId, input.Address),
             ContractVersion = getFilesResult.Version,
             ContractSourceCode = getFilesResult.Data
         };
