@@ -145,7 +145,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private static int BlockSizeInterval = 1;
     private static long BpStakedAmount = 100000;
     private static object _lock = new object();
-
+    private static long PullLogEventTransactionInterval = 100 - 1;
     private static Timer timer;
     private static long PullTransactioninterval = 4000 - 1;
 
@@ -635,17 +635,29 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         {
             try
             {
+                if (PullLogEventTransactionInterval != 0)
+                {
+                    var latestBlocksAsync = await _aelfIndexerProvider.GetLatestSummariesAsync(chainId);
+                    if (lastBlockHeight >= latestBlocksAsync.First().LatestBlockHeight)
+                    {
+                        PullLogEventTransactionInterval = 0;
+                    }
+                }
+
                 var batchTransactionList =
                     await GetBatchTransactionList(chainId, lastBlockHeight,
-                        lastBlockHeight + _globalOptions.CurrentValue.PullLogEventTransactionInterval);
+                        lastBlockHeight + PullLogEventTransactionInterval);
+
 
                 if (batchTransactionList.IsNullOrEmpty())
                 {
+                    await Task.Delay(1000 * 1);
                     continue;
                 }
 
                 await ParseLogEventList(batchTransactionList, chainId);
-                lastBlockHeight += _globalOptions.CurrentValue.PullLogEventTransactionInterval + 1;
+                lastBlockHeight += PullLogEventTransactionInterval + 1;
+                await Task.Delay(1000 * 1);
             }
 
             catch (Exception e)
@@ -654,7 +666,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     "BatchPullTransactionTask err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
                     chainId,
                     e, lastBlockHeight,
-                    lastBlockHeight + _globalOptions.CurrentValue.PullLogEventTransactionInterval);
+                    lastBlockHeight + PullLogEventTransactionInterval);
 
 
                 await ConnectAsync();
@@ -1427,11 +1439,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task UpdateRound(string chainId)
     {
-        var currentRound = await GetCurrentRound(chainId);
         while (true)
         {
             try
             {
+                var currentRound = await GetCurrentRound(chainId);
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 stopwatch.Start();
                 var tasks = new List<Task>();
@@ -1445,11 +1457,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 }
 
                 var startRoundNumber = (long)redisValue;
+
+
                 if (startRoundNumber >= currentRound.RoundNumber ||
                     startRoundNumber + BatchPullRoundCount - 1 >= currentRound.RoundNumber)
                 {
+                    BatchPullRoundCount = 1;
                     _logger.LogInformation("BatchUpdateNetwork Stop update round:{c},{r}", chainId, startRoundNumber);
-                    currentRound = await GetCurrentRound(chainId);
                     await Task.Delay(1000 * 60 * 5);
                     continue;
                 }
@@ -1457,7 +1471,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 var rounds = new List<Round>();
 
                 var _lock = new object();
-
 
                 for (long i = startRoundNumber; i < startRoundNumber + BatchPullRoundCount; i++)
                 {
@@ -1501,6 +1514,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     roundIndices.Count, nodeBlockProduceIndices.Count);
 
                 RedisDatabase.StringSet(RedisKeyHelper.LatestRound(chainId), startRoundNumber + BatchPullRoundCount);
+                await Task.Delay(1000 * 10);
             }
             catch (Exception e)
             {
