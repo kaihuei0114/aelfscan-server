@@ -26,7 +26,7 @@ public class GlobalOptions
 
     public int SupplyChartShowOffset { get; set; }
 
-    public List<string> OrganizationAddressList { get; set; }
+    public string OrganizationAddress { get; set; }
 
     public Dictionary<string, List<string>> BurntFeeContractAddresses { get; set; } =
         new Dictionary<string, List<string>>();

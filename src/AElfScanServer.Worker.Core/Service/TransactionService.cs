@@ -900,8 +900,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                             var from = transferred.From.ToBase58();
                             var to = transferred.To.ToBase58();
 
-                            if (_globalOptions.CurrentValue.OrganizationAddressList.Contains(
-                                    from))
+                            if (_globalOptions.CurrentValue.OrganizationAddress ==
+                                from)
                             {
                                 dailyData.OrganizationSupply += transferred.Amount;
                                 dailyData.TotalSupply += transferred.Amount;
@@ -918,7 +918,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                             }
 
 
-                            if (_globalOptions.CurrentValue.OrganizationAddressList.Contains(to))
+                            if (_globalOptions.CurrentValue.OrganizationAddress == to)
                             {
                                 dailyData.OrganizationSupply -= transferred.Amount;
                                 dailyData.TotalSupply -= transferred.Amount;
@@ -947,7 +947,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                                 address = transactionFeeCharged.ChargingAddress.ToBase58();
                             }
 
-                            if (_globalOptions.CurrentValue.OrganizationAddressList.Contains(address))
+                            if (_globalOptions.CurrentValue.OrganizationAddress.Contains(address))
                             {
                                 dailyData.OrganizationSupply += transactionFeeCharged.Amount;
                                 dailyData.TotalSupply += transactionFeeCharged.Amount;
