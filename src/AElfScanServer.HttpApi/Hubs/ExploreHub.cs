@@ -121,6 +121,66 @@ public class ExploreHub : AbpHub
     }
 
 
+    public async Task RequestMergeBlockInfo(MergeBlockInfoReq request)
+    {
+        var transactions = await _latestTransactionsDataStrategy.DisplayData(request.ChainId);
+        var blocks = await _latestBlocksDataStrategy.DisplayData(request.ChainId);
+        var resp = new WebSocketMergeBlockInfoDto()
+        {
+            LatestTransactions = transactions,
+            LatestBlocks = blocks
+        };
+
+        await Groups.AddToGroupAsync(Context.ConnectionId,
+            HubGroupHelper.GetMergeBlockInfoGroupName(request.ChainId));
+        _logger.LogInformation("RequestMergeBlockInfo: {chainId}", request.ChainId);
+        await Clients.Caller.SendAsync("ReceiveMergeBlockInfo", resp);
+
+        PushMergeBlockInfoAsync(request.ChainId);
+    }
+
+    public async Task PushMergeBlockInfoAsync(string chainId)
+    {
+        var key = "mergeBlockInfo" + chainId;
+        if (!_isPushRunning.TryAdd(key, true))
+        {
+            return;
+        }
+
+
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(2000);
+                var transactions = await _latestTransactionsDataStrategy.DisplayData(chainId);
+                var blocks = await _latestBlocksDataStrategy.DisplayData(chainId);
+                var resp = new WebSocketMergeBlockInfoDto()
+                {
+                    LatestTransactions = transactions,
+                    LatestBlocks = blocks
+                };
+                await _hubContext.Clients.Groups(HubGroupHelper.GetMergeBlockInfoGroupName(chainId))
+                    .SendAsync("ReceiveMergeBlockInfo", resp);
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("push merge block info error: {error}", e);
+        }
+        finally
+        {
+            _isPushRunning.TryRemove(key, out var v);
+        }
+    }
+
+    public async Task UnsubscribeMergeBlockInfo(CommonRequest request)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
+            HubGroupHelper.GetMergeBlockInfoGroupName(request.ChainId));
+    }
+
+
     public async Task PushLatestTransactionsAsync(string chainId)
     {
         var key = "transaction" + chainId;

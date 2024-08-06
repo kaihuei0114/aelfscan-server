@@ -17,6 +17,14 @@ public class LatestTransactionsReq
     public int MaxResultCount { get; set; }
 }
 
+
+public class MergeBlockInfoReq
+{
+    public string ChainId { get; set; }
+    public int MaxResultCount { get; set; }
+}
+
+
 public class TransactionsRequestDto : PagedResultRequestDto
 {
     public string ChainId { get; set; }
@@ -66,6 +74,12 @@ public class LogEventRequestDto : PagedResultRequestDto
 {
     public string ChainId { get; set; }
     public string ContractName { get; set; }
+}
+
+public class WebSocketMergeBlockInfoDto
+{
+    public TransactionsResponseDto LatestTransactions { get; set; }
+    public BlocksResponseDto LatestBlocks { get; set; }
 }
 
 public class TransactionsResponseDto
