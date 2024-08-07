@@ -610,7 +610,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 if (updateDailyTransactionData != null)
                 {
                     _logger.LogInformation("Fix daily data finished:{c},{c2}", chainId,
-                        updateDailyTransactionData.Date);
+                        updateDailyTransactionData.DateStr);
                     break;
                 }
 
@@ -746,7 +746,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         ChainId = chainId,
                         StartBlockHeight = updateDailyTransactionData.StartBlockHeight,
                         EndBlockHeight = updateDailyTransactionData.EndBlockHeight,
-                        DateStr = updateDailyTransactionData.Date,
+                        DateStr = updateDailyTransactionData.DateStr,
                         StartTime = updateDailyTransactionData.StartTime,
                         WriteCostTime = updateDailyTransactionData.CostTime,
                         DataWriteFinishTime = updateDailyTransactionData.WirteFinishiTime,
@@ -856,7 +856,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 var dailyTransactionsChartSet =
                     new DailyTransactionsChartSet(chainId, totalMilliseconds, date);
                 dailyTransactionsChartSet.StartTime = DateTime.UtcNow;
-                dailyTransactionsChartSet.Date = date;
+                dailyTransactionsChartSet.DateStr = date;
+                dailyTransactionsChartSet.ChainId = chainId;
                 dailyTransactionsChartSet.DateTimeStamp = totalMilliseconds;
                 dic[date] = dailyTransactionsChartSet;
             }
@@ -889,56 +890,32 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     case nameof(ContractDeployed):
                         dailyData.DailyDeployContractIndex.Count++;
                         break;
-
                     case nameof(Burned):
                         var burned = new Burned();
                         burned.MergeFrom(logEvent);
+                        await SetAddressSet(burned.Burner.ToBase58(), "", dailyData);
                         if (burned.Symbol == "ELF")
                         {
                             var burnt = LogEventHelper.ParseBurnt(burned.Amount, burned.Burner.ToBase58(),
                                 burned.Symbol, chainId);
-                            var transactionId = transaction.TransactionId + "_" + "burned" + "_" + burnt / 1e8;
-                            dailyData.DailySupplyChange.SupplyChange.Add(transactionId);
-                            dailyData.TotalBurnt += burnt;
-                            dailyData.TotalSupply -= burnt;
+                            dailyData.DailyBurnt += burnt;
+
+                            await CalculateSupplyByAddress(burned.Burner.ToBase58(),
+                                "", burned.Amount, dailyData, transaction.TransactionId);
                         }
 
                         break;
                     case nameof(Transferred):
                         var transferred = new Transferred();
                         transferred.MergeFrom(logEvent);
+                        var from = transferred.From == null ? "" : transferred.From.ToBase58();
+                        var to = transferred.To.ToBase58();
+                        transferred.MergeFrom(logEvent);
+                        await SetAddressSet(from, to, dailyData);
                         if (chainId == "AELF" && transferred.Symbol == "ELF")
                         {
-                            var from = transferred.From.ToBase58();
-                            var to = transferred.To.ToBase58();
-
-                            if (_globalOptions.CurrentValue.OrganizationAddress ==
-                                from)
-                            {
-                                dailyData.OrganizationSupply += transferred.Amount;
-                                dailyData.TotalSupply += transferred.Amount;
-                                var transactionId = transaction.TransactionId + "_" + "transferredFrom" + "_" +
-                                                    from +
-                                                    "_" + transferred.Amount / 1e8;
-                                dailyData.DailySupplyChange.SupplyChange.Add(transactionId);
-                            }
-
-                            if (_globalOptions.CurrentValue.ContractAddressConsensus[chainId] ==
-                                from)
-                            {
-                                dailyData.TotalReward += transferred.Amount;
-                            }
-
-
-                            if (_globalOptions.CurrentValue.OrganizationAddress == to)
-                            {
-                                dailyData.OrganizationSupply -= transferred.Amount;
-                                dailyData.TotalSupply -= transferred.Amount;
-                                var transactionId = transaction.TransactionId + "_" + "transferredTo" + "_" +
-                                                    to +
-                                                    "_" + transferred.Amount / 1e8;
-                                dailyData.DailySupplyChange.SupplyChange.Add(transactionId);
-                            }
+                            await CalculateSupplyByAddress(from,
+                                to, transferred.Amount, dailyData, transaction.TransactionId);
                         }
 
                         break;
@@ -946,24 +923,48 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     case nameof(TransactionFeeCharged):
                         var transactionFeeCharged = new TransactionFeeCharged();
                         transactionFeeCharged.MergeFrom(logEvent);
+                        var address = "";
+                        if (transactionFeeCharged.ChargingAddress == null ||
+                            transactionFeeCharged.ChargingAddress.ToBase58().IsNullOrEmpty())
+                        {
+                            address = transaction.From;
+                        }
+                        else
+                        {
+                            address = transactionFeeCharged.ChargingAddress.ToBase58();
+                        }
+
+                        await SetAddressSet(address, "", dailyData);
                         if (chainId == "AELF" && transactionFeeCharged.Symbol == "ELF")
                         {
-                            var address = "";
-                            if (transactionFeeCharged.ChargingAddress == null ||
-                                transactionFeeCharged.ChargingAddress.ToBase58().IsNullOrEmpty())
-                            {
-                                address = transaction.From;
-                            }
-                            else
-                            {
-                                address = transactionFeeCharged.ChargingAddress.ToBase58();
-                            }
+                            await CalculateSupplyByAddress(address,
+                                "", transactionFeeCharged.Amount, dailyData, transaction.TransactionId);
+                        }
 
-                            if (_globalOptions.CurrentValue.OrganizationAddress.Contains(address))
-                            {
-                                dailyData.OrganizationSupply += transactionFeeCharged.Amount;
-                                dailyData.TotalSupply += transactionFeeCharged.Amount;
-                            }
+                        break;
+
+                    case nameof(CrossChainReceived):
+                        var crossChainReceived = new CrossChainReceived();
+                        crossChainReceived.MergeFrom(logEvent);
+                        await SetAddressSet(crossChainReceived.From.ToBase58(), crossChainReceived.To.ToBase58(),
+                            dailyData);
+                        if (dailyData.ChainId == "AELF" && crossChainReceived.Symbol == "ELF")
+                        {
+                            await CalculateSupplyByAddress(crossChainReceived.From.ToBase58(),
+                                crossChainReceived.To.ToBase58(),
+                                crossChainReceived.Amount, dailyData, transaction.TransactionId);
+                        }
+
+                        break;
+                    case nameof(Issued):
+                        var issued = new Issued();
+                        issued.MergeFrom(logEvent);
+                        await SetAddressSet("", issued.To.ToBase58(), dailyData);
+                        if (dailyData.ChainId == "AELF" && issued.Symbol == "ELF")
+                        {
+                            await CalculateSupplyByAddress("",
+                                issued.To.ToBase58(),
+                                issued.Amount, dailyData, transaction.TransactionId);
                         }
 
                         break;
@@ -1004,10 +1005,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 }
             }
 
-            dailyData.AddressFromSet.Add(transaction.From);
-            dailyData.AddressToSet.Add(transaction.To);
-            dailyData.AddressSet.Add(transaction.From);
-            dailyData.AddressSet.Add(transaction.To);
+            await SetAddressSet(transaction.From, transaction.To, dailyData);
+
             dailyData.DailyTransactionCountIndex.TransactionCount++;
             dailyData.DailyAvgTransactionFeeIndex.TransactionCount++;
             dailyData.DailyTotalContractCallIndex.CallCount++;
@@ -1046,7 +1045,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
         }
 
-
         if (dic.Count == 2)
         {
             var firstDate = _globalOptions.CurrentValue.OneBlockTime[chainId];
@@ -1054,15 +1052,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             var needUpdateData = dic[minDate];
             double firstSupply = 0;
 
-            needUpdateData.TotalSupply /= 1e8;
-            needUpdateData.TotalReward /= 1e8;
-            needUpdateData.TotalBurnt /= 1e8;
-            needUpdateData.OrganizationSupply /= 1e8;
-            if (firstDate == minDate)
-            {
-                needUpdateData.TotalSupply += 1000000000;
-                needUpdateData.OrganizationSupply += 1000000000;
-            }
+
+            await HandleSupplyChart(needUpdateData);
 
 
             var dailyElfPrice = await GetElfPrice(minDate);
@@ -1080,10 +1071,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             needUpdateData.DailyBlockRewardIndex.TotalBlockCount =
                 needUpdateData.EndBlockHeight - needUpdateData.StartBlockHeight + 1;
-            needUpdateData.DailyBlockRewardIndex.BlockReward =
-                ((double)needUpdateData.TotalReward).ToString("F6");
+            // needUpdateData.DailyBlockRewardIndex.BlockReward =
+            //     ((double)needUpdateData.DailyConsensusBalance).ToString("F6");
 
-            needUpdateData.DailyTotalBurntIndex.Burnt = needUpdateData.TotalBurnt.ToString("F6");
+            needUpdateData.DailyTotalBurntIndex.Burnt = needUpdateData.DailyBurnt.ToString("F6");
 
             needUpdateData.DailyTransactionCountIndex.BlockCount = totalBlockCount;
 
@@ -1092,11 +1083,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             needUpdateData.DailyActiveAddressCountIndex.ReceiveAddressCount = needUpdateData.AddressToSet.Count;
 
             needUpdateData.DailyTotalContractCallIndex.CallAddressCount = needUpdateData.AddressFromSet.Count;
-
-            needUpdateData.DailySupplyGrowthIndex.DailyBurnt = needUpdateData.TotalBurnt;
-            needUpdateData.DailySupplyGrowthIndex.DailyReward = needUpdateData.TotalReward;
-            needUpdateData.DailySupplyGrowthIndex.DailyOrganizationUnlock = needUpdateData.OrganizationSupply;
-            needUpdateData.DailySupplyGrowthIndex.DailySupply = needUpdateData.TotalSupply;
 
 
             var dailyContractCallIndexList = needUpdateData.DailyContractCallIndexDic.Values.Select(c =>
@@ -1164,7 +1150,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             var withDrawVotedAmount = await GetWithDrawVotedAmount(chainId, ids);
             needUpdateData.TotalVotedStaked -= withDrawVotedAmount;
             needUpdateData.DailyStakedIndex.VoteStaked = needUpdateData.TotalVotedStaked.ToString("F4");
-            needUpdateData.DailyStakedIndex.Supply = needUpdateData.DailySupplyGrowthIndex.DailySupply.ToString("F4");
             needUpdateData.DailyTVLIndex.DailyPrice = dailyElfPrice;
 
 
@@ -1224,6 +1209,104 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
 
         return null;
+    }
+
+
+    public async Task HandleSupplyChart(DailyTransactionsChartSet dailyData)
+    {
+        dailyData.DailyConsensusBalance /= 1e8;
+        dailyData.DailyBurnt /= 1e8;
+        dailyData.DailyOrganizationBalance /= 1e8;
+
+        dailyData.DailySupplyGrowthIndex.DailyBurnt = dailyData.DailyBurnt;
+        dailyData.DailySupplyGrowthIndex.DailyConsensusBalance = dailyData.DailyConsensusBalance;
+        dailyData.DailySupplyGrowthIndex.DailyOrganizationBalance = dailyData.DailyOrganizationBalance;
+
+        var beforeDaySupply = _dailySupplyGrowthIndexRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == dailyData.ChainId)
+            .Where(c => c.DateStr == DateTimeHelper.GetBeforeDayDate(dailyData.DateStr)).Take(1).ToList();
+
+        if (!beforeDaySupply.IsNullOrEmpty())
+        {
+            dailyData.DailySupplyGrowthIndex.TotalBurnt = beforeDaySupply.First().DailyBurnt + dailyData.DailyBurnt;
+            dailyData.DailySupplyGrowthIndex.TotalConsensusBalance =
+                beforeDaySupply.First().DailyConsensusBalance + dailyData.DailyConsensusBalance;
+            dailyData.DailySupplyGrowthIndex.TotalOrganizationBalance =
+                beforeDaySupply.First().DailyOrganizationBalance + dailyData.DailyOrganizationBalance;
+        }
+        else
+        {
+            dailyData.DailySupplyGrowthIndex.TotalBurnt = dailyData.DailyBurnt;
+            dailyData.DailySupplyGrowthIndex.TotalConsensusBalance = dailyData.DailyConsensusBalance;
+            dailyData.DailySupplyGrowthIndex.TotalOrganizationBalance = dailyData.DailyOrganizationBalance;
+        }
+
+        await _dailySupplyGrowthIndexRepository.AddOrUpdateAsync(dailyData.DailySupplyGrowthIndex);
+    }
+
+    public async Task SetAddressSet(string from, string to, DailyTransactionsChartSet dailyData)
+    {
+        if (!from.IsNullOrEmpty())
+        {
+            dailyData.AddressFromSet.Add(from);
+            dailyData.AddressSet.Add(from);
+        }
+
+        if (!to.IsNullOrEmpty())
+        {
+            dailyData.AddressToSet.Add(to);
+            dailyData.AddressSet.Add(to);
+        }
+    }
+
+
+    public async Task CalculateSupplyByAddress(string send, string receive, long amount,
+        DailyTransactionsChartSet dailyData, string transactionId)
+    {
+        if (!send.IsNullOrEmpty())
+        {
+            if (_globalOptions.CurrentValue.OrganizationAddress == send)
+            {
+                dailyData.DailyOrganizationBalance -= amount;
+                var record = transactionId + "_" + "transferredFrom" + "_" +
+                             send +
+                             "_" + amount / 1e8;
+                dailyData.DailySupplyChange.SupplyChange.Add(record);
+            }
+
+            if (_globalOptions.CurrentValue.ContractAddressConsensus[dailyData.ChainId] ==
+                send)
+            {
+                dailyData.DailyConsensusBalance -= amount;
+                var record = transactionId + "_" + "transferredFrom" + "_" +
+                             send +
+                             "_" + amount / 1e8;
+                dailyData.DailySupplyChange.SupplyChange.Add(record);
+            }
+        }
+
+        if (!receive.IsNullOrEmpty())
+        {
+            if (_globalOptions.CurrentValue.OrganizationAddress == receive)
+            {
+                dailyData.DailyOrganizationBalance += amount;
+                var record = transactionId + "_" + "transferredTo" + "_" +
+                             receive +
+                             "_" + amount / 1e8;
+                dailyData.DailySupplyChange.SupplyChange.Add(record);
+            }
+
+
+            if (_globalOptions.CurrentValue.ContractAddressConsensus[dailyData.ChainId] ==
+                receive)
+            {
+                dailyData.DailyConsensusBalance += amount;
+                var record = amount + "_" + "transferredTo" + "_" +
+                             receive +
+                             "_" + amount / 1e8;
+                dailyData.DailySupplyChange.SupplyChange.Add(record);
+            }
+        }
     }
 
 
