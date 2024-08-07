@@ -13,6 +13,8 @@ public class GetContractFilesResponseDto
 public class DecompilerContractDto
 {
     public string Name { get; set; }
+    public string Content { get; set; }
+    public string FileType { get; set; }
     public List<DecompilerContractFileDto> Files { get; set; }
 }
 
