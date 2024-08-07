@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.HttpApi.Dtos.address;
 using AElfScanServer.Common.Constant;
@@ -16,6 +17,9 @@ public interface IIndexerGenesisProvider
 {
     Task<IndexerContractListResultDto> GetContractListAsync(string chainId, int skipCount,
         int maxResultCount, string orderBy, string sort, string address);
+
+
+    Task<Dictionary<string, ContractInfoDto>> GetContractListAsync(string chainId, List<string> addresslist);
 
     Task<List<ContractRecordDto>> GetContractRecordAsync(string chainId, string address, int skipCount = 0,
         int maxResultCount = 10);
@@ -35,6 +39,54 @@ public class IndexerGenesisProvider : IIndexerGenesisProvider, ISingletonDepende
     {
         _graphQlFactory = graphQlFactory;
         _logger = logger;
+    }
+
+    public async Task<Dictionary<string, ContractInfoDto>> GetContractListAsync(string chainId,
+        List<string> addressList)
+    {
+        var indexerContractListResultDto = new IndexerContractListResultDto();
+        try
+        {
+            var result = await _graphQlFactory.GetGraphQlHelper(IndexerType).QueryAsync<IndexerContractListResultDto>(
+                new GraphQLRequest
+                {
+                    Query =
+                        @"query($chainId:String!,$addressList:[String!],$skipCount:Int!,$maxResultCount:Int!){
+                            contractList(input: {chainId:$chainId,addressList:$addressList,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                               totalCount
+                               items {
+                                 address
+                                contractVersion
+                                version
+                                author
+                                codeHash
+                                contractType
+                                metadata {
+                                  chainId
+                                  block {
+                                    blockHash
+                                    blockTime
+                                    blockHeight
+                                  }
+                                }
+
+                              }
+                            }
+                        }",
+                    Variables = new
+                    {
+                        chainId = chainId, addressList = addressList, skipCount = 0,
+                        maxResultCount = 100,
+                    }
+                });
+
+            return result.ContractList.Items.ToDictionary(c => c.Address, c => c);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Query ContractList failed.");
+            return new Dictionary<string, ContractInfoDto>();
+        }
     }
 
     public async Task<IndexerContractListResultDto> GetContractListAsync(string chainId,

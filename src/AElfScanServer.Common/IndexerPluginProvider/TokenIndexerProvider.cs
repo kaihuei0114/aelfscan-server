@@ -41,6 +41,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
     private readonly IObjectMapper _objectMapper;
     private readonly ITokenInfoProvider _tokenInfoProvider;
     private readonly IGenesisPluginProvider _genesisPluginProvider;
+    
     private ILogger<TokenIndexerProvider> _logger;
 
 

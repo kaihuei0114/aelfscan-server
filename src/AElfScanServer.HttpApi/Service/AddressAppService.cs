@@ -76,7 +76,10 @@ public class AddressAppService : IAddressAppService
         var holderInput = new TokenHolderInput
         {
             ChainId = input.ChainId, Symbol = CurrencyConstant.ElfCurrency,
-            SkipCount = input.SkipCount, MaxResultCount = input.MaxResultCount
+            SkipCount = input.SkipCount, MaxResultCount = input.MaxResultCount,
+            OrderBy = input.OrderBy,
+            OrderInfos = input.OrderInfos,
+            SearchAfter = input.SearchAfter
         };
         holderInput.SetDefaultSort();
 
@@ -94,9 +97,12 @@ public class AddressAppService : IAddressAppService
             Total = indexerTokenHolderInfo.TotalCount,
             TotalBalance = DecimalHelper.Divide(tokenInfo.Supply, tokenInfo.Decimals)
         };
-        var contractInfosDict = await _genesisPluginProvider
-            .GetContractListAsync(input.ChainId,
+
+
+        var contractInfosDict =
+            await _indexerGenesisProvider.GetContractListAsync(input.ChainId,
                 indexerTokenHolderInfo.Items.Select(address => address.Address).ToList());
+
 
         var addressList = new List<GetAddressInfoResultDto>();
         foreach (var info in indexerTokenHolderInfo.Items)
