@@ -38,7 +38,7 @@ public class ContractRecordDto : GraphQLDto
     public string TransactionId { get; set; }
     public string Author { get; set; }
     public string Address { get; set; }
-    public int Version { get; set; }
+    public string Version { get; set; }
     public ContractInfoDto ContractInfo { get; set; }
     public MetadataDto Metadata { get; set; }
     public string ContractType { get; set; } // 0: SystemContract 1: UserContract

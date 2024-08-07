@@ -178,12 +178,20 @@ public class ContractAppService : IContractAppService
         var getContractRecordResult =
             await _indexerGenesisProvider.GetContractRecordAsync(input.ChainId, input.Address);
 
+        var getContractListResult =
+            await _indexerGenesisProvider.GetContractListAsync(input.ChainId,
+                0,
+                1, "", "", input.Address);
+
+        var codeHash = getContractListResult.ContractList.Items.First().CodeHash;
         result.Record = getContractRecordResult.Select(t =>
         {
             var tempContractRecord = _objectMapper.Map<ContractInfoDto, ContractRecordDto>(t.ContractInfo);
             tempContractRecord.BlockTime = t.Metadata.Block.BlockTime;
             tempContractRecord.TransactionId = t.TransactionId;
             tempContractRecord.BlockHeight = t.Metadata.Block.BlockHeight;
+            tempContractRecord.CodeHash = codeHash;
+            tempContractRecord.Version = t.ContractInfo.ContractVersion;
             tempContractRecord.ContractOperationType = t.OperationType;
             return tempContractRecord;
         }).OrderByDescending(t => t.Version).ToList();

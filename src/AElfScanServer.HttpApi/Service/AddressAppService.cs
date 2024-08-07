@@ -81,7 +81,6 @@ public class AddressAppService : IAddressAppService
             OrderInfos = input.OrderInfos,
             SearchAfter = input.SearchAfter
         };
-        holderInput.SetDefaultSort();
 
         var tokenHolderInfoTask = _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
         var tokenDetailTask = _tokenIndexerProvider.GetTokenDetailAsync(input.ChainId, CurrencyConstant.ElfCurrency);
