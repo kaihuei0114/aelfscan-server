@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Net.NetworkInformation;
 using AElfScanServer.Common.Dtos;
+using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.Enums;
 using Google.Protobuf;
 using Nest;
@@ -17,22 +18,31 @@ public class LatestTransactionsReq
     public int MaxResultCount { get; set; }
 }
 
-
 public class MergeBlockInfoReq
 {
     public string ChainId { get; set; }
     public int MaxResultCount { get; set; }
 }
 
-
-public class TransactionsRequestDto : PagedResultRequestDto
+public class TransactionsRequestDto : BaseInput
 {
-    public string ChainId { get; set; }
     public string TransactionId { get; set; } = "";
     public int BlockHeight { get; set; }
-
+    public long StartTime { get; set; }
+    public long EndTime { get; set; }
     public string Address { get; set; } = "";
+    
+    public void SetDefaultSort()
+    {
+        if (!OrderBy.IsNullOrEmpty() || !OrderInfos.IsNullOrEmpty())
+        {
+            return;
+        }
+        OfOrderInfos((SortField.BlockHeight, SortDirection.Desc), (SortField.TransactionId, SortDirection.Desc));
+    }
 }
+
+
 
 public class BpDataRequestDto
 {

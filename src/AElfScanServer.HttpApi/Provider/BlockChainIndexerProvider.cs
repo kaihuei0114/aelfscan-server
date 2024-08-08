@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AElfScanServer.HttpApi.Dtos.Indexer;
 using AElfScanServer.Common.Constant;
 using AElfScanServer.Common.GraphQL;
+using AElfScanServer.HttpApi.Dtos;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
@@ -14,8 +15,7 @@ namespace AElfScanServer.HttpApi.Provider;
 public interface IBlockChainIndexerProvider
 {
     public Task<IndexerTransactionListResultDto>
-        GetTransactionsAsync(string chainId, int skipCount,
-            int maxResultCount, long startTime = 0, long endTime = 0, string address = "");
+        GetTransactionsAsync(TransactionsRequestDto req);
 
     public Task<long> GetTransactionCount(string chainId);
 
@@ -66,16 +66,15 @@ public class BlockChainIndexerProvider : IBlockChainIndexerProvider, ISingletonD
         return indexerResult.AddressTransactionCount.Items;
     }
 
-    public async Task<IndexerTransactionListResultDto> GetTransactionsAsync(string chainId, int skipCount,
-        int maxResultCount, long startTime = 0, long endTime = 0, string address = "")
+    public async Task<IndexerTransactionListResultDto> GetTransactionsAsync(TransactionsRequestDto input)
     {
         var graphQlHelper = _graphQlFactory.GetGraphQlHelper(AElfIndexerConstant.BlockChainIndexer);
 
         var indexerResult = await graphQlHelper.QueryAsync<IndexerTransactionResultDto>(new GraphQLRequest
         {
             Query =
-                @"query($chainId:String!,$skipCount:Int!,$maxResultCount:Int!,$startTime:Long!,$endTime:Long!,$address:String!){
-                    transactionInfos(input: {chainId:$chainId,skipCount:$skipCount,maxResultCount:$maxResultCount,startTime:$startTime,endTime:$endTime,address:$address})
+                @"query($chainId:String!,$skipCount:Int!,$maxResultCount:Int!,$startTime:Long!,$endTime:Long!,$address:String!,$searchAfter:[String],$orderInfos:[OrderInfo]){
+                    transactionInfos(input: {chainId:$chainId,skipCount:$skipCount,maxResultCount:$maxResultCount,startTime:$startTime,endTime:$endTime,address:$address,searchAfter:$searchAfter,orderInfos:$orderInfos})
                 {
                   totalCount
                     items {
@@ -100,8 +99,10 @@ public class BlockChainIndexerProvider : IBlockChainIndexerProvider, ISingletonD
             }",
             Variables = new
             {
-                chainId = chainId, skipCount = skipCount, maxResultCount = maxResultCount, startTime = startTime,
-                endTime = endTime, address = address
+                chainId = input.ChainId, skipCount = input.SkipCount, maxResultCount = input.MaxResultCount,
+                startTime = input.StartTime,
+                endTime = input.EndTime, address = input.Address,
+                orderInfos = input.OrderInfos, searchAfter = input.SearchAfter
             }
         });
         return indexerResult?.TransactionInfos;

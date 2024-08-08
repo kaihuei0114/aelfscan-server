@@ -1836,13 +1836,24 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 var nowMilliSeconds = DateTimeHelper.GetNowMilliSeconds();
                 var beforeHoursMilliSeconds = DateTimeHelper.GetBeforeHoursMilliSeconds(3);
 
+
+                var input = new TransactionsRequestDto()
+                {
+                    ChainId = chainId,
+                    SkipCount = 0,
+                    MaxResultCount = 1000,
+                    StartTime = beforeHoursMilliSeconds,
+                    EndTime = nowMilliSeconds
+                };
+                input.SetDefaultSort();
                 var transactionsAsync =
-                    await _blockChainIndexerProvider.GetTransactionsAsync(chainId, 0, 1000, beforeHoursMilliSeconds,
-                        nowMilliSeconds);
+                    await _blockChainIndexerProvider.GetTransactionsAsync(input);
                 if (transactionsAsync == null || transactionsAsync.Items.Count <= 0)
                 {
+                    input.StartTime = 0;
+                    input.EndTime = 0;
                     transactionsAsync =
-                        await _blockChainIndexerProvider.GetTransactionsAsync(chainId, 0, 1000);
+                        await _blockChainIndexerProvider.GetTransactionsAsync(input);
                 }
 
                 if (transactionsAsync == null)

@@ -712,8 +712,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         try
         {
-            var indexerTransactionList = await _blockChainIndexerProvider.GetTransactionsAsync(requestDto.ChainId,
-                requestDto.SkipCount, requestDto.MaxResultCount, 0, 0, requestDto.Address);
+            var indexerTransactionList = await _blockChainIndexerProvider.GetTransactionsAsync(requestDto);
 
 
             foreach (var transactionIndex in indexerTransactionList.Items)
@@ -735,6 +734,10 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                 transactionRespDto.To = ConvertAddress(transactionIndex.To, requestDto.ChainId);
                 result.Transactions.Add(transactionRespDto);
             }
+
+            result.Transactions = result.Transactions.OrderByDescending(item => item.BlockHeight)
+                .ThenByDescending(item => item.TransactionId)
+                .ToList();
 
             result.Total = indexerTransactionList.TotalCount;
         }
