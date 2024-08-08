@@ -65,11 +65,12 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
             }));
 
 
-            tasks.Add(_uniqueAddressRepository.GetQueryableAsync(chainId).ContinueWith(
+            tasks.Add(_uniqueAddressRepository.GetQueryableAsync().ContinueWith(
                 task =>
                 {
                     overviewResp.Accounts =
-                        task.Result.OrderByDescending(c => c.Date).Take(1).ToList().First().AddressCount;
+                        task.Result.Where(c => c.ChainId == chainId).OrderByDescending(c => c.Date).Take(1).ToList()
+                            .First().TotalUniqueAddressees;
                 }));
 
 
