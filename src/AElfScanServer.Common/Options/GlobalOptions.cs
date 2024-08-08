@@ -22,18 +22,17 @@ public class GlobalOptions
     public string InitStakedStr { get; set; } = "500000";
 
     public double InitStaked { get; set; } = 500000;
-    public int PullLogEventTransactionInterval { get; set; } = 100;
 
     public int SupplyChartShowOffset { get; set; }
 
-    public List<string> OrganizationAddressList { get; set; }
+    public string OrganizationAddress { get; set; }
 
     public Dictionary<string, List<string>> BurntFeeContractAddresses { get; set; } =
         new Dictionary<string, List<string>>();
 
     public List<string> ChainIds { get; set; }
 
-    public Dictionary<string, long> LogEventStartBlockHeightInit { get; set; }
+    public Dictionary<string, long> LogEventStartBlockHeightInit { get; set; } = new();
 
     public Dictionary<string, List<string>> SkipContractAddress { get; set; }
     public Dictionary<string, long> SkipContractAddressStartBlockHeight { get; set; }

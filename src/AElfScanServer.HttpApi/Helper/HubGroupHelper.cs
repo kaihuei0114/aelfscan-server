@@ -7,6 +7,13 @@ public class HubGroupHelper
         return $"{chainId}_latest_transactions";
     }
     
+    public static string GetMergeBlockInfoGroupName(string chainId)
+    {
+        return $"{chainId}_merge_blockInfo";
+    }
+
+    
+    
     public static string GetBpProduceGroupName(string chainId)
     {
         return $"{chainId}_BpProduce";

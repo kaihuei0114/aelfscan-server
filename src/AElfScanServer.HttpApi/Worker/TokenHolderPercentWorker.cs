@@ -22,8 +22,8 @@ public class TokenHolderPercentWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly IOptionsMonitor<WorkerOptions> _workerOptions;
 
     public TokenHolderPercentWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        ILogger<TokenHolderPercentWorker> logger, ITokenHolderPercentProvider tokenHolderPercentProvider, 
-        ITokenIndexerProvider tokenIndexerProvider, IOptionsMonitor<WorkerOptions> workerOptionsMonitor) 
+        ILogger<TokenHolderPercentWorker> logger, ITokenHolderPercentProvider tokenHolderPercentProvider,
+        ITokenIndexerProvider tokenIndexerProvider, IOptionsMonitor<WorkerOptions> workerOptionsMonitor)
         : base(timer, serviceScopeFactory)
     {
         _logger = logger;
@@ -49,7 +49,7 @@ public class TokenHolderPercentWorker : AsyncPeriodicBackgroundWorkerBase
             _logger.LogInformation("Update TokenHolderCount date {date} exist.", today);
             return;
         }
-            
+
         var batchSize = _workerOptions.CurrentValue.BatchSize;
         var skipCount = 0;
         var moreData = true;
@@ -72,6 +72,7 @@ public class TokenHolderPercentWorker : AsyncPeriodicBackgroundWorkerBase
             {
                 skipCount += batchSize;
             }
+
             var dictionary = tokenListDto.Items.ToDictionary(token => token.Symbol, token => token.HolderCount);
             await _tokenHolderPercentProvider.UpdateTokenHolderCount(dictionary, chainId);
         }

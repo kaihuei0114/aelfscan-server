@@ -48,7 +48,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     // private readonly IElasticClient _elasticClient;
 
     private ConcurrentDictionary<string, string> _contractAddressCache;
-    private Dictionary<string, string> _tokenImageBase64Cache;
+    private Dictionary<string, string> _tokenImageUrlCache;
     private readonly ILogger<BlockChainDataProvider> _logger;
 
     public BlockChainDataProvider(
@@ -70,7 +70,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
         _addressIndexRepository = addressIndexRepository;
         _contractAddressCache = new ConcurrentDictionary<string, string>();
         _tokenUsdPriceCache = tokenUsdPriceCache;
-        _tokenImageBase64Cache = new Dictionary<string, string>();
+        _tokenImageUrlCache = new Dictionary<string, string>();
     }
 
 
@@ -240,106 +240,40 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     }
 
 
-    public async Task<string> GetTokenImageBase64Async(string symbol)
+    public async Task<string> GetTokenImageAsync(string symbol)
     {
         try
         {
-            if (_tokenImageBase64Cache.TryGetValue(symbol, out var imageBase64))
+            if (_tokenImageUrlCache.TryGetValue(symbol, out var imageBase64))
             {
                 return imageBase64;
             }
 
-            if (TokenSymbolHelper.GetSymbolType(symbol) == SymbolType.Token)
+
+            AElfClient elfClient = new AElfClient(_globalOptions.ChainNodeHosts["AELF"]);
+            var tokenInfoInput = new GetTokenInfoInput
             {
-                try
-                {
-                    var file = File.ReadAllBytes($"TokenImage/{symbol}.png");
-                    string base64Image = Convert.ToBase64String(file);
-                    _tokenImageBase64Cache.Add(symbol, base64Image);
-                    return base64Image;
-                }
-                catch (Exception e)
-                {
-                    _logger.LogWarning("get token:{0} image file err:{1}", symbol, e);
-                    return "";
-                }
-            }
-
-
-            if (TokenSymbolHelper.GetSymbolType(symbol) == SymbolType.Nft)
+                Symbol = symbol
+            };
+            var transactionGetToken =
+                await elfClient.GenerateTransactionAsync(
+                    elfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
+                    "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
+                    "GetTokenInfo",
+                    tokenInfoInput);
+            var txWithSignGetToken = elfClient.SignTransaction(GlobalOptions.PrivateKey, transactionGetToken);
+            var transactionGetTokenResult = await elfClient.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
-                AElfClient elfClient = new AElfClient(_globalOptions.ChainNodeHosts["AELF"]);
-                var tokenInfoInput = new GetTokenInfoInput
-                {
-                    Symbol = symbol
-                };
-                var transactionGetToken =
-                    await elfClient.GenerateTransactionAsync(
-                        elfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
-                        "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
-                        "GetTokenInfo",
-                        tokenInfoInput);
-                var txWithSignGetToken = elfClient.SignTransaction(GlobalOptions.PrivateKey, transactionGetToken);
-                var transactionGetTokenResult = await elfClient.ExecuteTransactionAsync(new ExecuteTransactionDto
-                {
-                    RawTransaction = txWithSignGetToken.ToByteArray().ToHex()
-                });
+                RawTransaction = txWithSignGetToken.ToByteArray().ToHex()
+            });
 
-                var token = new TokenInfo();
-                token.MergeFrom(ByteArrayHelper.HexStringToByteArray(transactionGetTokenResult));
+            var token = new TokenInfo();
+            token.MergeFrom(ByteArrayHelper.HexStringToByteArray(transactionGetTokenResult));
 
-                if (token.ExternalInfo.Value.TryGetValue("inscription_image", out var inscription_image))
-                {
-                    try
-                    {
-                        Convert.FromBase64String(inscription_image);
-                        _tokenImageBase64Cache.Add(symbol, inscription_image);
-                        return inscription_image;
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError("parse token:{0} image base64  error:{1}", symbol, e);
-                    }
-                }
-
-                if (token.ExternalInfo.Value.TryGetValue("__inscription_image", out var __inscription_image))
-                {
-                    try
-                    {
-                        Convert.FromBase64String(__inscription_image);
-                        _tokenImageBase64Cache.Add(symbol, __inscription_image);
-                        return __inscription_image;
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError("parse token:{0} image base64  error:{1}", symbol, e);
-                    }
-                }
-
-                foreach (var keyValuePair in token.ExternalInfo.Value)
-                {
-                    if (keyValuePair.Key != "inscription_image" && keyValuePair.Key != "__inscription_image" &&
-                        keyValuePair.Key.Contains("image"))
-                    {
-                        try
-                        {
-                            Convert.FromBase64String(keyValuePair.Value);
-                            _tokenImageBase64Cache.Add(symbol, keyValuePair.Value);
-                            return keyValuePair.Value;
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.LogWarning("parse token:{0} other image base64  error:{1}", symbol, e);
-                        }
-
-
-                        var webClient = new WebClient();
-                        var downloadData = webClient.DownloadData(keyValuePair.Value);
-                        var base64String = Convert.ToBase64String(downloadData);
-                        _tokenImageBase64Cache.Add(symbol, base64String);
-                        return base64String;
-                    }
-                }
+            if (token.ExternalInfo.Value.TryGetValue("__ft_image_uri", out var url))
+            {
+                _tokenImageUrlCache.Add(symbol, url);
+                return url;
             }
         }
         catch (Exception e)

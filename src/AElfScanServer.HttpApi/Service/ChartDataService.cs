@@ -417,22 +417,31 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<DailyStakedResp> GetDailyStakedRespAsync(ChartDataRequest request)
     {
         var queryable = await _dailyStakedIndexRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
-
-
+        var indexList = queryable.Where(c => c.ChainId == "AELF").OrderBy(c => c.Date).Take(10000).ToList();
         var datList = _objectMapper.Map<List<DailyStakedIndex>, List<DailyStaked>>(indexList);
 
+
+        var dailySupplyGrowthRespAsync = await GetDailySupplyGrowthRespAsync();
+        var supplyDic = dailySupplyGrowthRespAsync.List.ToDictionary(c => c.DateStr, c => c);
 
         datList[0].TotalStaked = _globalOptions.CurrentValue.InitStakedStr;
         datList[0].BpStaked = _globalOptions.CurrentValue.InitStakedStr;
 
         var totalStaked = double.Parse(datList[0].BpStaked) + double.Parse(datList[0].VoteStaked);
 
+        if (supplyDic.TryGetValue(datList[0].DateStr, out var v))
+        {
+            datList[0].Supply = v.TotalSupply;
+        }
+
         datList[0].Rate = (totalStaked / double.Parse(datList[0].Supply) * 100).ToString("F4");
         for (var i = 1; i < datList.Count; i++)
         {
-            var supply = double.Parse(datList[i - 1].Supply) + double.Parse(datList[i].Supply);
-            datList[i].Supply = supply.ToString();
+            if (supplyDic.TryGetValue(datList[i].DateStr, out var supply))
+            {
+                datList[i].Supply = supply.TotalSupply;
+            }
+
 
             var curtBpStaked = double.Parse(datList[i].BpStaked) + double.Parse(datList[i - 1].BpStaked);
             datList[i].BpStaked = curtBpStaked.ToString();
@@ -442,7 +451,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
             var curTotalStaked = curtBpStaked + curtVoteStaked;
 
-            datList[i].Rate = (curTotalStaked / supply * 100).ToString("F4");
+            datList[i].Rate = (curTotalStaked / double.Parse(datList[i].Supply) * 100).ToString("F4");
             datList[i].TotalStaked = curTotalStaked.ToString("f4");
         }
 
@@ -519,54 +528,29 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
             sideIndexList = queryableBurnt.Where(c => c.ChainId == "tDVW").OrderBy(c => c.Date).Take(10000).ToList();
         }
 
+
+        var supplyGrowths = _objectMapper.Map<List<DailySupplyGrowthIndex>, List<DailySupplyGrowth>>(mainIndexList);
+
         var sideDic = sideIndexList.ToDictionary(c => c.DateStr, c => c);
-        var dailySupplyGrowths = new List<DailySupplyGrowth>();
-        for (var i = 0; i < mainIndexList.Count; i++)
+
+        foreach (var dailySupplyGrowth in supplyGrowths)
         {
-            var cur = mainIndexList[i];
-            double curSideBurnt = 0;
-            if (sideDic.TryGetValue(cur.DateStr, out var v))
+            if (sideDic.TryGetValue(dailySupplyGrowth.DateStr, out var sideIndex))
             {
-                var sideBurnt = v.Burnt.IsNullOrEmpty() ? 0 : double.Parse(v.Burnt);
-                cur.DailySupply -= sideBurnt;
-                curSideBurnt = sideBurnt;
+                dailySupplyGrowth.SideChainBurnt = sideIndex.Burnt;
             }
-
-            var curSupplyGrowth = new DailySupplyGrowth()
-            {
-                DateStr = cur.DateStr,
-                Date = cur.Date,
-                Reward = cur.DailyReward.ToString("F4"),
-                Burnt = cur.DailyBurnt.ToString("F4"),
-                SideChainBurnt = curSideBurnt.ToString("F4"),
-                MainChainBurnt = cur.DailyBurnt.ToString("f4"),
-                OrganizationUnlock = cur.DailyOrganizationUnlock.ToString("f4"),
-                TotalSupply = cur.DailySupply.ToString("F4")
-            };
-            if (i == 0)
-            {
-                curSupplyGrowth.TotalSupply = cur.DailySupply.ToString("F4");
-            }
-            else
-            {
-                var previous = mainIndexList[i - 1];
-                cur.DailySupply += previous.DailySupply;
-                curSupplyGrowth.TotalSupply = cur.DailySupply.ToString("F4");
-            }
-
-            dailySupplyGrowths.Add(curSupplyGrowth);
         }
 
 
         if (_globalOptions.CurrentValue.SupplyChartShowOffset > 0)
         {
-            dailySupplyGrowths = dailySupplyGrowths.Skip(_globalOptions.CurrentValue.SupplyChartShowOffset).ToList();
+            supplyGrowths = supplyGrowths.Skip(_globalOptions.CurrentValue.SupplyChartShowOffset).ToList();
         }
 
         var resp = new DailySupplyGrowthResp()
         {
-            List = dailySupplyGrowths,
-            Total = dailySupplyGrowths.Count,
+            List = supplyGrowths,
+            Total = supplyGrowths.Count,
         };
 
         return resp;
@@ -811,11 +795,17 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     {
         var queryable = await _blockRewardRepository.GetQueryableAsync();
         var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
-
         var datList = _objectMapper.Map<List<DailyBlockRewardIndex>, List<DailyBlockReward>>(indexList);
 
+        var dailySupplyGrowthRespAsync = await GetDailySupplyGrowthRespAsync();
+        var supplyDic = dailySupplyGrowthRespAsync.List.ToDictionary(c => c.DateStr, c => c);
         foreach (var data in datList)
         {
+            if (supplyDic.TryGetValue(data.DateStr, out var supply))
+            {
+                data.BlockReward = supply.Reward;
+            }
+
             data.BlockReward = double.Parse(data.BlockReward).ToString("F6");
         }
 

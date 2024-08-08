@@ -1,12 +1,22 @@
+using System;
 using System.Collections.Generic;
 using AElfScanServer.Common.Dtos;
-using Volo.Abp.Application.Dtos;
+using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Enums;
 
 namespace AElfScanServer.HttpApi.Dtos.address;
 
-public class GetListInputInput : PagedResultRequestDto
+public class GetListInputInput : BaseInput
 {
-    public string ChainId { get; set; }
+    public void SetDefaultSort()
+    {
+        if (!OrderBy.IsNullOrEmpty()|| !OrderInfos.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        OfOrderInfos((SortField.FormatAmount, SortDirection.Desc));
+    }
 }
 
 public class GetAddressListResultDto

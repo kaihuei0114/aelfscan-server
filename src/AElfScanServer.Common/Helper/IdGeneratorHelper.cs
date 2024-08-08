@@ -100,6 +100,18 @@ public static class DateTimeHelper
 
         return dateTime.AddDays(1).ToUtc8String(dateFormat);
     }
+    
+    
+    public static string GetBeforeDayDate(string dateString)
+    {
+        string dateFormat = "yyyy-MM-dd";
+
+        DateTime dateTime;
+        DateTime.TryParseExact(dateString, dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None,
+            out dateTime);
+
+        return dateTime.AddDays(-1).ToUtc8String(dateFormat);
+    }
 
     public static string GetDateStr(DateTime dateTime)
     {

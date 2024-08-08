@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
+using AElf.EntityMapping.Repositories;
+using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.Helper;
 using AElfScanServer.HttpApi.Provider;
@@ -22,6 +26,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
     private readonly HomePageProvider _homePageProvider;
     private readonly BlockChainDataProvider _blockChainProvider;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
+    private readonly IEntityMappingRepository<DailyUniqueAddressCountIndex, string> _uniqueAddressRepository;
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
 
 
@@ -32,6 +37,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         BlockChainDataProvider blockChainProvider,
         ITokenIndexerProvider tokenIndexerProvider,
         IBlockChainIndexerProvider blockChainIndexerProvider,
+        IEntityMappingRepository<DailyUniqueAddressCountIndex, string> uniqueAddressRepository,
         ILogger<DataStrategyBase<string, HomeOverviewResponseDto>> logger) : base(optionsAccessor, logger)
     {
         _globalOptions = globalOptions;
@@ -40,10 +46,12 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         _blockChainProvider = blockChainProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _blockChainIndexerProvider = blockChainIndexerProvider;
+        _uniqueAddressRepository = uniqueAddressRepository;
     }
 
     public override async Task<HomeOverviewResponseDto> QueryData(string chainId)
     {
+        
         DataStrategyLogger.LogInformation("GetBlockchainOverviewAsync:{c}", chainId);
         var overviewResp = new HomeOverviewResponseDto();
         try
@@ -57,8 +65,14 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
                 overviewResp.Transactions = task.Result;
             }));
 
-            tasks.Add(_tokenIndexerProvider.GetAccountCountAsync(chainId).ContinueWith(
-                task => { overviewResp.Accounts = task.Result; }));
+
+            tasks.Add(_uniqueAddressRepository.GetQueryableAsync().ContinueWith(
+                task =>
+                {
+                    overviewResp.Accounts =
+                        task.Result.Where(c => c.ChainId == chainId).OrderByDescending(c => c.Date).Take(1).ToList()
+                            .First().TotalUniqueAddressees;
+                }));
 
 
             tasks.Add(_homePageProvider.GetRewardAsync(chainId).ContinueWith(

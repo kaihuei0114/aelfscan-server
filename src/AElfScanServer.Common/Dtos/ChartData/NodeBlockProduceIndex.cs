@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using AElf.EntityMapping.Entities;
+using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Domain.Common.Entities;
 using Nest;
 
@@ -154,6 +155,8 @@ public class DailyTransactionsChartSet
     public List<string> TransactionFeeRecords { get; set; } = new();
     public DailyTVLIndex DailyTVLIndex { get; set; }
 
+    public string ChainId { get; set; }
+
     public Dictionary<string, DailyVotedIndex> DailyVotedIndexDic { get; set; }
     public List<DailyWithDrawnIndex> DailyWithDrawnList { get; set; } = new();
     public DailyStakedIndex DailyStakedIndex { get; set; }
@@ -162,7 +165,7 @@ public class DailyTransactionsChartSet
 
     public DailySupplyChange DailySupplyChange { get; set; }
     public Dictionary<string, HashSet<string>> CallersDic { get; set; } = new();
-    public string Date { get; set; }
+    public string DateStr { get; set; }
 
     public long DateTimeStamp { get; set; }
     public DateTime StartTime { get; set; }
@@ -184,13 +187,13 @@ public class DailyTransactionsChartSet
     public HashSet<string> AddressToSet { get; set; }
 
 
-    public double TotalBurnt { get; set; }
-    public double TotalReward { get; set; }
+    public double DailyBurnt { get; set; }
+    public double DailyConsensusBalance { get; set; }
     public double TotalFee { get; set; }
 
-    public double TotalSupply { get; set; }
 
-    public double OrganizationSupply { get; set; }
+    public double DailyOrganizationBalance { get; set; }
+
 
     public DailyTransactionsChartSet(string chainId, long totalMilliseconds, string date)
     {
@@ -591,14 +594,13 @@ public class DailySupplyGrowthIndex : AElfIndexerEntity<string>, IEntityMappingE
     public long Date { get; set; }
     [Keyword] public string DateStr { get; set; }
 
-    public double DailySupply { get; set; }
 
-    public double DailyReward { get; set; }
-
+    public double DailyConsensusBalance { get; set; }
+    public double TotalConsensusBalance { get; set; }
     public double DailyBurnt { get; set; }
-
-    public double DailyOrganizationUnlock { get; set; }
-
+    public double TotalBurnt { get; set; }
+    public double DailyOrganizationBalance { get; set; }
+    public double TotalOrganizationBalance { get; set; }
     [Keyword] public string ChainId { get; set; }
 }
 
@@ -616,8 +618,6 @@ public class DailyStakedIndex : AElfIndexerEntity<string>, IEntityMappingEntity
     [Keyword] public string BpStaked { get; set; }
 
     [Keyword] public string VoteStaked { get; set; }
-
-    [Keyword] public string Supply { get; set; }
 
 
     [Keyword] public string ChainId { get; set; }

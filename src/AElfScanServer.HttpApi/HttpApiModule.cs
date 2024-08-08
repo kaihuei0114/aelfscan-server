@@ -10,9 +10,11 @@ using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
+using AElfScanServer.HttpApi.Worker;
 using Aetherlink.PriceServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Volo.Abp;
 using Volo.Abp.Account;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Serilog;
@@ -92,6 +94,8 @@ public class HttpApiModule : AbpModule
         context.Services.AddSingleton<BlockChainDataProvider, BlockChainDataProvider>();
         context.Services.AddSingleton<ITokenIndexerProvider, TokenIndexerProvider>();
         context.Services.AddSingleton<IBlockChainIndexerProvider, BlockChainIndexerProvider>();
+        
+        
         context.Services.AddSignalR();
     }
 
@@ -99,5 +103,14 @@ public class HttpApiModule : AbpModule
     {
         context.Services.AddSingleton<IGraphQlFactory, GraphQlFactory>();
         Configure<IndexerOptions>(configuration.GetSection("Indexer"));
+    }
+    
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+       
+   
+        context.AddBackgroundWorkerAsync<NftCollectionHolderInfoWorker>();
+        context.AddBackgroundWorkerAsync<TokenHolderPercentWorker>();
+
     }
 }

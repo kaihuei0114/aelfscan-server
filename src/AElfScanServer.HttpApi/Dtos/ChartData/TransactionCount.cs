@@ -298,16 +298,43 @@ public class DailySupplyGrowth
     public long Date { get; set; }
     public string DateStr { get; set; }
 
-    public string TotalSupply { get; set; } = "0";
+    public string TotalSupply
+    {
+        get
+        {
+            var totalSupply = 1000000000 - TotalOrganizationBalance - TotalConsensusBalance - TotalBurnt;
+            if (!SideChainBurnt.IsNullOrEmpty())
+            {
+                totalSupply -= decimal.Parse(SideChainBurnt);
+            }
 
-    public string MainChainBurnt { get; set; }
+            return totalSupply.ToString("F4");
+        }
+    }
+
+    public string MainChainBurnt
+    {
+        get { return DailyBurnt.ToString("F4"); }
+    }
 
     public string SideChainBurnt { get; set; }
-    public string OrganizationUnlock { get; set; }
 
-    public string Reward { get; set; }
+    public string OrganizationUnlock
+    {
+        get { return (-DailyOrganizationBalance).ToString("F4"); }
+    }
 
-    public string Burnt { get; set; }
+    public string Reward
+    {
+        get { return (DailyConsensusBalance < 0 ? -DailyConsensusBalance : 0).ToString("F4"); }
+    }
+
+    public decimal DailyConsensusBalance { get; set; }
+    public decimal TotalConsensusBalance { get; set; }
+    public decimal DailyBurnt { get; set; }
+    public decimal TotalBurnt { get; set; }
+    public decimal DailyOrganizationBalance { get; set; }
+    public decimal TotalOrganizationBalance { get; set; }
 }
 
 public class DailyStakedResp

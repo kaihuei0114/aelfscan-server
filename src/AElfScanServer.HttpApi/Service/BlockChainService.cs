@@ -102,7 +102,6 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             return transactionDetailResponseDto;
         }
 
-
         try
         {
             var transactionsAsync =
@@ -439,12 +438,13 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                                 await _blockChainProvider.GetDecimalAmountAsync(transferred.Symbol, transferred.Amount),
                             From = ConvertAddress(transferred.From.ToBase58(), transactionIndex.ChainId),
                             To = ConvertAddress(transferred.To.ToBase58(), transactionIndex.ChainId),
-                            ImageBase64 = await _blockChainProvider.GetTokenImageBase64Async(transferred.Symbol),
+                            ImageUrl = await _blockChainProvider.GetTokenImageAsync(transferred.Symbol),
                             NowPrice = await _blockChainProvider.TransformTokenToUsdValueAsync(transferred.Symbol,
                                 transferred.Amount)
                         };
 
-                        if (_tokenInfoOptionsMonitor.CurrentValue.TokenInfos.TryGetValue(
+                        if (token.ImageUrl.IsNullOrEmpty() &&
+                            _tokenInfoOptionsMonitor.CurrentValue.TokenInfos.TryGetValue(
                                 transferred.Symbol, out var info))
                         {
                             token.ImageUrl = info.ImageUrl;
@@ -712,8 +712,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         try
         {
-            var indexerTransactionList = await _blockChainIndexerProvider.GetTransactionsAsync(requestDto.ChainId,
-                requestDto.SkipCount, requestDto.MaxResultCount, 0, 0, requestDto.Address);
+            var indexerTransactionList = await _blockChainIndexerProvider.GetTransactionsAsync(requestDto);
 
 
             foreach (var transactionIndex in indexerTransactionList.Items)
@@ -735,6 +734,10 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                 transactionRespDto.To = ConvertAddress(transactionIndex.To, requestDto.ChainId);
                 result.Transactions.Add(transactionRespDto);
             }
+
+            result.Transactions = result.Transactions.OrderByDescending(item => item.BlockHeight)
+                .ThenByDescending(item => item.TransactionId)
+                .ToList();
 
             result.Total = indexerTransactionList.TotalCount;
         }

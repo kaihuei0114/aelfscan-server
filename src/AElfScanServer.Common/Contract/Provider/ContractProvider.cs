@@ -73,9 +73,14 @@ public class GenesisPluginProvider : IGenesisPluginProvider, ISingletonDependenc
                 {
                     Query =
                         @"query($chainId:String!,$addressList:[String!],$skipCount:Int!,$maxResultCount:Int!){
-                            contractInfo(input: {chainId:$chainId,addressList:$addressList,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                                address
+                            contractList(input: {chainId:$chainId,addressList:$addressList,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                               totalCount
+                               items {
+                                 address
+                                contractVersion
+                                version
                                 author
+                                codeHash
                                 contractType
                                 metadata {
                                   chainId
@@ -85,6 +90,8 @@ public class GenesisPluginProvider : IGenesisPluginProvider, ISingletonDependenc
                                     blockHeight
                                   }
                                 }
+
+                              }
                             }
                         }",
                     Variables = new
