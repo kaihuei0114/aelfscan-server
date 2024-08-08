@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -102,25 +103,6 @@ public class ExploreHub : AbpHub
     }
 
 
-    public async Task RequestLatestTransactions(LatestTransactionsReq request)
-    {
-        var resp = await _latestTransactionsDataStrategy.DisplayData(request.ChainId);
-
-        await Groups.AddToGroupAsync(Context.ConnectionId,
-            HubGroupHelper.GetLatestTransactionsGroupName(request.ChainId));
-        _logger.LogInformation("RequestLatestTransactions: {chainId}", request.ChainId);
-        await Clients.Caller.SendAsync("ReceiveLatestTransactions", resp);
-
-        PushLatestTransactionsAsync(request.ChainId);
-    }
-
-    public async Task UnsubscribeLatestTransactions(CommonRequest request)
-    {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
-            HubGroupHelper.GetLatestTransactionsGroupName(request.ChainId));
-    }
-
-
     public async Task RequestMergeBlockInfo(MergeBlockInfoReq request)
     {
         var transactions = await _latestTransactionsDataStrategy.DisplayData(request.ChainId);
@@ -181,36 +163,6 @@ public class ExploreHub : AbpHub
     }
 
 
-    public async Task PushLatestTransactionsAsync(string chainId)
-    {
-        var key = "transaction" + chainId;
-        if (!_isPushRunning.TryAdd(key, true))
-        {
-            return;
-        }
-
-
-        try
-        {
-            while (true)
-            {
-                await Task.Delay(2000);
-                var resp = await _latestTransactionsDataStrategy.DisplayData(chainId);
-                await _hubContext.Clients.Groups(HubGroupHelper.GetLatestTransactionsGroupName(chainId))
-                    .SendAsync("ReceiveLatestTransactions", resp);
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("push transaction error: {error}", e);
-        }
-        finally
-        {
-            _isPushRunning.TryRemove(key, out var v);
-        }
-    }
-
-
     public async Task RequestBlockchainOverview(BlockchainOverviewRequestDto request)
     {
         var resp = await _overviewDataStrategy.DisplayData(request.ChainId);
@@ -258,65 +210,12 @@ public class ExploreHub : AbpHub
     }
 
 
-    public async Task RequestLatestBlocks(LatestBlocksRequestDto request)
-    {
-        var resp = await _latestBlocksDataStrategy.DisplayData(request.ChainId);
-
-
-        await Groups.AddToGroupAsync(Context.ConnectionId,
-            HubGroupHelper.GetLatestBlocksGroupName(request.ChainId));
-
-        await Clients.Caller.SendAsync("ReceiveLatestBlocks", resp);
-
-        PushLatestBlocksAsync(request.ChainId);
-    }
-
-    public async Task UnsubscribeRequestLatestBlocks(CommonRequest request)
-    {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId,
-            HubGroupHelper.GetLatestBlocksGroupName(request.ChainId));
-    }
-
-
-    public async Task PushLatestBlocksAsync(string chainId)
-    {
-        var key = "block" + chainId;
-        if (!_isPushRunning.TryAdd(key, true))
-        {
-            return;
-        }
-
-
-        try
-        {
-            while (true)
-            {
-                await Task.Delay(2000);
-                var resp = await _latestBlocksDataStrategy.DisplayData(chainId);
-                if (resp.Blocks.Count > 6)
-                {
-                    resp.Blocks = resp.Blocks.GetRange(0, 6);
-                }
-
-                await _hubContext.Clients.Groups(HubGroupHelper.GetLatestBlocksGroupName(chainId))
-                    .SendAsync("ReceiveLatestBlocks", resp);
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("Push blocks error: {error}", e);
-        }
-        finally
-        {
-            _isPushRunning.TryRemove(key, out var v);
-        }
-    }
-
-
     public async Task RequestTransactionDataChart(GetTransactionPerMinuteRequestDto request)
     {
         var resp = await _HomePageService.GetTransactionPerMinuteAsync(request.ChainId);
 
+        resp.All = resp.All.Take(resp.All.Count - 3).ToList();
+        resp.Owner = resp.Owner.Take(resp.Owner.Count - 3).ToList();
         await Groups.AddToGroupAsync(Context.ConnectionId,
             HubGroupHelper.GetTransactionCountPerMinuteGroupName(request.ChainId));
 
@@ -347,7 +246,8 @@ public class ExploreHub : AbpHub
             {
                 await Task.Delay(60 * 1000);
                 var resp = await _HomePageService.GetTransactionPerMinuteAsync(chainId);
-
+                resp.All = resp.All.Take(resp.All.Count - 3).ToList();
+                resp.Owner = resp.Owner.Take(resp.Owner.Count - 3).ToList();
                 await _hubContext.Clients.Groups(HubGroupHelper.GetTransactionCountPerMinuteGroupName(chainId))
                     .SendAsync("ReceiveTransactionDataChart", resp);
             }

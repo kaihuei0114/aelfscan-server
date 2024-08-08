@@ -302,7 +302,7 @@ public class DailySupplyGrowth
     {
         get
         {
-            var totalSupply = 100000000 - TotalOrganizationBalance - TotalConsensusBalance - TotalBurnt;
+            var totalSupply = 1000000000 - TotalOrganizationBalance - TotalConsensusBalance - TotalBurnt;
             if (!SideChainBurnt.IsNullOrEmpty())
             {
                 totalSupply -= double.Parse(SideChainBurnt);
