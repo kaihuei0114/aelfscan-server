@@ -1161,6 +1161,21 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 needUpdateData.DailyTVLIndex.AwakenLocked = awakenTvl == null ? 0 : awakenTvl.Value;
             }
 
+            var dailyUniqueAddressCountIndices = _uniqueAddressRepository.GetQueryableAsync().Result
+                .Where(c => c.ChainId == chainId)
+                .Where(c => c.DateStr == DateTimeHelper.GetBeforeDayDate(needUpdateData.DateStr)).ToList();
+
+            if (dailyUniqueAddressCountIndices.IsNullOrEmpty())
+            {
+                needUpdateData.DailyUniqueAddressCountIndex.TotalUniqueAddressees =
+                    needUpdateData.DailyUniqueAddressCountIndex.AddressCount;
+            }
+            else
+            {
+                needUpdateData.DailyUniqueAddressCountIndex.TotalUniqueAddressees =
+                    needUpdateData.DailyUniqueAddressCountIndex.AddressCount +
+                    dailyUniqueAddressCountIndices.First().TotalUniqueAddressees;
+            }
 
             var startNew = Stopwatch.StartNew();
             await _avgTransactionFeeRepository.AddOrUpdateAsync(needUpdateData.DailyAvgTransactionFeeIndex);

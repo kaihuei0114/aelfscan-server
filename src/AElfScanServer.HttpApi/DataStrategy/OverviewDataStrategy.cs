@@ -51,6 +51,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
 
     public override async Task<HomeOverviewResponseDto> QueryData(string chainId)
     {
+        
         DataStrategyLogger.LogInformation("GetBlockchainOverviewAsync:{c}", chainId);
         var overviewResp = new HomeOverviewResponseDto();
         try
