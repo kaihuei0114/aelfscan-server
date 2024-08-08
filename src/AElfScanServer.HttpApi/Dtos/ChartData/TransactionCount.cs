@@ -305,7 +305,7 @@ public class DailySupplyGrowth
             var totalSupply = 1000000000 - TotalOrganizationBalance - TotalConsensusBalance - TotalBurnt;
             if (!SideChainBurnt.IsNullOrEmpty())
             {
-                totalSupply -= double.Parse(SideChainBurnt);
+                totalSupply -= decimal.Parse(SideChainBurnt);
             }
 
             return totalSupply.ToString("F4");
@@ -329,12 +329,12 @@ public class DailySupplyGrowth
         get { return (DailyConsensusBalance < 0 ? -DailyConsensusBalance : 0).ToString("F4"); }
     }
 
-    public double DailyConsensusBalance { get; set; }
-    public double TotalConsensusBalance { get; set; }
-    public double DailyBurnt { get; set; }
-    public double TotalBurnt { get; set; }
-    public double DailyOrganizationBalance { get; set; }
-    public double TotalOrganizationBalance { get; set; }
+    public decimal DailyConsensusBalance { get; set; }
+    public decimal TotalConsensusBalance { get; set; }
+    public decimal DailyBurnt { get; set; }
+    public decimal TotalBurnt { get; set; }
+    public decimal DailyOrganizationBalance { get; set; }
+    public decimal TotalOrganizationBalance { get; set; }
 }
 
 public class DailyStakedResp
