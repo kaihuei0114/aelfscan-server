@@ -50,8 +50,6 @@ public class IndexerTransactionCountDto
     public long Count { get; set; }
 }
 
-
-
 public class Header
 {
     public string PreviousBlockHash { get; set; }
@@ -79,6 +77,7 @@ public class BlockDetailDto
 public class NodeTransactionDto
 {
     public NodeTransactionInfo Transaction { get; set; }
+    public long BlockNumber { get; set; }
 }
 
 public class NodeTransactionInfo

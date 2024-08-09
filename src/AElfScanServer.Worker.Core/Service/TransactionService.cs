@@ -265,6 +265,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         {
             await ConnectAsync();
             RedisDatabase.StringSet(RedisKeyHelper.LogEventTransactionLastBlockHeight(v.Key), v.Value);
+            _logger.LogInformation("Init log event {p1},{p2}", v.Key, v.Value);
         }
 
         var tasks = new List<Task>();
@@ -657,6 +658,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 await ParseLogEventList(batchTransactionList, chainId);
                 lastBlockHeight += PullLogEventTransactionInterval + 1;
+                RedisDatabase.StringSet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId),
+                    lastBlockHeight + PullLogEventTransactionInterval);
                 await Task.Delay(1000 * 1);
             }
 
@@ -667,7 +670,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     chainId,
                     e, lastBlockHeight,
                     lastBlockHeight + PullLogEventTransactionInterval);
-
 
                 await ConnectAsync();
                 redisValue = RedisDatabase.StringGet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId));

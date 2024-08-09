@@ -119,17 +119,9 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             }
 
             var blockHeight = 0l;
-            TransactionIndex transactionIndex = new TransactionIndex();
             NodeTransactionDto transactionDto = new NodeTransactionDto();
 
             var tasks = new List<Task>();
-
-            tasks.Add(_aelfIndexerProvider.GetTransactionsAsync(request.ChainId,
-                request.BlockHeight == 0 ? 0 : request.BlockHeight,
-                request.BlockHeight, request.TransactionId).ContinueWith(task =>
-            {
-                transactionIndex = task.Result.First();
-            }));
 
 
             tasks.Add(_overviewDataStrategy.DisplayData(request.ChainId).ContinueWith(task =>
@@ -141,10 +133,13 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             tasks.Add(_blockChainProvider.GetTransactionDetailAsync(request.ChainId,
                 request.TransactionId).ContinueWith(task => { transactionDto = task.Result; }));
 
-
             await tasks.WhenAll();
-            var detailDto = new TransactionDetailDto();
+            var transactionIndex = _aelfIndexerProvider.GetTransactionsAsync(request.ChainId,
+                transactionDto.BlockNumber,
+                transactionDto.BlockNumber, request.TransactionId).Result.First();
 
+
+            var detailDto = new TransactionDetailDto();
             detailDto.TransactionId = transactionIndex.TransactionId;
             detailDto.Status = transactionIndex.Status;
             detailDto.BlockConfirmations = detailDto.Status == TransactionStatus.Mined ? blockHeight : 0;
