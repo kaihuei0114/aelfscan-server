@@ -513,7 +513,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     public async Task BatchPullTransactionTask()
     {
         await ConnectAsync();
-
+        
         if (_globalOptions.CurrentValue.NeedInitLastHeight && !FinishInitChartData)
         {
             foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
@@ -1245,11 +1245,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
         if (!beforeDaySupply.IsNullOrEmpty())
         {
-            dailyData.DailySupplyGrowthIndex.TotalBurnt = beforeDaySupply.First().DailyBurnt + dailyData.DailyBurnt;
+            dailyData.DailySupplyGrowthIndex.TotalBurnt = beforeDaySupply.First().TotalBurnt + dailyData.DailyBurnt;
+            
             dailyData.DailySupplyGrowthIndex.TotalConsensusBalance =
-                beforeDaySupply.First().DailyConsensusBalance + dailyData.DailyConsensusBalance;
+                beforeDaySupply.First().TotalConsensusBalance + dailyData.DailyConsensusBalance;
+            
             dailyData.DailySupplyGrowthIndex.TotalOrganizationBalance =
-                beforeDaySupply.First().DailyOrganizationBalance + dailyData.DailyOrganizationBalance;
+                beforeDaySupply.First().TotalOrganizationBalance + dailyData.DailyOrganizationBalance;
         }
         else
         {
