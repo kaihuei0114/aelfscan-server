@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,13 +55,16 @@ public class ExploreHub : AbpHub
 
     public async Task RequestBpProduce(CommonRequest request)
     {
+        var startNew = Stopwatch.StartNew();
         var resp = await _bpDataStrategy.DisplayData(request.ChainId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId,
             HubGroupHelper.GetBpProduceGroupName(request.ChainId));
         _logger.LogInformation("RequestBpProduce: {chainId}", request.ChainId);
         await Clients.Caller.SendAsync("ReceiveBpProduce", resp);
-
+        startNew.Stop();
+        _logger.LogInformation("RequestBpProduce costTime:{p1},{p2}", request.ChainId,
+            startNew.Elapsed.TotalSeconds);
         PushRequestBpProduceAsync(request.ChainId);
     }
 
@@ -85,11 +89,14 @@ public class ExploreHub : AbpHub
             while (true)
             {
                 await Task.Delay(2000);
-
+                var startNew = Stopwatch.StartNew();
                 var resp = await _bpDataStrategy.DisplayData(chainId);
 
                 await _hubContext.Clients.Groups(HubGroupHelper.GetBpProduceGroupName(chainId))
                     .SendAsync("ReceiveBpProduce", resp);
+                startNew.Stop();
+                _logger.LogInformation("PushRequestBpProduceAsync costTime:{p1},{p2}", chainId,
+                    startNew.Elapsed.TotalSeconds);
             }
         }
         catch (Exception e)
@@ -105,6 +112,7 @@ public class ExploreHub : AbpHub
 
     public async Task RequestMergeBlockInfo(MergeBlockInfoReq request)
     {
+        var startNew = Stopwatch.StartNew();
         var transactions = await _latestTransactionsDataStrategy.DisplayData(request.ChainId);
         var blocks = await _latestBlocksDataStrategy.DisplayData(request.ChainId);
         var resp = new WebSocketMergeBlockInfoDto()
@@ -117,6 +125,10 @@ public class ExploreHub : AbpHub
             HubGroupHelper.GetMergeBlockInfoGroupName(request.ChainId));
         _logger.LogInformation("RequestMergeBlockInfo: {chainId}", request.ChainId);
         await Clients.Caller.SendAsync("ReceiveMergeBlockInfo", resp);
+
+        startNew.Stop();
+        _logger.LogInformation("RequestMergeBlockInfo costTime:{p1},{p2}", request.ChainId,
+            startNew.Elapsed.TotalSeconds);
 
         PushMergeBlockInfoAsync(request.ChainId);
     }
@@ -135,6 +147,7 @@ public class ExploreHub : AbpHub
             while (true)
             {
                 await Task.Delay(2000);
+                var startNew = Stopwatch.StartNew();
                 var transactions = await _latestTransactionsDataStrategy.DisplayData(chainId);
                 var blocks = await _latestBlocksDataStrategy.DisplayData(chainId);
                 var resp = new WebSocketMergeBlockInfoDto()
@@ -144,6 +157,9 @@ public class ExploreHub : AbpHub
                 };
                 await _hubContext.Clients.Groups(HubGroupHelper.GetMergeBlockInfoGroupName(chainId))
                     .SendAsync("ReceiveMergeBlockInfo", resp);
+                startNew.Stop();
+                _logger.LogInformation("PushMergeBlockInfoAsync costTime:{p1},{p2}", chainId,
+                    startNew.Elapsed.TotalSeconds);
             }
         }
         catch (Exception e)
@@ -165,12 +181,17 @@ public class ExploreHub : AbpHub
 
     public async Task RequestBlockchainOverview(BlockchainOverviewRequestDto request)
     {
+        var startNew = Stopwatch.StartNew();
         var resp = await _overviewDataStrategy.DisplayData(request.ChainId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId,
             HubGroupHelper.GetBlockOverviewGroupName(request.ChainId));
         await Clients.Caller.SendAsync("ReceiveBlockchainOverview", resp);
         PushBlockOverViewAsync(request.ChainId);
+
+        startNew.Stop();
+        _logger.LogInformation("RequestBlockchainOverview costTime:{p1},{p2}", request.ChainId,
+            startNew.Elapsed.TotalSeconds);
     }
 
     public async Task UnsubscribeBlockchainOverview(CommonRequest request)
@@ -194,9 +215,14 @@ public class ExploreHub : AbpHub
             while (true)
             {
                 await Task.Delay(2000);
+                var startNew = Stopwatch.StartNew();
                 var resp = await _overviewDataStrategy.DisplayData(chainId);
                 await _hubContext.Clients.Groups(HubGroupHelper.GetBlockOverviewGroupName(chainId))
                     .SendAsync("ReceiveBlockchainOverview", resp);
+
+                startNew.Stop();
+                _logger.LogInformation("PushBlockOverViewAsync costTime:{p1},{p2}", chainId,
+                    startNew.Elapsed.TotalSeconds);
             }
         }
         catch (Exception e)
@@ -212,6 +238,7 @@ public class ExploreHub : AbpHub
 
     public async Task RequestTransactionDataChart(GetTransactionPerMinuteRequestDto request)
     {
+        var startNew = Stopwatch.StartNew();
         var resp = await _HomePageService.GetTransactionPerMinuteAsync(request.ChainId);
 
         resp.All = resp.All.Take(resp.All.Count - 3).ToList();
@@ -222,6 +249,10 @@ public class ExploreHub : AbpHub
         _logger.LogInformation("RequestTransactionDataChart: {chainId}", request.ChainId);
         await Clients.Caller.SendAsync("ReceiveTransactionDataChart", resp);
         PushTransactionCountPerMinuteAsync(request.ChainId);
+
+        startNew.Stop();
+        _logger.LogInformation("RequestTransactionDataChart costTime:{p1},{p2}", request.ChainId,
+            startNew.Elapsed.TotalSeconds);
     }
 
 
@@ -245,11 +276,15 @@ public class ExploreHub : AbpHub
             while (true)
             {
                 await Task.Delay(60 * 1000);
+                var startNew = Stopwatch.StartNew();
                 var resp = await _HomePageService.GetTransactionPerMinuteAsync(chainId);
                 resp.All = resp.All.Take(resp.All.Count - 3).ToList();
                 resp.Owner = resp.Owner.Take(resp.Owner.Count - 3).ToList();
                 await _hubContext.Clients.Groups(HubGroupHelper.GetTransactionCountPerMinuteGroupName(chainId))
                     .SendAsync("ReceiveTransactionDataChart", resp);
+                startNew.Stop();
+                _logger.LogInformation("PushTransactionCountPerMinuteAsync costTime:{p1},{p2}", chainId,
+                    startNew.Elapsed.TotalSeconds);
             }
         }
         catch (Exception e)

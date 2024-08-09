@@ -513,7 +513,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     public async Task BatchPullTransactionTask()
     {
         await ConnectAsync();
-
+        
         if (_globalOptions.CurrentValue.NeedInitLastHeight && !FinishInitChartData)
         {
             foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
@@ -674,9 +674,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     e, lastBlockHeight,
                     lastBlockHeight + PullLogEventTransactionInterval);
 
-                await ConnectAsync();
-                redisValue = RedisDatabase.StringGet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId));
-                lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
                 await Task.Delay(1000 * 2);
             }
         }
