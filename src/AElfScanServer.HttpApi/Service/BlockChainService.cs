@@ -33,6 +33,8 @@ using Castle.Components.DictionaryAdapter.Xml;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
+using AElfScanServer.DataStrategy;
+using AElfScanServer.HttpApi.DataStrategy;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -40,6 +42,7 @@ using StackExchange.Redis;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Nito.AsyncEx;
+using Volo.Abp.Caching;
 
 namespace AElfScanServer.HttpApi.Service;
 
@@ -70,7 +73,8 @@ public class BlockChainService : IBlockChainService, ITransientDependency
     private readonly LogEventProvider _logEventProvider;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptionsMonitor;
-
+    private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
+    private IDistributedCache<TransactionDetailResponseDto> _transactionDetailCache;
     private readonly ILogger<HomePageService> _logger;
 
 
@@ -80,7 +84,9 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         INESTRepository<BlockExtraIndex, string> blockExtraIndexRepository,
         LogEventProvider logEventProvider, IObjectMapper objectMapper,
         BlockChainDataProvider blockChainProvider, IBlockChainIndexerProvider blockChainIndexerProvider,
-        ITokenIndexerProvider tokenIndexerProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions)
+        ITokenIndexerProvider tokenIndexerProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
+        OverviewDataStrategy overviewDataStrategy,
+        IDistributedCache<TransactionDetailResponseDto> transactionDetailCache)
     {
         _logger = logger;
         _globalOptions = blockChainOptions;
@@ -91,6 +97,8 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         _blockChainIndexerProvider = blockChainIndexerProvider;
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenInfoOptionsMonitor = tokenInfoOptions;
+        _overviewDataStrategy = new DataStrategyContext<string, HomeOverviewResponseDto>(overviewDataStrategy);
+        _transactionDetailCache = transactionDetailCache;
     }
 
 
@@ -104,25 +112,56 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         try
         {
-            var transactionsAsync =
-                await _aelfIndexerProvider.GetTransactionsAsync(request.ChainId,
-                    request.BlockHeight == 0 ? 0 : request.BlockHeight,
-                    request.BlockHeight, request.TransactionId);
-
-            var aElfClient = new AElfClient(_globalOptions.CurrentValue.ChainNodeHosts[request.ChainId]);
-
-            var blockHeightAsync = await aElfClient.GetBlockHeightAsync();
-            for (var i = 0; i < transactionsAsync.Count; i++)
+            var detailResponseDto = _transactionDetailCache.Get(request.TransactionId);
+            if (detailResponseDto != null)
             {
-                if (transactionsAsync[i].TransactionId == request.TransactionId)
-                {
-                    transactionDetailResponseDto.List.Add(await AnalysisTransaction(transactionsAsync[i],
-                        blockHeightAsync));
-
-
-                    break;
-                }
+                return detailResponseDto;
             }
+
+            var blockHeight = 0l;
+            NodeTransactionDto transactionDto = new NodeTransactionDto();
+
+            var tasks = new List<Task>();
+
+
+            tasks.Add(_overviewDataStrategy.DisplayData(request.ChainId).ContinueWith(task =>
+            {
+                blockHeight = task.Result.BlockHeight;
+            }));
+
+
+            tasks.Add(_blockChainProvider.GetTransactionDetailAsync(request.ChainId,
+                request.TransactionId).ContinueWith(task => { transactionDto = task.Result; }));
+
+            await tasks.WhenAll();
+            var transactionIndex = _aelfIndexerProvider.GetTransactionsAsync(request.ChainId,
+                transactionDto.BlockNumber,
+                transactionDto.BlockNumber, request.TransactionId).Result.First();
+
+
+            var detailDto = new TransactionDetailDto();
+            detailDto.TransactionId = transactionIndex.TransactionId;
+            detailDto.Status = transactionIndex.Status;
+            detailDto.BlockConfirmations = detailDto.Status == TransactionStatus.Mined ? blockHeight : 0;
+            detailDto.BlockHeight = transactionIndex.BlockHeight;
+            detailDto.Timestamp = DateTimeHelper.GetTotalSeconds(transactionIndex.BlockTime);
+            detailDto.Method = transactionIndex.MethodName;
+            detailDto.TransactionParams = transactionDto.Transaction.Params;
+            detailDto.TransactionSignature = transactionIndex.Signature;
+            detailDto.Confirmed = transactionIndex.Confirmed;
+            detailDto.From = ConvertAddress(transactionIndex.From, transactionIndex.ChainId);
+            detailDto.To = ConvertAddress(transactionIndex.To, transactionIndex.ChainId);
+
+
+            await AnalysisExtraPropertiesAsync(detailDto, transactionIndex);
+            await AnalysisTransferredAsync(detailDto, transactionIndex);
+            await AnalysisLogEventAsync(detailDto, transactionIndex);
+            var result = new TransactionDetailResponseDto()
+            {
+                List = new List<TransactionDetailDto>() { detailDto }
+            };
+            _transactionDetailCache.Set(request.TransactionId, result);
+            return result;
         }
         catch (Exception e)
         {

@@ -265,6 +265,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         {
             await ConnectAsync();
             RedisDatabase.StringSet(RedisKeyHelper.LogEventTransactionLastBlockHeight(v.Key), v.Value);
+            _logger.LogInformation("Init log event {p1},{p2}", v.Key, v.Value);
         }
 
         var tasks = new List<Task>();
@@ -512,7 +513,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     public async Task BatchPullTransactionTask()
     {
         await ConnectAsync();
-
+        
         if (_globalOptions.CurrentValue.NeedInitLastHeight && !FinishInitChartData)
         {
             foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
@@ -642,6 +643,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     {
                         PullLogEventTransactionInterval = 0;
                     }
+
+                    _logger.LogInformation("Set log event PullLogEventTransactionInterval to 0:{p1},{p2}", chainId,
+                        lastBlockHeight);
                 }
 
                 var batchTransactionList =
@@ -657,6 +661,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 await ParseLogEventList(batchTransactionList, chainId);
                 lastBlockHeight += PullLogEventTransactionInterval + 1;
+                RedisDatabase.StringSet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId),
+                    lastBlockHeight + PullLogEventTransactionInterval);
                 await Task.Delay(1000 * 1);
             }
 
@@ -668,10 +674,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     e, lastBlockHeight,
                     lastBlockHeight + PullLogEventTransactionInterval);
 
-
-                await ConnectAsync();
-                redisValue = RedisDatabase.StringGet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId));
-                lastBlockHeight = redisValue.IsNullOrEmpty ? 1 : long.Parse(redisValue) + 1;
                 await Task.Delay(1000 * 2);
             }
         }
@@ -1243,11 +1245,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
         if (!beforeDaySupply.IsNullOrEmpty())
         {
-            dailyData.DailySupplyGrowthIndex.TotalBurnt = beforeDaySupply.First().DailyBurnt + dailyData.DailyBurnt;
+            dailyData.DailySupplyGrowthIndex.TotalBurnt = beforeDaySupply.First().TotalBurnt + dailyData.DailyBurnt;
+
             dailyData.DailySupplyGrowthIndex.TotalConsensusBalance =
-                beforeDaySupply.First().DailyConsensusBalance + dailyData.DailyConsensusBalance;
+                beforeDaySupply.First().TotalConsensusBalance + dailyData.DailyConsensusBalance;
+
             dailyData.DailySupplyGrowthIndex.TotalOrganizationBalance =
-                beforeDaySupply.First().DailyOrganizationBalance + dailyData.DailyOrganizationBalance;
+                beforeDaySupply.First().TotalOrganizationBalance + dailyData.DailyOrganizationBalance;
         }
         else
         {
