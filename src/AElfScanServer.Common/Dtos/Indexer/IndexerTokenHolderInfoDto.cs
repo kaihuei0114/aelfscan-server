@@ -26,3 +26,8 @@ public class IndexerTokenHolderInfoListDto
     public long TotalCount  { get; set; }
     public List<IndexerTokenHolderInfoDto> Items { get; set; } = new();
 }
+
+public class IndexerCollectionHolderInfosDto
+{
+    public IndexerTokenHolderInfoListDto AccountCollection { get; set; }
+}

@@ -33,6 +33,9 @@ public interface ITokenIndexerProvider
     Task<TokenTransferInfosDto> GetTokenTransfersAsync(TokenTransferInput input);
 
     Task<List<BlockBurnFeeDto>> GetBlockBurntFeeListAsync(string chainId, long startBlockHeight, long endBlockHeight);
+    
+    
+    Task<IndexerTokenHolderInfoListDto> GetCollectionHolderInfoAsync(TokenHolderInput input);
 }
 
 public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
@@ -144,7 +147,8 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                         issueChainId,
                         externalInfo { key, value },
                         holderCount,
-                        transferCount
+                        transferCount,
+                        itemCount
                   }
                 }
             }",
@@ -184,7 +188,8 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                         issueChainId,
                         externalInfo { key, value },
                         holderCount,
-                        transferCount
+                        transferCount,
+                        itemCount
                   }
                 }
             }",
@@ -275,6 +280,41 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             }
         });
         return indexerResult == null ? new IndexerTokenHolderInfoListDto() : indexerResult.AccountToken;
+    }
+    
+     public async Task<IndexerTokenHolderInfoListDto> GetCollectionHolderInfoAsync(TokenHolderInput input)
+    {
+        var graphQlHelper = GetGraphQlHelper();
+        var indexerResult = await graphQlHelper.QueryAsync<IndexerCollectionHolderInfosDto>(new GraphQLRequest
+        {
+            Query =
+                @"query($chainId:String!,$symbol:String!,$skipCount:Int!,$maxResultCount:Int!,$address:String,
+                   $sort:String,$orderBy:String,$searchAfter:[String],$orderInfos:[OrderInfo]){
+                    accountCollection(input: {chainId:$chainId,symbol:$symbol,skipCount:$skipCount,
+                   maxResultCount:$maxResultCount,address:$address,sort:$sort,orderBy:$orderBy,searchAfter:$searchAfter,orderInfos:$orderInfos}){
+                    totalCount,
+                    items{
+                        id,
+                        address,
+                        token {
+                            symbol,
+                            type,
+                            decimals
+                        },
+                        formatAmount,
+                        transferCount
+                    }
+                }
+            }",
+            Variables = new
+            {
+                chainId = input.ChainId, symbol = input.CollectionSymbol,
+                skipCount = input.SkipCount, maxResultCount = input.MaxResultCount, address = input.Address,
+                sort = input.Sort, orderBy = input.OrderBy, 
+                orderInfos = input.OrderInfos, searchAfter = input.SearchAfter
+            }
+        });
+        return indexerResult == null ? new IndexerTokenHolderInfoListDto() : indexerResult.AccountCollection;
     }
 
     private IGraphQlHelper GetGraphQlHelper()

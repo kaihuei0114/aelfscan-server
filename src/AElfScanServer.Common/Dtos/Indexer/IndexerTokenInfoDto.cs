@@ -17,6 +17,8 @@ public class IndexerTokenInfoDto : IndexerTokenBaseDto
     public List<ExternalInfoDto> ExternalInfo { get; set; } = new();
     public long HolderCount { get; set; }
     public long TransferCount { get; set; }
+    
+    public decimal ItemCount { get; set; }
 }
 
 public class IndexerTokenBaseDto
