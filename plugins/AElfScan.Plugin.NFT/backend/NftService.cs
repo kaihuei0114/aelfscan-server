@@ -200,6 +200,8 @@ public class NftService : INftService, ISingletonDependency
         {
             var tokenHolderInput = _objectMapper.Map<NftInventoryInput, TokenHolderInput>(input);
             tokenHolderInput.Types = new List<SymbolType> { SymbolType.Nft };
+            tokenHolderInput.Symbol = tokenHolderInput.Search;
+            tokenHolderInput.Search = "";
             var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(tokenHolderInput);
             var symbols = tokenHolderInfos.Items.Select(i => i.Token.Symbol).ToList();
             var tokenListInput = new TokenListInput()
