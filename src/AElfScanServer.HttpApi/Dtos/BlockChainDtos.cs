@@ -40,6 +40,25 @@ public class TransactionsRequestDto : BaseInput
         }
         OfOrderInfos((SortField.BlockHeight, SortDirection.Desc), (SortField.TransactionId, SortDirection.Desc));
     }
+    
+    
+    public void SetFirstTransactionSort()
+    {
+        if (!OrderBy.IsNullOrEmpty() || !OrderInfos.IsNullOrEmpty())
+        {
+            return;
+        }
+        OfOrderInfos((SortField.BlockHeight, SortDirection.Asc), (SortField.TransactionId, SortDirection.Asc));
+    }
+    
+    public void SetLastTransactionSort()
+    {
+        if (!OrderBy.IsNullOrEmpty() || !OrderInfos.IsNullOrEmpty())
+        {
+            return;
+        }
+        OfOrderInfos((SortField.BlockHeight, SortDirection.Desc), (SortField.TransactionId, SortDirection.Desc));
+    }
 }
 
 
