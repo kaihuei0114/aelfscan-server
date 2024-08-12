@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Ocsp;
 using Volo.Abp;
+using Volo.Abp.Caching;
 using Volo.Abp.ObjectMapping;
 
 namespace AElfScanServer.HttpApi.Service;
@@ -41,13 +42,14 @@ public class ContractAppService : IContractAppService
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
     private readonly IEntityMappingRepository<LogEventIndex, string> _logEventIndexRepository;
+    private readonly IDistributedCache<List<ContractDto>> _contractListCache;
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IDecompilerProvider decompilerProvider,
         IIndexerTokenProvider indexerTokenProvider, IIndexerGenesisProvider indexerGenesisProvider,
         IOptionsMonitor<GlobalOptions> globalOptions, IBlockChainIndexerProvider blockChainIndexerProvider,
         IEntityMappingRepository<LogEventIndex, string> logEventIndexRepository,
-        AELFIndexerProvider aelfIndexerProvider)
+        AELFIndexerProvider aelfIndexerProvider, IDistributedCache<List<ContractDto>> contractListCache)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -58,6 +60,7 @@ public class ContractAppService : IContractAppService
         _blockChainIndexerProvider = blockChainIndexerProvider;
         _logEventIndexRepository = logEventIndexRepository;
         _aelfIndexerProvider = aelfIndexerProvider;
+        _contractListCache = contractListCache;
     }
 
     public async Task<GetContractListResultDto> GetContractListAsync(GetContractContracts input)
@@ -65,10 +68,19 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("GetContractListAsync");
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
 
+
+        var contractDtos = _contractListCache.Get(input.ChainId);
+        if (!contractDtos.IsNullOrEmpty())
+        {
+            result.List = contractDtos.Skip(input.SkipCount).Take(input.MaxResultCount).ToList();
+            result.Total = contractDtos.Count;
+            return result;
+        }
+
         var getContractListResult =
             await _indexerGenesisProvider.GetContractListAsync(input.ChainId,
-                input.SkipCount,
-                input.MaxResultCount, input.OrderBy, input.Sort, "");
+                0,
+                100, "", "", "");
         result.Total = getContractListResult.ContractList.TotalCount;
 
 
@@ -123,6 +135,10 @@ public class ContractAppService : IContractAppService
 
             result.List.Add(contractInfo);
         }
+
+        _contractListCache.Set(input.ChainId, result.List);
+        result.Total = result.List.Count;
+        result.List = result.List.Skip(input.SkipCount).Take(input.MaxResultCount).ToList();
 
         return result;
     }
