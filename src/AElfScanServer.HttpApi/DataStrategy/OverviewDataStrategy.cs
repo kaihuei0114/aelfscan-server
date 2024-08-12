@@ -12,10 +12,12 @@ using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.DataStrategy;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp.Caching;
 
 namespace AElfScanServer.HttpApi.DataStrategy;
 
@@ -38,7 +40,8 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         ITokenIndexerProvider tokenIndexerProvider,
         IBlockChainIndexerProvider blockChainIndexerProvider,
         IEntityMappingRepository<DailyUniqueAddressCountIndex, string> uniqueAddressRepository,
-        ILogger<DataStrategyBase<string, HomeOverviewResponseDto>> logger) : base(optionsAccessor, logger)
+        ILogger<DataStrategyBase<string, HomeOverviewResponseDto>> logger, IDistributedCache<string> cache) : base(
+        optionsAccessor, logger, cache)
     {
         _globalOptions = globalOptions;
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -51,7 +54,6 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
 
     public override async Task<HomeOverviewResponseDto> QueryData(string chainId)
     {
-        
         DataStrategyLogger.LogInformation("GetBlockchainOverviewAsync:{c}", chainId);
         var overviewResp = new HomeOverviewResponseDto();
         try
