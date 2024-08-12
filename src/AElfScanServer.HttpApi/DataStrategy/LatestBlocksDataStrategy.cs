@@ -8,10 +8,12 @@ using AElfScanServer.HttpApi.Provider;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.Options;
 using AElfScanServer.DataStrategy;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp.Caching;
 
 namespace AElfScanServer.HttpApi.DataStrategy;
 
@@ -24,8 +26,8 @@ public class LatestBlocksDataStrategy : DataStrategyBase<string, BlocksResponseD
     public LatestBlocksDataStrategy(IOptions<RedisCacheOptions> optionsAccessor,
         ILogger<DataStrategyBase<string, BlocksResponseDto>> logger,
         IOptionsMonitor<GlobalOptions> globalOptions,
-        AELFIndexerProvider aelfIndexerProvider) : base(
-        optionsAccessor, logger)
+        AELFIndexerProvider aelfIndexerProvider,IDistributedCache<string> cache) : base(
+        optionsAccessor, logger,cache)
     {
         _globalOptions = globalOptions;
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -55,13 +57,13 @@ public class LatestBlocksDataStrategy : DataStrategyBase<string, BlocksResponseD
             latestBlockDto.Timestamp = DateTimeHelper.GetTotalSeconds(indexerBlockDto.BlockTime);
             latestBlockDto.TransactionCount = indexerBlockDto.TransactionIds.Count;
             latestBlockDto.ProducerAddress = indexerBlockDto.Miner;
-            if (_globalOptions.CurrentValue.BPNames.TryGetValue(chainId, out var bpNames))
-            {
-                if (bpNames.TryGetValue(indexerBlockDto.Miner, out var name))
-                {
-                    latestBlockDto.ProducerName = name;
-                }
-            }
+            // if (_globalOptions.CurrentValue.BPNames.TryGetValue(chainId, out var bpNames))
+            // {
+            //     if (bpNames.TryGetValue(indexerBlockDto.Miner, out var name))
+            //     {
+            //         latestBlockDto.ProducerName = name;
+            //     }
+            // }
 
             if (i == 0)
             {

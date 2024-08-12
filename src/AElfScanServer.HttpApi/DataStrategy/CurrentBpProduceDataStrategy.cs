@@ -13,10 +13,12 @@ using AElfScanServer.HttpApi.Helper;
 using AElfScanServer.HttpApi.Provider;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Volo.Abp.Caching;
 
 namespace AElfScanServer.HttpApi.DataStrategy;
 
@@ -27,9 +29,9 @@ public class CurrentBpProduceDataStrategy : DataStrategyBase<string, BlockProduc
 
     public CurrentBpProduceDataStrategy(IOptions<RedisCacheOptions> optionsAccessor,
         IOptionsMonitor<GlobalOptions> globalOptions,
-        ILogger<DataStrategyBase<string, BlockProduceInfoDto>> logger
+        ILogger<DataStrategyBase<string, BlockProduceInfoDto>> logger, IDistributedCache<string> cache
     ) : base(
-        optionsAccessor, logger)
+        optionsAccessor, logger,cache)
     {
         _globalOptions = globalOptions;
     }
