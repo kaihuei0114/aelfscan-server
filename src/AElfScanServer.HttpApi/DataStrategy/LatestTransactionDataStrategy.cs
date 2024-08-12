@@ -8,10 +8,12 @@ using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.Options;
 using AElfScanServer.DataStrategy;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp.Caching;
 
 namespace AElfScanServer.HttpApi.DataStrategy;
 
@@ -24,7 +26,7 @@ public class LatestTransactionDataStrategy : DataStrategyBase<string, Transactio
     public LatestTransactionDataStrategy(IOptions<RedisCacheOptions> optionsAccessor,
         ILogger<DataStrategyBase<string, TransactionsResponseDto>> logger,
         IOptionsMonitor<GlobalOptions> globalOptions,
-        IBlockChainIndexerProvider blockChainIndexerProvider) : base(optionsAccessor, logger)
+        IBlockChainIndexerProvider blockChainIndexerProvider,IDistributedCache<string> cache) : base(optionsAccessor, logger,cache)
     {
         _globalOptions = globalOptions;
         _blockChainIndexerProvider = blockChainIndexerProvider;
