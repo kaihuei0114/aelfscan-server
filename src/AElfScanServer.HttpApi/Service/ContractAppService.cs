@@ -68,8 +68,9 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("GetContractListAsync");
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
 
-
-        var contractDtos = _contractListCache.Get(input.ChainId);
+        var key = IdGeneratorHelper.GenerateId(input.ChainId, input.SkipCount, input.MaxResultCount);
+        var contractDtos =
+            _contractListCache.Get(key);
         if (!contractDtos.IsNullOrEmpty())
         {
             result.List = contractDtos.Skip(input.SkipCount).Take(input.MaxResultCount).ToList();
@@ -79,8 +80,8 @@ public class ContractAppService : IContractAppService
 
         var getContractListResult =
             await _indexerGenesisProvider.GetContractListAsync(input.ChainId,
-                0,
-                100, "", "", "");
+                input.SkipCount,
+                input.MaxResultCount, input.OrderBy, input.Sort, "");
         result.Total = getContractListResult.ContractList.TotalCount;
 
 
@@ -136,7 +137,7 @@ public class ContractAppService : IContractAppService
             result.List.Add(contractInfo);
         }
 
-        _contractListCache.Set(input.ChainId, result.List);
+        _contractListCache.Set(key, result.List);
         result.Total = result.List.Count;
         result.List = result.List.Skip(input.SkipCount).Take(input.MaxResultCount).ToList();
 

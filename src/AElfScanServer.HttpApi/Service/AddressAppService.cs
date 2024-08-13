@@ -145,17 +145,26 @@ public class AddressAppService : IAddressAppService
         var transferInput = new TokenTransferInput { ChainId = input.ChainId, Address = input.Address };
         transferInput.OfOrderInfos((SortField.BlockHeight, SortDirection.Desc));
 
-        var transactionInput = new TransactionsRequestDto()
+        var firstTransactionInput = new TransactionsRequestDto()
         {
             ChainId = input.ChainId,
             Address = input.Address,
             SkipCount = 0,
             MaxResultCount = 1,
         };
-        transactionInput.SetFirstTransactionSort();
-        var firstTransactionTask = _blockChainIndexerProvider.GetTransactionsAsync(transactionInput);
-        transactionInput.SetLastTransactionSort();
-        var lastTransactionTask = _blockChainIndexerProvider.GetTransactionsAsync(transactionInput);
+        firstTransactionInput.SetFirstTransactionSort();
+        var firstTransactionTask = _blockChainIndexerProvider.GetTransactionsAsync(firstTransactionInput);
+        
+        var lastTransactionInput = new TransactionsRequestDto()
+        {
+            ChainId = input.ChainId,
+            Address = input.Address,
+            SkipCount = 0,
+            MaxResultCount = 1,
+        };
+        
+        lastTransactionInput.SetLastTransactionSort();
+        var lastTransactionTask = _blockChainIndexerProvider.GetTransactionsAsync(lastTransactionInput);
 
 
         await Task.WhenAll(priceDtoTask, priceHisDtoTask, holderInfoTask, curAddressAssetTask, dailyAddressAssetTask,
