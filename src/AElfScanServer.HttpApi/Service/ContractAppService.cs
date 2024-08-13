@@ -42,14 +42,14 @@ public class ContractAppService : IContractAppService
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
     private readonly IEntityMappingRepository<LogEventIndex, string> _logEventIndexRepository;
-    private readonly IDistributedCache<List<ContractDto>> _contractListCache;
+    private readonly IDistributedCache<GetContractListResultDto> _contractListCache;
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IDecompilerProvider decompilerProvider,
         IIndexerTokenProvider indexerTokenProvider, IIndexerGenesisProvider indexerGenesisProvider,
         IOptionsMonitor<GlobalOptions> globalOptions, IBlockChainIndexerProvider blockChainIndexerProvider,
         IEntityMappingRepository<LogEventIndex, string> logEventIndexRepository,
-        AELFIndexerProvider aelfIndexerProvider, IDistributedCache<List<ContractDto>> contractListCache)
+        AELFIndexerProvider aelfIndexerProvider, IDistributedCache<GetContractListResultDto> contractListCache)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -68,14 +68,12 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("GetContractListAsync");
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
 
-        var key = IdGeneratorHelper.GenerateId(input.ChainId, input.SkipCount, input.MaxResultCount);
+        var key = IdGeneratorHelper.GenerateId(input.SkipCount, input.MaxResultCount, input.ChainId);
         var contractDtos =
             _contractListCache.Get(key);
-        if (!contractDtos.IsNullOrEmpty())
+        if (contractDtos != null)
         {
-            result.List = contractDtos.Skip(input.SkipCount).Take(input.MaxResultCount).ToList();
-            result.Total = contractDtos.Count;
-            return result;
+            return contractDtos;
         }
 
         var getContractListResult =
@@ -137,9 +135,7 @@ public class ContractAppService : IContractAppService
             result.List.Add(contractInfo);
         }
 
-        _contractListCache.Set(key, result.List);
-        result.Total = result.List.Count;
-        result.List = result.List.Skip(input.SkipCount).Take(input.MaxResultCount).ToList();
+        _contractListCache.Set(key, result);
 
         return result;
     }
