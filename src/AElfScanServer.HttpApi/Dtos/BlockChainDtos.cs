@@ -31,18 +31,38 @@ public class TransactionsRequestDto : BaseInput
     public long StartTime { get; set; }
     public long EndTime { get; set; }
     public string Address { get; set; } = "";
-    
+
     public void SetDefaultSort()
     {
         if (!OrderBy.IsNullOrEmpty() || !OrderInfos.IsNullOrEmpty())
         {
             return;
         }
+
+        OfOrderInfos((SortField.BlockHeight, SortDirection.Desc), (SortField.TransactionId, SortDirection.Desc));
+    }
+
+
+    public void SetFirstTransactionSort()
+    {
+        if (!OrderBy.IsNullOrEmpty() || !OrderInfos.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        OfOrderInfos((SortField.BlockHeight, SortDirection.Asc), (SortField.TransactionId, SortDirection.Asc));
+    }
+
+    public void SetLastTransactionSort()
+    {
+        if (!OrderBy.IsNullOrEmpty() || !OrderInfos.IsNullOrEmpty())
+        {
+            return;
+        }
+
         OfOrderInfos((SortField.BlockHeight, SortDirection.Desc), (SortField.TransactionId, SortDirection.Desc));
     }
 }
-
-
 
 public class BpDataRequestDto
 {
@@ -117,22 +137,11 @@ public class SearchRequestDto : IValidatableObject
     }
 }
 
-public class TransactionDetailRequestDto : IValidatableObject
+public class TransactionDetailRequestDto
 {
     public long BlockHeight { get; set; }
     public string TransactionId { get; set; }
     public string ChainId { get; set; }
-
-    public IEnumerable<ValidationResult> Validate(
-        ValidationContext validationContext)
-    {
-        if (BlockHeight < 0)
-        {
-            yield return new ValidationResult(
-                "Invalid Request"
-            );
-        }
-    }
 }
 
 public class GetTransactionPerMinuteRequestDto
@@ -438,6 +447,7 @@ public class TransactionResponseDto
     public string TransactionValue { get; set; }
 
     public string TransactionFee { get; set; }
+    
 }
 
 public class TransactionPerMinuteResponseDto

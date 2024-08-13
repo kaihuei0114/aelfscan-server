@@ -59,7 +59,7 @@ public class AElfScanServerWorkerModule : AbpModule
         context.Services.AddSingleton<NodeProvider, NodeProvider>();
         context.Services.AddSingleton<IAwakenIndexerProvider, AwakenIndexerProvider>();
 
-        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AElfScanWorker:"; });
+        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AElfScanServer:"; });
         Configure<BlockChainProducerInfoSyncWorkerOptions>(configuration.GetSection("BlockChainProducer"));
         Configure<ContractInfoSyncWorkerOptions>(configuration.GetSection("Contract"));
         Configure<WorkerOptions>(configuration.GetSection("Worker"));

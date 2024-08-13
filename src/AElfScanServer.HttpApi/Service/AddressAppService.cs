@@ -18,6 +18,7 @@ using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
 using AElfScanServer.Common.Token.Provider;
 using AElfScanServer.HttpApi.Dtos.address;
+using AElfScanServer.HttpApi.Dtos.Indexer;
 using AElfScanServer.HttpApi.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -49,6 +50,7 @@ public class AddressAppService : IAddressAppService
     private readonly ITokenAssetProvider _tokenAssetProvider;
     private readonly IAddressInfoProvider _addressInfoProvider;
     private readonly IGenesisPluginProvider _genesisPluginProvider;
+    private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
 
 
     public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger,
@@ -56,7 +58,8 @@ public class AddressAppService : IAddressAppService
         ITokenIndexerProvider tokenIndexerProvider, ITokenPriceService tokenPriceService,
         ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
         IOptionsSnapshot<GlobalOptions> globalOptions, ITokenAssetProvider tokenAssetProvider,
-        IAddressInfoProvider addressInfoProvider, IGenesisPluginProvider genesisPluginProvider)
+        IAddressInfoProvider addressInfoProvider, IGenesisPluginProvider genesisPluginProvider,
+        IBlockChainIndexerProvider blockChainIndexerProvider)
     {
         _logger = logger;
         _objectMapper = objectMapper;
@@ -69,6 +72,7 @@ public class AddressAppService : IAddressAppService
         _addressInfoProvider = addressInfoProvider;
         _genesisPluginProvider = genesisPluginProvider;
         _globalOptions = globalOptions.Value;
+        _blockChainIndexerProvider = blockChainIndexerProvider;
     }
 
     public async Task<GetAddressListResultDto> GetAddressListAsync(GetListInputInput input)
@@ -140,13 +144,32 @@ public class AddressAppService : IAddressAppService
         var contractInfoTask = _indexerGenesisProvider.GetContractListAsync(input.ChainId, 0, 1, "", "", input.Address);
         var transferInput = new TokenTransferInput { ChainId = input.ChainId, Address = input.Address };
         transferInput.OfOrderInfos((SortField.BlockHeight, SortDirection.Desc));
-        var tokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(transferInput);
-        var firstTransferInput = new TokenTransferInput { ChainId = input.ChainId, Address = input.Address };
-        firstTransferInput.OfOrderInfos((SortField.BlockHeight, SortDirection.Asc));
-        var firstTokenTransferListDtoTask = _tokenIndexerProvider.GetTokenTransferInfoAsync(firstTransferInput);
+
+        var firstTransactionInput = new TransactionsRequestDto()
+        {
+            ChainId = input.ChainId,
+            Address = input.Address,
+            SkipCount = 0,
+            MaxResultCount = 1,
+        };
+        firstTransactionInput.SetFirstTransactionSort();
+        var firstTransactionTask = _blockChainIndexerProvider.GetTransactionsAsync(firstTransactionInput);
+
+        var lastTransactionInput = new TransactionsRequestDto()
+        {
+            ChainId = input.ChainId,
+            Address = input.Address,
+            SkipCount = 0,
+            MaxResultCount = 1,
+        };
+
+        lastTransactionInput.SetLastTransactionSort();
+        var lastTransactionTask = _blockChainIndexerProvider.GetTransactionsAsync(lastTransactionInput);
+
 
         await Task.WhenAll(priceDtoTask, priceHisDtoTask, holderInfoTask, curAddressAssetTask, dailyAddressAssetTask,
-            holderInfosTask, tokenTransferListDtoTask, firstTokenTransferListDtoTask, contractInfoTask);
+            holderInfosTask, contractInfoTask, firstTransactionTask,
+            lastTransactionTask);
 
         var holderInfo = await holderInfoTask;
         var priceDto = await priceDtoTask;
@@ -154,8 +177,10 @@ public class AddressAppService : IAddressAppService
         var curAddressAsset = await curAddressAssetTask;
         var dailyAddressAsset = await dailyAddressAssetTask;
         var holderInfos = await holderInfosTask;
-        var tokenTransferListDto = await tokenTransferListDtoTask;
-        var firstTokenTransferListDto = await firstTokenTransferListDtoTask;
+
+
+        var firstTransaction = await firstTransactionTask;
+        var lastTransaction = await lastTransactionTask;
         var contractInfo = await contractInfoTask;
 
         _logger.LogInformation("GetAddressDetail chainId: {chainId}, dailyAddressAsset: {dailyAddressAsset}",
@@ -169,7 +194,9 @@ public class AddressAppService : IAddressAppService
             result.ContractName = _globalOptions.GetContractName(input.ChainId, input.Address);
             result.Author = contractInfo.ContractList.Items[0].Author;
             result.CodeHash = contractInfo.ContractList.Items[0].CodeHash;
+            result.AddressType = AddressType.ContractAddress;
         }
+       
 
         result.ElfBalance = holderInfo.Balance;
         result.ElfPriceInUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
@@ -186,16 +213,17 @@ public class AddressAppService : IAddressAppService
                     CommonConstant.PercentageValueDecimals);
         }
 
+
         result.TokenHoldings = holderInfos.Count;
 
-        if (!tokenTransferListDto.Items.IsNullOrEmpty())
+        if (!lastTransaction.Items.IsNullOrEmpty())
         {
-            result.LastTransactionSend = OfTransactionInfo(tokenTransferListDto.Items[0]);
+            result.LastTransactionSend = OfTransactionInfo(lastTransaction.Items.First());
         }
 
-        if (!firstTokenTransferListDto.Items.IsNullOrEmpty())
+        if (!firstTransaction.Items.IsNullOrEmpty())
         {
-            result.FirstTransactionSend = OfTransactionInfo(firstTokenTransferListDto.Items[0]);
+            result.FirstTransactionSend = OfTransactionInfo(firstTransaction.Items.First());
         }
 
         return result;
@@ -417,7 +445,7 @@ public class AddressAppService : IAddressAppService
         return (await Task.WhenAll(tasks)).ToList();
     }
 
-    private static TransactionInfoDto OfTransactionInfo(IndexerTransferInfoDto transferInfoDto)
+    private static TransactionInfoDto OfTransactionInfo(IndexerTransactionInfoDto transferInfoDto)
     {
         if (transferInfoDto == null)
         {

@@ -24,6 +24,10 @@ public class GlobalOptions
     public double InitStaked { get; set; } = 500000;
 
     public int SupplyChartShowOffset { get; set; }
+    
+    public int MarketCapShowOffset { get; set; }
+    
+    public int BpStakedShowOffset { get; set; }
 
     public string OrganizationAddress { get; set; }
 

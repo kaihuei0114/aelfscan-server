@@ -77,6 +77,6 @@ public class HttpApiHostModule : AbpModule
         var multiplexer = ConnectionMultiplexer
             .Connect(configuration["Redis:Configuration"]);
         context.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
-        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "BlockChainDataFunctionServer:"; });
+        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AElfScanServer:"; });
     }
 }

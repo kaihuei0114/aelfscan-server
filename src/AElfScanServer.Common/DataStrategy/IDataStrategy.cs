@@ -1,10 +1,13 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
+using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 
 namespace AElfScanServer.DataStrategy;
@@ -38,11 +41,13 @@ public class DataStrategyContext<TInput, TOutPut>
 public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataStrategy<TInput, TOutPut>
 {
     protected ILogger<DataStrategyBase<TInput, TOutPut>> DataStrategyLogger { get; set; }
+    protected IDistributedCache<string> _cache { get; set; }
 
     protected DataStrategyBase(IOptions<RedisCacheOptions> optionsAccessor,
-        ILogger<DataStrategyBase<TInput, TOutPut>> logger) : base(optionsAccessor)
+        ILogger<DataStrategyBase<TInput, TOutPut>> logger, IDistributedCache<string> cache) : base(optionsAccessor)
     {
         DataStrategyLogger = logger;
+        _cache = cache;
     }
 
     public async Task LoadData(TInput input)
@@ -57,10 +62,10 @@ public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataSt
     {
         try
         {
-            await ConnectAsync();
             var key = DisplayKey(input);
             var value = JsonConvert.SerializeObject(data);
-            await RedisDatabase.StringSetAsync(key, value);
+
+            await _cache.SetAsync(key, value);
         }
         catch (Exception e)
         {
@@ -73,11 +78,9 @@ public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataSt
     {
         try
         {
-            await ConnectAsync();
             var key = DisplayKey(input);
-            var redisValue = RedisDatabase.StringGet(key);
-
-            return JsonConvert.DeserializeObject<TOutPut>(redisValue);
+            var s = await _cache.GetAsync(key);
+            return JsonConvert.DeserializeObject<TOutPut>(s);
         }
         catch (Exception e)
         {

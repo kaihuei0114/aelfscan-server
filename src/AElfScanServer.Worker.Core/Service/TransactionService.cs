@@ -513,7 +513,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     public async Task BatchPullTransactionTask()
     {
         await ConnectAsync();
-        
+
         if (_globalOptions.CurrentValue.NeedInitLastHeight && !FinishInitChartData)
         {
             foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
@@ -898,10 +898,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         await SetAddressSet(burned.Burner.ToBase58(), "", dailyData);
                         if (burned.Symbol == "ELF")
                         {
-                            var burnt = LogEventHelper.ParseBurnt(burned.Amount, burned.Burner.ToBase58(),
-                                burned.Symbol, chainId);
-                            dailyData.DailyBurnt += burnt;
-
+                            dailyData.DailyBurnt += burned.Amount;
                             await CalculateSupplyByAddress(burned.Burner.ToBase58(),
                                 "", burned.Amount, dailyData, transaction.TransactionId);
                         }
@@ -950,11 +947,15 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         crossChainReceived.MergeFrom(logEvent);
                         await SetAddressSet(crossChainReceived.From.ToBase58(), crossChainReceived.To.ToBase58(),
                             dailyData);
-                        if (dailyData.ChainId == "AELF" && crossChainReceived.Symbol == "ELF")
+                        if (crossChainReceived.Symbol == "ELF")
                         {
-                            await CalculateSupplyByAddress(crossChainReceived.From.ToBase58(),
-                                crossChainReceived.To.ToBase58(),
-                                crossChainReceived.Amount, dailyData, transaction.TransactionId);
+                            dailyData.DailyBurnt -= crossChainReceived.Amount;
+                            if (chainId == "AELF")
+                            {
+                                await CalculateSupplyByAddress(crossChainReceived.From.ToBase58(),
+                                    crossChainReceived.To.ToBase58(),
+                                    crossChainReceived.Amount, dailyData, transaction.TransactionId);
+                            }
                         }
 
                         break;

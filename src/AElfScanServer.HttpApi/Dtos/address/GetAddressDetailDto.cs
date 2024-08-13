@@ -17,7 +17,8 @@ public class GetAddressDetailResultDto
     public decimal ElfBalanceOfUsd { get; set; }
     public decimal ElfPriceInUsd { get; set; }
     public long TokenHoldings { get; set; }
-    
+
+    public AddressType AddressType { get; set; } = AddressType.EoaAddress;
     public decimal TotalValueOfUsd { get; set; }
     public decimal TotalValueOfElf { get; set; }
     public decimal TotalValueOfUsdChangeRate { get; set; }

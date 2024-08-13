@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Ocsp;
 using Volo.Abp;
+using Volo.Abp.Caching;
 using Volo.Abp.ObjectMapping;
 
 namespace AElfScanServer.HttpApi.Service;
@@ -41,13 +42,14 @@ public class ContractAppService : IContractAppService
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly AELFIndexerProvider _aelfIndexerProvider;
     private readonly IEntityMappingRepository<LogEventIndex, string> _logEventIndexRepository;
+    private readonly IDistributedCache<GetContractListResultDto> _contractListCache;
 
     public ContractAppService(IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IDecompilerProvider decompilerProvider,
         IIndexerTokenProvider indexerTokenProvider, IIndexerGenesisProvider indexerGenesisProvider,
         IOptionsMonitor<GlobalOptions> globalOptions, IBlockChainIndexerProvider blockChainIndexerProvider,
         IEntityMappingRepository<LogEventIndex, string> logEventIndexRepository,
-        AELFIndexerProvider aelfIndexerProvider)
+        AELFIndexerProvider aelfIndexerProvider, IDistributedCache<GetContractListResultDto> contractListCache)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -58,12 +60,21 @@ public class ContractAppService : IContractAppService
         _blockChainIndexerProvider = blockChainIndexerProvider;
         _logEventIndexRepository = logEventIndexRepository;
         _aelfIndexerProvider = aelfIndexerProvider;
+        _contractListCache = contractListCache;
     }
 
     public async Task<GetContractListResultDto> GetContractListAsync(GetContractContracts input)
     {
         _logger.LogInformation("GetContractListAsync");
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
+
+        var key = IdGeneratorHelper.GenerateId(input.SkipCount, input.MaxResultCount, input.ChainId);
+        var contractDtos =
+            await _contractListCache.GetAsync(key);
+        if (contractDtos != null)
+        {
+            return contractDtos;
+        }
 
         var getContractListResult =
             await _indexerGenesisProvider.GetContractListAsync(input.ChainId,
@@ -123,6 +134,8 @@ public class ContractAppService : IContractAppService
 
             result.List.Add(contractInfo);
         }
+
+        await _contractListCache.SetAsync(key, result);
 
         return result;
     }

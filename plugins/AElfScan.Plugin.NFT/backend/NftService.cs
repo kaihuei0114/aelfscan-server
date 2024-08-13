@@ -93,6 +93,8 @@ public class NftService : INftService, ISingletonDependency
         var list = indexerNftListDto.Items.Select(item =>
         {
             var nftInfoDto = _objectMapper.Map<IndexerTokenInfoDto, NftInfoDto>(item);
+          //  nftInfoDto.Items =  item.ItemCount.ToString(CultureInfo.InvariantCulture);
+
             //convert url
             nftInfoDto.NftCollection.ImageUrl = TokenInfoHelper.GetImageUrl(item.ExternalInfo,
                 () => _tokenInfoProvider.BuildImageUrl(item.Symbol));
@@ -126,6 +128,8 @@ public class NftService : INftService, ISingletonDependency
         AssertHelper.NotEmpty(collectionInfoDtos, "this nft not exist");
         var collectionInfo = collectionInfoDtos[0];
         var nftDetailDto = _objectMapper.Map<IndexerTokenInfoDto, NftDetailDto>(collectionInfo);
+     //   nftDetailDto.Items = collectionInfo.ItemCount.ToString(CultureInfo.InvariantCulture);
+
         nftDetailDto.TokenContractAddress = _chainOptions.CurrentValue.GetChainInfo(chainId)?.TokenContractAddress;
         //collectionInfo.Symbol is xxx-0
         nftDetailDto.NftCollection.ImageUrl = TokenInfoHelper.GetImageUrl(collectionInfo.ExternalInfo,
@@ -174,9 +178,8 @@ public class NftService : INftService, ISingletonDependency
     public async Task<ListResponseDto<TokenHolderInfoDto>> GetNftCollectionHolderInfosAsync(TokenHolderInput input)
     {
         input.SetDefaultSort();
-        input.Types = new List<SymbolType> { SymbolType.Nft };
 
-        var indexerTokenHolderInfo = await _tokenIndexerProvider.GetTokenHolderInfoAsync(input);
+        var indexerTokenHolderInfo = await _tokenIndexerProvider.GetCollectionHolderInfoAsync(input);
 
         var list = await ConvertIndexerNftHolderInfoDtoAsync(indexerTokenHolderInfo.Items, input.ChainId,
             input.CollectionSymbol);
@@ -220,6 +223,8 @@ public class NftService : INftService, ISingletonDependency
             tokenListInput.CollectionSymbols = new List<string> { input.CollectionSymbol };
             tokenListInput.Types = new List<SymbolType> { SymbolType.Nft };
             tokenListInput.OfOrderInfos((SortField.BlockHeight, SortDirection.Desc));
+            tokenListInput.Search = "";
+            tokenListInput.ExactSearch = input.Search;
             var indexerTokenInfoListDto = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
             totalCount = indexerTokenInfoListDto.TotalCount;
             indexerTokenInfoList = indexerTokenInfoListDto.Items;
@@ -434,6 +439,8 @@ public class NftService : INftService, ISingletonDependency
             .Where(value => !string.IsNullOrEmpty(value.Address))
             .Select(value => value.Address).Distinct().ToList();
         var groupAndSumSupplyTask = GetCollectionSupplyAsync(chainId, collectionSymbols);
+        //var getCollectionInfoTask = _tokenIndexerProvider.GetTokenDetailAsync(chainId, collectionSymbol);
+
         var contractInfoDictTask = _genesisPluginProvider.GetContractListAsync(chainId, addressList);
         await Task.WhenAll(groupAndSumSupplyTask, contractInfoDictTask);
 
