@@ -154,7 +154,7 @@ public class AddressAppService : IAddressAppService
         };
         firstTransactionInput.SetFirstTransactionSort();
         var firstTransactionTask = _blockChainIndexerProvider.GetTransactionsAsync(firstTransactionInput);
-        
+
         var lastTransactionInput = new TransactionsRequestDto()
         {
             ChainId = input.ChainId,
@@ -162,7 +162,7 @@ public class AddressAppService : IAddressAppService
             SkipCount = 0,
             MaxResultCount = 1,
         };
-        
+
         lastTransactionInput.SetLastTransactionSort();
         var lastTransactionTask = _blockChainIndexerProvider.GetTransactionsAsync(lastTransactionInput);
 
@@ -194,7 +194,9 @@ public class AddressAppService : IAddressAppService
             result.ContractName = _globalOptions.GetContractName(input.ChainId, input.Address);
             result.Author = contractInfo.ContractList.Items[0].Author;
             result.CodeHash = contractInfo.ContractList.Items[0].CodeHash;
+            result.AddressType = AddressType.ContractAddress;
         }
+       
 
         result.ElfBalance = holderInfo.Balance;
         result.ElfPriceInUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);

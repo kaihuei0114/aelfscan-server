@@ -447,6 +447,7 @@ public class TransactionResponseDto
     public string TransactionValue { get; set; }
 
     public string TransactionFee { get; set; }
+    
 }
 
 public class TransactionPerMinuteResponseDto
