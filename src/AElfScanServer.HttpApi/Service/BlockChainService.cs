@@ -112,7 +112,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
         try
         {
-            var detailResponseDto = _transactionDetailCache.Get(request.TransactionId);
+            var detailResponseDto = await _transactionDetailCache.GetAsync(request.TransactionId);
             if (detailResponseDto != null)
             {
                 return detailResponseDto;
@@ -160,7 +160,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
             {
                 List = new List<TransactionDetailDto>() { detailDto }
             };
-            _transactionDetailCache.Set(request.TransactionId, result);
+            await _transactionDetailCache.SetAsync(request.TransactionId, result);
             return result;
         }
         catch (Exception e)

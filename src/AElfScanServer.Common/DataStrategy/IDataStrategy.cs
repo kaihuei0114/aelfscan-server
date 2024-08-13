@@ -65,7 +65,7 @@ public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataSt
             var key = DisplayKey(input);
             var value = JsonConvert.SerializeObject(data);
 
-            _cache.Set(key, value);
+            await _cache.SetAsync(key, value);
         }
         catch (Exception e)
         {
@@ -79,7 +79,7 @@ public abstract class DataStrategyBase<TInput, TOutPut> : AbpRedisCache, IDataSt
         try
         {
             var key = DisplayKey(input);
-            var s = _cache.Get(key);
+            var s = await _cache.GetAsync(key);
             return JsonConvert.DeserializeObject<TOutPut>(s);
         }
         catch (Exception e)

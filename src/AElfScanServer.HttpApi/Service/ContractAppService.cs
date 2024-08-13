@@ -70,7 +70,7 @@ public class ContractAppService : IContractAppService
 
         var key = IdGeneratorHelper.GenerateId(input.SkipCount, input.MaxResultCount, input.ChainId);
         var contractDtos =
-            _contractListCache.Get(key);
+            await _contractListCache.GetAsync(key);
         if (contractDtos != null)
         {
             return contractDtos;
@@ -135,7 +135,7 @@ public class ContractAppService : IContractAppService
             result.List.Add(contractInfo);
         }
 
-        _contractListCache.Set(key, result);
+        await _contractListCache.SetAsync(key, result);
 
         return result;
     }
