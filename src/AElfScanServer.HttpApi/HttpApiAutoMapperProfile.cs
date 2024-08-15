@@ -22,6 +22,8 @@ public class BlockChainAutoMapperProfile : Profile
 {
     public BlockChainAutoMapperProfile()
     {
+        CreateMap<AdsBannerIndex, AdsBannerResp>().ReverseMap();
+        CreateMap<UpdateAdsBannerReq, AdsBannerIndex>().ReverseMap();
         CreateMap<AdsInfoDto, AdsResp>().ReverseMap();
         CreateMap<AdsIndex, AdsResp>().ReverseMap();
         CreateMap<UpdateAdsReq, AdsIndex>().ReverseMap();

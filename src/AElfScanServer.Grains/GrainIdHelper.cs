@@ -6,9 +6,13 @@ public static class GrainIdHelper
 
     public static string GenerateAdsKey(params object[] ids)
     {
-        return ids.JoinAsString("-");
+        return "ads" + ids.JoinAsString("-");
     }
 
+    public static string GenerateAdsBannerKey(params object[] ids)
+    {
+        return "banner" + ids.JoinAsString("-");
+    }
     public static string GenerateAppSubscriptionGrainId(string appId)
     {
         return GenerateAdsKey(appId);
@@ -66,22 +70,23 @@ public static class GrainIdHelper
         const string userAppPrefix = "UserApps";
         return GenerateAdsKey(userAppPrefix, userId);
     }
-    
+
     public static string GenerateAppGrainId(string appId)
     {
         return GenerateAdsKey(appId);
     }
-    
+
     public static string GenerateOrganizationAppGrainId(string organizationId)
     {
         return GenerateAdsKey(organizationId);
     }
-    
-    public static string GenerateAppBlockStateChangeGrainId(string appId, string version, string chainId, long blockHeight)
+
+    public static string GenerateAppBlockStateChangeGrainId(string appId, string version, string chainId,
+        long blockHeight)
     {
         return GenerateAdsKey(appId, version, chainId, blockHeight);
     }
-    
+
     public static int GenerateMessageStreamNamespaceManagerGrainId()
     {
         return 0;
