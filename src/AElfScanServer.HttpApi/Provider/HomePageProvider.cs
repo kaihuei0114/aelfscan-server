@@ -160,7 +160,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
                 return 0;
             }
 
-            return transactionCountPerMinuteDtos.Last().Count;
+            return transactionCountPerMinuteDtos.Skip(transactionCountPerMinuteDtos.Count - 3).Take(1).First().Count;
         }
         catch (Exception e)
         {
