@@ -28,7 +28,7 @@ public static class OrleansHostExtensions
                     options.ClusterId = configSection.GetValue<string>("ClusterId");
                     options.ServiceId = configSection.GetValue<string>("ServiceId");
                 })
-                .AddMemoryStreams("AElfScanServer");;
+                ;
         });
     }
 }

@@ -86,6 +86,7 @@ public class BlockChainIndexerProvider : IBlockChainIndexerProvider, ISingletonD
                           from
                           to
                           transactionValue
+                          fee
                           metadata {
                             chainId
                             block {
