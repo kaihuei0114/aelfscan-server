@@ -1,10 +1,12 @@
 using AElf.EntityMapping.Elasticsearch;
 using AElfScanServer.Common;
+using AElfScanServer.Domain.Shared.MultiTenancy;
 using AutoResponseWrapper;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
@@ -33,6 +35,16 @@ namespace AElfScanServer.HttpApi.Host;
 )]
 public class HttpApiHostModule : AbpModule
 {
+    
+    public override void PreConfigureServices(ServiceConfigurationContext context)
+    {
+        PreConfigure<IdentityBuilder>(builder =>
+        {
+            builder.AddDefaultTokenProviders();
+        });
+        
+        IdentityBuilderExtensions.AddDefaultTokenProviders(context.Services.AddIdentity<IdentityUser, IdentityRole>());
+    }
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var configuration = context.Services.GetConfiguration();
@@ -52,6 +64,16 @@ public class HttpApiHostModule : AbpModule
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
+        app.UseAbpRequestLocalization();
+        app.UseAuthentication();
+
+        if (MultiTenancyConsts.IsEnabled)
+        {
+            app.UseMultiTenancy();
+        }
+
+        app.UseAuthorization();
+        
         app.UseHttpsRedirection();
         app.UseCorrelationId();
         app.UseStaticFiles();

@@ -25,6 +25,7 @@ public class AdsBannerResp
     public string Image { get; set; }
     public string ClickLink { get; set; }
     public string Text { get; set; }
+    public string MobileImage { get; set; }
     public string SearchKey { get; set; }
 }
 
@@ -91,6 +92,8 @@ public class AdsBannerIndex : AElfIndexerEntity<string>, IEntityMappingEntity
     public string Text { get; set; }
 
     public string ClickLink { get; set; }
+    
+    public string MobileImage { get; set; }
 
     public DateTime CreateTime { get; set; }
 

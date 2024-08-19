@@ -1,5 +1,6 @@
 using AElfScanServer.Domain.Shared.Localization;
 using Volo.Abp.AuditLogging;
+using Volo.Abp.BackgroundJobs;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
 using Volo.Abp.Localization;
@@ -16,13 +17,14 @@ namespace AElfScanServer.Domain.Shared;
 
 [DependsOn(
     typeof(AbpAuditLoggingDomainSharedModule),
+    typeof(AbpBackgroundJobsDomainSharedModule),
     typeof(AbpFeatureManagementDomainSharedModule),
     typeof(AbpIdentityDomainSharedModule),
     typeof(AbpOpenIddictDomainSharedModule),
     typeof(AbpPermissionManagementDomainSharedModule),
     typeof(AbpSettingManagementDomainSharedModule),
-    typeof(AbpTenantManagementDomainSharedModule)    
-    )]
+    typeof(AbpTenantManagementDomainSharedModule)
+)]
 public class AElfScanServerDomainSharedModule : AbpModule
 {
     public override void PreConfigureServices(ServiceConfigurationContext context)
@@ -38,19 +40,34 @@ public class AElfScanServerDomainSharedModule : AbpModule
             options.FileSets.AddEmbedded<AElfScanServerDomainSharedModule>();
         });
 
+        // Configure<AbpLocalizationOptions>(options =>
+        // {
+        //     options.Resources
+        //         .Add<AElfScanServerResource>("en")
+        //         .AddBaseTypes(typeof(AbpValidationResource))
+        //         .AddVirtualJson("/Localization/AElfScanServer.Silo");
+        //
+        //     options.DefaultResourceType = typeof(AElfScanServerResource);
+        // });
+        //
+        // Configure<AbpExceptionLocalizationOptions>(options =>
+        // {
+        //     options.MapCodeNamespace("AElfScanServer.Silo", typeof(AElfScanServerResource));
+        // });
+
         Configure<AbpLocalizationOptions>(options =>
         {
             options.Resources
                 .Add<AElfScanServerResource>("en")
                 .AddBaseTypes(typeof(AbpValidationResource))
-                .AddVirtualJson("/Localization/AElfScanServer.Silo");
+                .AddVirtualJson("/Localization/AElfScanServer");
 
             options.DefaultResourceType = typeof(AElfScanServerResource);
         });
 
         Configure<AbpExceptionLocalizationOptions>(options =>
         {
-            options.MapCodeNamespace("AElfScanServer.Silo", typeof(AElfScanServerResource));
+            options.MapCodeNamespace("AElfScanServer", typeof(AElfScanServerResource));
         });
     }
 }

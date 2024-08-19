@@ -37,6 +37,7 @@ public class UpdateAdsBannerReq
     public string Text { get; set; } = "";
     public string ClickLink { get; set; } = "";
     public string Image { get; set; }
+    public string MobileImage { get; set; }
     public List<string> Labels { get; set; }
     public DateTime Createtime { get; set; }
     public long StartTime { get; set; }

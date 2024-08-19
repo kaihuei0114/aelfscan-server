@@ -11,6 +11,7 @@ using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
 using AElfScanServer.HttpApi.Worker;
+using AElfScanServer.MongoDB;
 using Aetherlink.PriceServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
+using Volo.Abp.PermissionManagement;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 
@@ -37,16 +39,20 @@ namespace AElfScanServer.HttpApi;
     typeof(AbpAccountHttpApiModule),
     typeof(AElfIndexingElasticsearchModule),
     typeof(AbpIdentityHttpApiModule),
-    typeof(AbpTenantManagementHttpApiModule),
     typeof(AbpFeatureManagementHttpApiModule),
-    typeof(AbpSettingManagementHttpApiModule),
+    typeof(AbpPermissionManagementApplicationModule),
     typeof(AbpAspNetCoreSignalRModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(AbpAspNetCoreMvcModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBackgroundWorkersModule),
     typeof(AElfScanCommonModule),
-    typeof(AetherlinkPriceServerModule)
+    typeof(AetherlinkPriceServerModule),
+    typeof(AbpTenantManagementHttpApiModule),
+    typeof(AbpFeatureManagementHttpApiModule),
+    typeof(AbpSettingManagementHttpApiModule),
+    typeof(AbpAspNetCoreSignalRModule),
+    typeof(AElfScanServerMongoDbModule)
 )]
 public class HttpApiModule : AbpModule
 {
@@ -76,6 +82,7 @@ public class HttpApiModule : AbpModule
         context.Services.AddSingleton<INftCollectionHolderProvider, NftCollectionHolderProvider>();
         context.Services.AddTransient<ITokenService, TokenService>();
         context.Services.AddTransient<IChartDataService, ChartDataService>();
+        context.Services.AddTransient<IUserAppService, UserAppService>();
 
         var configuration = context.Services.GetConfiguration();
         Configure<BlockChainOption>(configuration.GetSection("BlockChainServer"));
@@ -94,8 +101,8 @@ public class HttpApiModule : AbpModule
         context.Services.AddSingleton<BlockChainDataProvider, BlockChainDataProvider>();
         context.Services.AddSingleton<ITokenIndexerProvider, TokenIndexerProvider>();
         context.Services.AddSingleton<IBlockChainIndexerProvider, BlockChainIndexerProvider>();
-        
-        
+
+
         context.Services.AddSignalR();
     }
 
@@ -104,13 +111,10 @@ public class HttpApiModule : AbpModule
         context.Services.AddSingleton<IGraphQlFactory, GraphQlFactory>();
         Configure<IndexerOptions>(configuration.GetSection("Indexer"));
     }
-    
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-       
-   
         context.AddBackgroundWorkerAsync<NftCollectionHolderInfoWorker>();
         context.AddBackgroundWorkerAsync<TokenHolderPercentWorker>();
-
     }
 }
