@@ -140,7 +140,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
         return 0;
     }
 
-    public async Task<long> GetTransactionCountPerLastMinute(string chainId)
+    public async Task<decimal> GetTransactionCountPerLastMinute(string chainId)
     {
         try
         {
@@ -160,7 +160,8 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
                 return 0;
             }
 
-            return transactionCountPerMinuteDtos.Skip(transactionCountPerMinuteDtos.Count - 3).Take(1).First().Count;
+            return (decimal)transactionCountPerMinuteDtos.Skip(transactionCountPerMinuteDtos.Count - 3).Take(1).First()
+                .Count;
         }
         catch (Exception e)
         {
