@@ -381,7 +381,7 @@ public class AdsService : AbpRedisCache, IAdsService, ITransientDependency
     public async Task<AdsBannerIndex> UpdateAdsBanner(UpdateAdsBannerReq req)
     {
         var adsBannerIndex = _objectMapper.Map<UpdateAdsBannerReq, AdsBannerIndex>(req);
-        if (req.BannerId.IsNullOrEmpty())
+        if (req.AdsBannerId.IsNullOrEmpty())
         {
             var adsId = Guid.NewGuid().ToString();
             adsBannerIndex.AdsBannerId = adsId;

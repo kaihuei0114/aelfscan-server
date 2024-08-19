@@ -33,7 +33,7 @@ public class UpdateAdsReq
 
 public class UpdateAdsBannerReq
 {
-    public string BannerId { get; set; } = "";
+    public string AdsBannerId { get; set; } = "";
     public string Text { get; set; } = "";
     public string ClickLink { get; set; } = "";
     public string Image { get; set; }
