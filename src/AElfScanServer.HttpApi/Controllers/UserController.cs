@@ -15,7 +15,7 @@ namespace AElfScanServer.HttpApi.Controllers;
 [AggregateExecutionTime]
 [RemoteService]
 [Area("app")]
-[ControllerName("User")]
+[ControllerName("user")]
 [Route("api/app/user")]
 public class UserController : AbpControllerBase
 {
@@ -27,7 +27,8 @@ public class UserController : AbpControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [Route("add")]
+    // [Authorize]
     public async Task<UserResp> CreateUser(UserReq input)
     {
         return await _userService.CreateUser(input);

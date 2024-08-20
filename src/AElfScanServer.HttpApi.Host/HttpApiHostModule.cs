@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using AElf.EntityMapping.Elasticsearch;
 using AElfScanServer.Common;
 using AElfScanServer.Domain.Shared.MultiTenancy;
@@ -5,7 +7,9 @@ using AutoResponseWrapper;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,8 +53,10 @@ public class HttpApiHostModule : AbpModule
     {
         var configuration = context.Services.GetConfiguration();
         
+        ConfigureAuthentication(context, configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureCache(context, configuration);
+        ConfigureCors(context, configuration);
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<HttpApiHostModule>(); });
         context.Services.AddAutoResponseWrapper();
 
@@ -60,27 +66,68 @@ public class HttpApiHostModule : AbpModule
         });
     }
 
+    private void ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        // IdentityBuilderExtensions.AddDefaultTokenProviders(context.Services.AddIdentity<IdentityUser, IdentityRole>());
+        context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.Authority = configuration["AuthServer:Authority"];
+                options.RequireHttpsMetadata = Convert.ToBoolean(configuration["AuthServer:RequireHttpsMetadata"]);
+                options.Audience = "AElfScanServer";
+                
+            });
+        context.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy("OnlyAdminAccess", policy =>
+                policy.RequireRole("admin"));
+        });
+    }
 
+    private void ConfigureCors(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(builder =>
+            {
+                builder
+                    .WithOrigins(
+                        configuration["App:CorsOrigins"]
+                            .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                            .Select(o => o.RemovePostFix("/"))
+                            .ToArray()
+                    )
+                    .WithAbpExposedHeaders()
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
+    }
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
+
         app.UseAbpRequestLocalization();
+        app.UseCorrelationId();
+        app.UseStaticFiles();
+        app.UseRouting();
+        app.UseCors();
         app.UseAuthentication();
 
+        
         if (MultiTenancyConsts.IsEnabled)
         {
             app.UseMultiTenancy();
         }
 
-        app.UseAuthorization();
-        
-        app.UseHttpsRedirection();
-        app.UseCorrelationId();
-        app.UseStaticFiles();
-        app.UseRouting();
-        app.UseCors();
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
+        app.UseUnitOfWork();
+
+        app.UseHttpsRedirection();
+        app.UseAuthorization();
         app.UseConfiguredEndpoints();
     }
 
