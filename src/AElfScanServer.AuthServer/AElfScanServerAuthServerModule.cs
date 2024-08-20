@@ -77,19 +77,19 @@ public class AElfScanServerAuthServerModule : AbpModule
             });
         });
 
-        if (!hostingEnvironment.IsDevelopment())
-        {
-            PreConfigure<AbpOpenIddictAspNetCoreOptions>(options =>
-            {
-                options.AddDevelopmentEncryptionAndSigningCertificate = false;
-            });
-
-            PreConfigure<OpenIddictServerBuilder>(serverBuilder =>
-            {
-                serverBuilder.AddProductionEncryptionAndSigningCertificate("openiddict.pfx",
-                    "ef404633-6a12-412b-ad69-6df1c6be4aeb");
-            });
-        }
+        // if (!hostingEnvironment.IsDevelopment())
+        // {
+        //     PreConfigure<AbpOpenIddictAspNetCoreOptions>(options =>
+        //     {
+        //         options.AddDevelopmentEncryptionAndSigningCertificate = false;
+        //     });
+        //
+        //     PreConfigure<OpenIddictServerBuilder>(serverBuilder =>
+        //     {
+        //         serverBuilder.AddProductionEncryptionAndSigningCertificate("openiddict.pfx",
+        //             "ef404633-6a12-412b-ad69-6df1c6be4aeb");
+        //     });
+        // }
     }
 
     public override void ConfigureServices(ServiceConfigurationContext context)
