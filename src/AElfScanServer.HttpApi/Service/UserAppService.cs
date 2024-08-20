@@ -90,7 +90,7 @@ public class UserAppService : IdentityUserAppService, IUserAppService
         var adminUser = await _identityUserManager.FindByNameAsync("admin");
         if (adminUser != null)
         {
-            var adminPassword = ",.";
+            var adminPassword = "Xuan123,.";
             var token = await _identityUserManager.GeneratePasswordResetTokenAsync(adminUser);
             var result = await _identityUserManager.ResetPasswordAsync(adminUser, token, adminPassword);
             if (!result.Succeeded)

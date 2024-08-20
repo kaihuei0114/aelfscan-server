@@ -28,7 +28,7 @@ public class UserController : AbpControllerBase
 
     [HttpPost]
     [Route("add")]
-    // [Authorize]
+    [Authorize]
     public async Task<UserResp> CreateUser(UserReq input)
     {
         return await _userService.CreateUser(input);
