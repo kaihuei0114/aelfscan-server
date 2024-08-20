@@ -3,6 +3,7 @@ using System.Linq;
 using AElf.EntityMapping.Elasticsearch;
 using AElfScanServer.Common;
 using AElfScanServer.Domain.Shared.MultiTenancy;
+using AElfScanServer.MongoDB;
 using AutoResponseWrapper;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
@@ -24,18 +26,21 @@ using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Modularity;
+using Volo.Abp.Security.Claims;
 
 namespace AElfScanServer.HttpApi.Host;
 
 [DependsOn(
     typeof(AbpAutofacModule),
     typeof(AElfEntityMappingElasticsearchModule),
+    typeof(AbpAspNetCoreMvcUiMultiTenancyModule),
     typeof(AbpBackgroundWorkersModule),
+    typeof(AElfScanServerApplicationModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(HttpApiModule),
-    typeof(AElfScanCommonModule),
-    typeof(AbpAspNetCoreMvcUiMultiTenancyModule)
+    typeof(AElfScanServerMongoDbModule),
+    typeof(AElfScanCommonModule)
 )]
 public class HttpApiHostModule : AbpModule
 {
@@ -83,6 +88,23 @@ public class HttpApiHostModule : AbpModule
                 policy.RequireRole("admin"));
         });
     }
+    
+    // private void ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration)
+    // {
+    //     context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    //         .AddJwtBearer(options =>
+    //         {
+    //             options.Authority = configuration["AuthServer:Authority"];
+    //             options.RequireHttpsMetadata = configuration.GetValue<bool>("AuthServer:RequireHttpsMetadata");
+    //             options.Audience = "AElfScanServer";
+    //         });
+    //
+    //     context.Services.Configure<AbpClaimsPrincipalFactoryOptions>(options =>
+    //     {
+    //         options.IsDynamicClaimsEnabled = true;
+    //     });
+    // }
+
 
     private void ConfigureCors(ServiceConfigurationContext context, IConfiguration configuration)
     {
@@ -107,7 +129,70 @@ public class HttpApiHostModule : AbpModule
     }
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
+        // var app = context.GetApplicationBuilder();
+        //
+        // app.UseAbpRequestLocalization();
+        // app.UseCorrelationId();
+        // app.UseStaticFiles();
+        // app.UseRouting();
+        // app.UseCors();
+        // app.UseAuthentication();
+        //
+        //
+        // if (MultiTenancyConsts.IsEnabled)
+        // {
+        //     app.UseMultiTenancy();
+        // }
+        //
+        // app.UseAuditing();
+        // app.UseAbpSerilogEnrichers();
+        // app.UseUnitOfWork();
+        //
+        // app.UseHttpsRedirection();
+        // app.UseAuthorization();
+        // app.UseConfiguredEndpoints();
+        
+        // var app = context.GetApplicationBuilder();
+        // var env = context.GetEnvironment();
+        //
+        // if (env.IsDevelopment())
+        // {
+        //     app.UseDeveloperExceptionPage();
+        // }
+        //
+        // app.UseAbpRequestLocalization();
+        // app.UseCorrelationId();
+        // app.UseStaticFiles();
+        //
+        // app.UseCors();
+        // app.UseAuthentication();
+        // app.UseRouting();
+        // if (MultiTenancyConsts.IsEnabled)
+        // {
+        //     app.UseMultiTenancy();
+        // }
+        //
+        // app.UseUnitOfWork();
+        // app.UseDynamicClaims();
+        // app.UseAuthorization();
+        //
+        //
+        //
+        // app.UseAuditing();
+        // app.UseAbpSerilogEnrichers();
+        // app.UseConfiguredEndpoints();
+        // app.UseEndpoints(endpoints =>
+        // {
+        //     endpoints.MapControllers();
+        // });
+        
         var app = context.GetApplicationBuilder();
+        var env = context.GetEnvironment();
+
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
 
         app.UseAbpRequestLocalization();
         app.UseCorrelationId();
@@ -116,19 +201,28 @@ public class HttpApiHostModule : AbpModule
         app.UseCors();
         app.UseAuthentication();
 
-        
         if (MultiTenancyConsts.IsEnabled)
         {
             app.UseMultiTenancy();
         }
 
+        app.UseAuthorization();
+
+        app.UseAbpSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "AeFinder API");
+
+            var configuration = context.GetConfiguration();
+            options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
+            options.OAuthClientSecret(configuration["AuthServer:SwaggerClientSecret"]);
+            options.OAuthScopes("AElfScanServer");
+        });
+
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
-
-        app.UseHttpsRedirection();
-        app.UseAuthorization();
         app.UseConfiguredEndpoints();
+
     }
 
 

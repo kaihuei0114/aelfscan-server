@@ -12,12 +12,13 @@ using Volo.Abp.AspNetCore.Mvc;
 
 namespace AElfScanServer.HttpApi.Controllers;
 
-[AggregateExecutionTime]
-[RemoteService]
+// [AggregateExecutionTime]
+// [RemoteService]
 [Area("app")]
-[ControllerName("user")]
+[ApiController]
+[ControllerName("User")]
 [Route("api/app/user")]
-public class UserController : AbpControllerBase
+public class UserController : AbpController
 {
     private readonly IUserAppService _userService;
 

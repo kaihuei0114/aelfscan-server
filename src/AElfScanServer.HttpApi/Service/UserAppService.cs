@@ -60,6 +60,7 @@ public class UserAppService : IdentityUserAppService, IUserAppService
     private readonly IOrganizationUnitRepository _organizationUnitRepository;
     private readonly ILookupNormalizer _lookupNormalizer;
     private readonly IOpenIddictApplicationManager _applicationManager;
+    // private readonly IOpenIddictScopeRepository _openIddictScopeRepository;
     // private readonly IOrganizationAppService _organizationAppService;
     private readonly IdentityUserManager _identityUserManager;
     private readonly IIdentityRoleRepository _roleRepository;
@@ -87,6 +88,13 @@ public class UserAppService : IdentityUserAppService, IUserAppService
 
     public async Task ResetAdminPwd()
     {
+        // if (await _openIddictScopeRepository.FindByNameAsync("AElfScanServer") == null)
+        // {
+        //     await _scopeManager.CreateAsync(new OpenIddictScopeDescriptor {
+        //         Name = "AElfScanServer", DisplayName = "AElfScanServer API", Resources = { "AElfScanServer" }
+        //     });
+        // }
+        
         var adminUser = await _identityUserManager.FindByNameAsync("admin");
         if (adminUser != null)
         {

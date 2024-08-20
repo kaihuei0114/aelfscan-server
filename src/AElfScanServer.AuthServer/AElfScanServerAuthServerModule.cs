@@ -77,6 +77,8 @@ public class AElfScanServerAuthServerModule : AbpModule
             });
         });
 
+        PreConfigure<OpenIddictServerBuilder>(builder => { builder.Configure(openIddictServerOptions => { openIddictServerOptions.GrantTypes.Add("login_credentials"); }); });
+        //
         // if (!hostingEnvironment.IsDevelopment())
         // {
         //     PreConfigure<AbpOpenIddictAspNetCoreOptions>(options =>
@@ -217,7 +219,7 @@ public class AElfScanServerAuthServerModule : AbpModule
         }
 
         app.UseUnitOfWork();
-        app.UseDynamicClaims();
+        // app.UseDynamicClaims();
         app.UseAuthorization();
 
         app.UseAuditing();

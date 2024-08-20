@@ -10,9 +10,12 @@ using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
+using AElfScanServer.Domain.Shared;
+using AElfScanServer.Domain.Shared.Localization;
 using AElfScanServer.HttpApi.Worker;
 using AElfScanServer.MongoDB;
 using Aetherlink.PriceServer;
+using Localization.Resources.AbpUi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp;
@@ -27,37 +30,48 @@ using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
+using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
+using Volo.Abp.ObjectExtending;
 using Volo.Abp.PermissionManagement;
+using Volo.Abp.PermissionManagement.HttpApi;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 
 namespace AElfScanServer.HttpApi;
 
 [DependsOn(
+    typeof(AElfScanServerApplicationContractsModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpAccountHttpApiModule),
+    typeof(AbpFeatureManagementApplicationContractsModule),
     typeof(AElfIndexingElasticsearchModule),
     typeof(AbpIdentityHttpApiModule),
-    typeof(AbpFeatureManagementHttpApiModule),
-    typeof(AbpPermissionManagementApplicationModule),
-    typeof(AbpAspNetCoreSignalRModule),
+    typeof(AbpIdentityApplicationContractsModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(AbpAspNetCoreMvcModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBackgroundWorkersModule),
+    typeof(AElfScanServerDomainSharedModule),
+    typeof(AbpAccountApplicationContractsModule),
+    typeof(AbpPermissionManagementHttpApiModule),
+    typeof(AbpSettingManagementApplicationContractsModule),
+    typeof(AbpPermissionManagementApplicationContractsModule),
+    typeof(AbpTenantManagementApplicationContractsModule),
     typeof(AElfScanCommonModule),
     typeof(AetherlinkPriceServerModule),
+    typeof(AbpAspNetCoreSignalRModule),
+    typeof(AElfScanServerMongoDbModule),
     typeof(AbpTenantManagementHttpApiModule),
     typeof(AbpFeatureManagementHttpApiModule),
     typeof(AbpSettingManagementHttpApiModule),
-    typeof(AbpAspNetCoreSignalRModule),
-    typeof(AElfScanServerMongoDbModule)
+    typeof(AbpObjectExtendingModule)
 )]
 public class HttpApiModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        ConfigureLocalization();
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<HttpApiModule>(); });
 
         context.Services.AddSingleton<IHomePageService, HomePageService>();
@@ -116,5 +130,17 @@ public class HttpApiModule : AbpModule
     {
         context.AddBackgroundWorkerAsync<NftCollectionHolderInfoWorker>();
         context.AddBackgroundWorkerAsync<TokenHolderPercentWorker>();
+    }
+
+    private void ConfigureLocalization()
+    {
+        Configure<AbpLocalizationOptions>(options =>
+        {
+            options.Resources
+                .Get<AElfScanServerResource>()
+                .AddBaseTypes(
+                    typeof(AbpUiResource)
+                );
+        });
     }
 }

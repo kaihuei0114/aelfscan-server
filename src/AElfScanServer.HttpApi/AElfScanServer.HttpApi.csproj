@@ -8,6 +8,7 @@
 
 
     <ItemGroup>
+        <ProjectReference Include="..\AElfScanServer.Application.Contracts\AElfScanServer.Application.Contracts.csproj" />
         <ProjectReference Include="..\AElfScanServer.Common\AElfScanServer.Common.csproj"/>
         <ProjectReference Include="..\AElfScanServer.Domain\AElfScanServer.Domain.csproj"/>
         <ProjectReference Include="..\AElfScanServer.Grains\AElfScanServer.Grains.csproj" />

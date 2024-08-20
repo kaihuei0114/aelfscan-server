@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\AElfScanServer.Application\AElfScanServer.Application.csproj" />
         <ProjectReference Include="..\AElfScanServer.HttpApi\AElfScanServer.HttpApi.csproj" />
     </ItemGroup>
 
