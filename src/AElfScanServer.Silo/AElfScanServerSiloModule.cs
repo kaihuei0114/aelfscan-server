@@ -21,12 +21,12 @@ namespace AElfScanServer.Silo;
      typeof(AElfScanCommonModule),
      typeof(AElfScanServerGrainsModule),
     typeof(AbpCachingStackExchangeRedisModule))]
-public class AeFinderOrleansSiloModule : AbpModule
+public class AElfScanServerOrleansSiloModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var configuration = context.Services.GetConfiguration();
-        context.Services.AddHostedService<AeFinderHostedService>();
+        context.Services.AddHostedService<AElfScanServerHostedService>();
         ConfigureCache(configuration);
         // context.Services.AddTransient<IAppDeployManager, KubernetesAppManager>();
     }

@@ -19,6 +19,16 @@ public class AdsResp
     public string SearchKey { get; set; }
 }
 
+public class AdsBannerResp
+{
+    public string AdsBannerId { get; set; }
+    public string Image { get; set; }
+    public string ClickLink { get; set; }
+    public string Text { get; set; }
+    public string MobileImage { get; set; }
+    public string SearchKey { get; set; }
+}
+
 [GenerateSerializer]
 public class AdsDto
 {
@@ -62,6 +72,28 @@ public class AdsIndex : AElfIndexerEntity<string>, IEntityMappingEntity
     [Keyword] public string ClickLink { get; set; }
 
     public List<string> Labels { get; set; }
+
+    public DateTime CreateTime { get; set; }
+
+    public DateTime UpdateTime { get; set; }
+    public long StartTime { get; set; }
+    public long EndTime { get; set; }
+
+    public int TotalVisitCount { get; set; }
+}
+
+public class AdsBannerIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword] public string AdsBannerId { get; set; }
+    [Keyword] public string Image { get; set; }
+
+    public List<string> Labels { get; set; }
+
+    public string Text { get; set; }
+
+    public string ClickLink { get; set; }
+    
+    public string MobileImage { get; set; }
 
     public DateTime CreateTime { get; set; }
 

@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\AElfScanServer.Application\AElfScanServer.Application.csproj" />
         <ProjectReference Include="..\AElfScanServer.HttpApi\AElfScanServer.HttpApi.csproj" />
     </ItemGroup>
 
@@ -28,6 +29,7 @@
         <PackageReference Include="Orleans.Providers.MongoDB" Version="8.0.3" />
         <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="8.2.0" />
         <PackageReference Include="Volo.Abp.EventBus.RabbitMQ" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.Identity.Application" Version="8.2.0" />
         <PackageReference Include="Volo.Abp.Swashbuckle" Version="8.2.0" />
         <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.2" />
     </ItemGroup>

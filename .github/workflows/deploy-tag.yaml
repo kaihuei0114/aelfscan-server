@@ -17,6 +17,8 @@ jobs:
             AElfScanServer.Worker,
             AElfScanServer.HttpApi.Host,
             AElfScanServer.Silo,
+            AElfScanServer.AuthServer,
+            AElfScanServer.DbMigrator
           ]
     steps:
       - uses: actions/checkout@v4
@@ -40,6 +42,8 @@ jobs:
             AElfScanServer.Worker,
             AElfScanServer.HttpApi.Host,
             AElfScanServer.Silo,
+            AElfScanServer.AuthServer,
+            AElfScanServer.DbMigrator
           ]
     permissions:
       contents: read

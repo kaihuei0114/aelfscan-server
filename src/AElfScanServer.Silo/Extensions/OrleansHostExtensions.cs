@@ -11,7 +11,6 @@ using Orleans.Providers.MongoDB.Configuration;
 using Orleans.Providers.MongoDB.StorageProviders.Serializers;
 using Orleans.Serialization;
 using Orleans.Statistics;
-using Orleans.Streams.Kafka.Config;
 
 namespace AElfScanServer.Silo.Extensions;
 
@@ -51,26 +50,7 @@ public static class OrleansHostExtensions
                         settings.ObjectCreationHandling = ObjectCreationHandling.Replace;
                         settings.DefaultValueHandling = DefaultValueHandling.Populate;
                     })
-                .ConfigureServices(services =>
-                    services.AddSingleton<IGrainStateSerializer, AeFinderJsonGrainStateSerializer>())
-                .AddMemoryGrainStorage("OrleansStorage")
                 .AddMemoryGrainStorageAsDefault()
-                .Configure<GrainCollectionOptions>(options =>
-                {
-                    // Override the value of CollectionAge to
-                    var collection = configSection.GetSection(nameof(GrainCollectionOptions.ClassSpecificCollectionAge))
-                        .GetChildren();
-                    foreach (var item in collection)
-                    {
-                        options.ClassSpecificCollectionAge[item.Key] = TimeSpan.FromSeconds(int.Parse(item.Value));
-                    }
-                })
-                // .Configure<GrainCollectionNameOptions>(options =>
-                // {
-                //     var collectionName = configSection
-                //         .GetSection(nameof(GrainCollectionNameOptions.GrainSpecificCollectionName)).GetChildren();
-                //     options.GrainSpecificCollectionName = collectionName.ToDictionary(o => o.Key, o => o.Value);
-                // })
                 .UseMongoDBReminders(options =>
                 {
                     options.DatabaseName = configSection.GetValue<string>("DataBase");
@@ -87,12 +67,6 @@ public static class OrleansHostExtensions
                     options.MaxMessageBodySize = configSection.GetValue<int>("GrainMaxMessageBodySize");
                     options.MaxForwardCount = configSection.GetValue<int>("MaxForwardCount");
                 })
-                // .AddAeFinderMongoDBGrainStorage("PubSubStore", options =>
-                // {
-                //     // Config PubSubStore Storage for Persistent Stream 
-                //     options.CollectionPrefix = "StreamStorage";
-                //     options.DatabaseName = configSection.GetValue<string>("DataBase");
-                // })
                 .Configure<ExceptionSerializationOptions>(options =>
                 {
                     options.SupportedNamespacePrefixes.Add("Volo.Abp");

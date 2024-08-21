@@ -46,8 +46,6 @@ public class AElfScanServerDomainModule : AbpModule
             options.Languages.Add(new LanguageInfo("hu", "hu", "Magyar"));
             options.Languages.Add(new LanguageInfo("hr", "hr", "Croatian"));
             options.Languages.Add(new LanguageInfo("pt-BR", "pt-BR", "Português"));
-            options.Languages.Add(new LanguageInfo("zh-Hans", "zh-Hans", "简体中文"));
-            options.Languages.Add(new LanguageInfo("zh-Hant", "zh-Hant", "繁體中文"));
             options.Languages.Add(new LanguageInfo("es", "es", "Español"));
         });
 
@@ -55,6 +53,9 @@ public class AElfScanServerDomainModule : AbpModule
         {
             options.IsEnabled = MultiTenancyConsts.IsEnabled;
         });
+        
+        Configure<AbpMultiTenancyOptions>(options => { options.IsEnabled = MultiTenancyConsts.IsEnabled; });
+        
 
     }
     

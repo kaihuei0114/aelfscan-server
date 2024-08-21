@@ -84,7 +84,7 @@ public class HomeOverviewResponseDto
     public decimal TokenPriceInUsd { get; set; }
     public decimal TokenPriceRate24h { get; set; }
     public long Transactions { get; set; }
-    public long Tps { get; set; }
+    public string Tps { get; set; }
 
     public DateTime TpsTime { get; set; }
     public string Reward { get; set; }

@@ -145,7 +145,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
                     overviewResp.TokenPriceInUsd = task.Result.LastPrice;
                 }));
             tasks.Add(_homePageProvider.GetTransactionCountPerLastMinute(req.ChainId).ContinueWith(
-                task => { overviewResp.Tps = task.Result; }));
+                task => { overviewResp.Tps = (task.Result / 60).ToString("F2"); }));
 
             await Task.WhenAll(tasks);
         }

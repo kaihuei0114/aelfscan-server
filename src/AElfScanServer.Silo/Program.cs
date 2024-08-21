@@ -36,7 +36,7 @@ public class Program
         Host.CreateDefaultBuilder(args)
             .InitAppConfiguration(true)
             .UseApolloForHostBuilder()
-            .ConfigureServices((hostcontext, services) => { services.AddApplication<AeFinderOrleansSiloModule>(); })
+            .ConfigureServices((hostcontext, services) => { services.AddApplication<AElfScanServerOrleansSiloModule>(); })
             .UseOrleansSnapshot()
             .UseAutofac()
             .UseSerilog();

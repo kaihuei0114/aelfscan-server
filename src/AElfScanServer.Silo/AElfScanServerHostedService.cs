@@ -3,12 +3,12 @@ using Volo.Abp;
 
 namespace AElfScanServer.Silo;
 
-public class AeFinderHostedService:IHostedService
+public class AElfScanServerHostedService:IHostedService
 {
     private readonly IAbpApplicationWithExternalServiceProvider _application;
     private readonly IServiceProvider _serviceProvider;
 
-    public AeFinderHostedService(
+    public AElfScanServerHostedService(
         IAbpApplicationWithExternalServiceProvider application,
         IServiceProvider serviceProvider)
     {

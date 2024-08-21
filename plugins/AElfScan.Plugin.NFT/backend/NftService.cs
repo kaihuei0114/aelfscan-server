@@ -87,20 +87,20 @@ public class NftService : INftService, ISingletonDependency
         }
 
         var collectionSymbols = indexerNftListDto.Items.Select(o => o.Symbol).ToList();
-        var groupAndSumSupply = await GetCollectionSupplyAsync(input.ChainId, collectionSymbols);
+      //  var groupAndSumSupply = await GetCollectionSupplyAsync(input.ChainId, collectionSymbols);
 
         //get collection supply
         var list = indexerNftListDto.Items.Select(item =>
         {
             var nftInfoDto = _objectMapper.Map<IndexerTokenInfoDto, NftInfoDto>(item);
-          //  nftInfoDto.Items =  item.ItemCount.ToString(CultureInfo.InvariantCulture);
+            nftInfoDto.Items =  item.ItemCount.ToString(CultureInfo.InvariantCulture);
 
             //convert url
             nftInfoDto.NftCollection.ImageUrl = TokenInfoHelper.GetImageUrl(item.ExternalInfo,
                 () => _tokenInfoProvider.BuildImageUrl(item.Symbol));
-            nftInfoDto.Items = groupAndSumSupply.TryGetValue(item.Symbol, out var sumSupply)
+            /*nftInfoDto.Items = groupAndSumSupply.TryGetValue(item.Symbol, out var sumSupply)
                 ? sumSupply
-                : "0";
+                : "0";*/
             return nftInfoDto;
         }).ToList();
         return new ListResponseDto<NftInfoDto>
@@ -120,23 +120,23 @@ public class NftService : INftService, ISingletonDependency
         };
         var nftCollectionInfoTask = _nftInfoProvider.GetNftCollectionInfoAsync(nftCollectionInfoInput);
         var collectionSymbols = new List<string> { collectionSymbol };
-        var groupAndSumSupplyTask = GetCollectionSupplyAsync(chainId, collectionSymbols);
+       // var groupAndSumSupplyTask = GetCollectionSupplyAsync(chainId, collectionSymbols);
 
-        await Task.WhenAll(getCollectionInfoTask, nftCollectionInfoTask, groupAndSumSupplyTask);
+        await Task.WhenAll(getCollectionInfoTask, nftCollectionInfoTask);
 
         var collectionInfoDtos = await getCollectionInfoTask;
         AssertHelper.NotEmpty(collectionInfoDtos, "this nft not exist");
         var collectionInfo = collectionInfoDtos[0];
         var nftDetailDto = _objectMapper.Map<IndexerTokenInfoDto, NftDetailDto>(collectionInfo);
-     //   nftDetailDto.Items = collectionInfo.ItemCount.ToString(CultureInfo.InvariantCulture);
+        nftDetailDto.Items = collectionInfo.ItemCount.ToString(CultureInfo.InvariantCulture);
 
         nftDetailDto.TokenContractAddress = _chainOptions.CurrentValue.GetChainInfo(chainId)?.TokenContractAddress;
         //collectionInfo.Symbol is xxx-0
         nftDetailDto.NftCollection.ImageUrl = TokenInfoHelper.GetImageUrl(collectionInfo.ExternalInfo,
             () => _tokenInfoProvider.BuildImageUrl(collectionInfo.Symbol));
-        nftDetailDto.Items = (await groupAndSumSupplyTask).TryGetValue(collectionInfo.Symbol, out var sumSupply)
+        /*nftDetailDto.Items = (await groupAndSumSupplyTask).TryGetValue(collectionInfo.Symbol, out var sumSupply)
             ? sumSupply
-            : "0";
+            : "0";*/
         //of floor price
         var nftCollectionInfo = await nftCollectionInfoTask;
         if (nftCollectionInfo.TryGetValue(collectionSymbol, out var nftCollection))
@@ -438,17 +438,15 @@ public class NftService : INftService, ISingletonDependency
         var addressList = indexerTokenHolderInfo
             .Where(value => !string.IsNullOrEmpty(value.Address))
             .Select(value => value.Address).Distinct().ToList();
-        var groupAndSumSupplyTask = GetCollectionSupplyAsync(chainId, collectionSymbols);
-        //var getCollectionInfoTask = _tokenIndexerProvider.GetTokenDetailAsync(chainId, collectionSymbol);
+       // var groupAndSumSupplyTask = GetCollectionSupplyAsync(chainId, collectionSymbols);
+        var getCollectionInfoTask = _tokenIndexerProvider.GetTokenDetailAsync(chainId, collectionSymbol);
 
         var contractInfoDictTask = _genesisPluginProvider.GetContractListAsync(chainId, addressList);
-        await Task.WhenAll(groupAndSumSupplyTask, contractInfoDictTask);
+        await Task.WhenAll(getCollectionInfoTask, contractInfoDictTask);
 
         var list = new List<TokenHolderInfoDto>();
         var contractInfoDict = await contractInfoDictTask;
-        var tokenSupply = (await groupAndSumSupplyTask).TryGetValue(collectionSymbol, out var sumSupply)
-            ? decimal.Parse(sumSupply)
-            : 0;
+        var tokenSupply = (await getCollectionInfoTask)[0].ItemCount;
 
         foreach (var indexerTokenHolderInfoDto in indexerTokenHolderInfo)
         {
