@@ -148,7 +148,7 @@ public class UserAppService : IdentityUserAppService, IUserAppService
             {
                 OpenIddictConstants.Permissions.Endpoints.Token,
                 OpenIddictConstants.Permissions.GrantTypes.ClientCredentials,
-                OpenIddictConstants.Permissions.Prefixes.Scope + "AeFinder",
+                OpenIddictConstants.Permissions.Prefixes.Scope + "AElfScanServer",
                 OpenIddictConstants.Permissions.ResponseTypes.IdToken
             }
         });

@@ -9,11 +9,11 @@ using Orleans.Serialization;
 
 namespace AElfScanServer.Silo;
 
-public class AeFinderJsonGrainStateSerializer: IGrainStateSerializer
+public class AElfScanServerJsonGrainStateSerializer: IGrainStateSerializer
 {
     private readonly JsonSerializerSettings jsonSettings;
 
-    public AeFinderJsonGrainStateSerializer(IOptions<JsonGrainStateSerializerOptions> options, IServiceProvider serviceProvider)
+    public AElfScanServerJsonGrainStateSerializer(IOptions<JsonGrainStateSerializerOptions> options, IServiceProvider serviceProvider)
     {
         jsonSettings = OrleansJsonSerializerSettings.GetDefaultSerializerSettings(serviceProvider);
         options.Value.ConfigureJsonSerializerSettings(jsonSettings);
