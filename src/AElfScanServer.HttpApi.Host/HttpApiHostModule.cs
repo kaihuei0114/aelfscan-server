@@ -210,7 +210,7 @@ public class HttpApiHostModule : AbpModule
 
         app.UseAbpSwaggerUI(options =>
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "AeFinder API");
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "AElfScanServer API");
 
             var configuration = context.GetConfiguration();
             options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);

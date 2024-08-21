@@ -1,4 +1,4 @@
-namespace AeFinder.Grains;
+namespace AElfScanServer.Grains;
 
 public static class GrainIdHelper
 {
@@ -18,17 +18,6 @@ public static class GrainIdHelper
         return GenerateAdsKey(appId);
     }
 
-    public static string GenerateAeFinderNameGrainId(string appName)
-    {
-        const string namePrefix = "AeFinderApp";
-        return GenerateAdsKey(namePrefix, appName);
-    }
-
-    public static string GenerateAeFinderAppGrainId(string adminId)
-    {
-        const string namePrefix = "AeFinderApp";
-        return GenerateAdsKey(namePrefix, adminId);
-    }
 
     public static string GenerateBlockPusherGrainId(string appId, string version, string chainId)
     {

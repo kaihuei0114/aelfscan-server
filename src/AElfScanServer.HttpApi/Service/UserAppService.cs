@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElfScanServer.Common.Options;
 using AElfScanServer.HttpApi.Dtos;
 using AutoMapper.Internal.Mappers;
 using Microsoft.AspNetCore.Identity;
@@ -17,12 +18,11 @@ using Volo.Abp.OpenIddict.Applications;
 using Volo.Abp.Users;
 using IdentityUser = Volo.Abp.Identity.IdentityUser;
 using IdentityRole = Volo.Abp.Identity.IdentityRole;
+
 namespace AElfScanServer.HttpApi.Service;
 
 public interface IUserAppService
 {
-    // Task<IdentityUserDto> RegisterUserWithOrganization(RegisterUserWithOrganizationInput input);
-
     Task RegisterAppAuthentication(string appId, string deployKey);
 
     Task<IdentityUserDto> GetUserInfoAsync();
@@ -36,23 +36,6 @@ public interface IUserAppService
     Task ResetAdminPwd();
 }
 
-// public interface IOrganizationAppService
-// {
-//     Task<OrganizationUnitDto> CreateOrganizationUnitAsync(string displayName, Guid? parentId = null);
-//
-//     Task DeleteOrganizationUnitAsync(Guid id);
-//
-//     Task AddUserToOrganizationUnitAsync(Guid userId, Guid organizationUnitId);
-//
-//     Task<List<OrganizationUnitDto>> GetAllOrganizationUnitsAsync();
-//
-//     Task<OrganizationUnitDto> GetOrganizationUnitAsync(Guid id);
-//
-//     Task<List<IdentityUserDto>> GetUsersInOrganizationUnitAsync(Guid organizationUnitId);
-//
-//     Task<List<OrganizationUnitDto>> GetOrganizationUnitsByUserIdAsync(Guid userId);
-// }
-
 [RemoteService(IsEnabled = false)]
 [DisableAuditing]
 public class UserAppService : IdentityUserAppService, IUserAppService
@@ -60,6 +43,9 @@ public class UserAppService : IdentityUserAppService, IUserAppService
     private readonly IOrganizationUnitRepository _organizationUnitRepository;
     private readonly ILookupNormalizer _lookupNormalizer;
     private readonly IOpenIddictApplicationManager _applicationManager;
+
+    private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
+
     // private readonly IOpenIddictScopeRepository _openIddictScopeRepository;
     // private readonly IOrganizationAppService _organizationAppService;
     private readonly IdentityUserManager _identityUserManager;
@@ -74,7 +60,8 @@ public class UserAppService : IdentityUserAppService, IUserAppService
         IOpenIddictApplicationManager applicationManager,
         // IOrganizationAppService organizationAppService,
         IOrganizationUnitRepository organizationUnitRepository,
-        IPermissionChecker permissionChecker, IdentityUserManager identityUserManager)
+        IPermissionChecker permissionChecker, IdentityUserManager identityUserManager,
+        IOptionsMonitor<GlobalOptions> globalOptions)
         : base(userManager, userRepository, roleRepository, identityOptions, permissionChecker)
     {
         _organizationUnitRepository = organizationUnitRepository;
@@ -83,22 +70,16 @@ public class UserAppService : IdentityUserAppService, IUserAppService
         // _organizationAppService = organizationAppService;
         _identityUserManager = identityUserManager;
         _roleRepository = roleRepository;
+        _globalOptions = globalOptions;
     }
 
 
     public async Task ResetAdminPwd()
     {
-        // if (await _openIddictScopeRepository.FindByNameAsync("AElfScanServer") == null)
-        // {
-        //     await _scopeManager.CreateAsync(new OpenIddictScopeDescriptor {
-        //         Name = "AElfScanServer", DisplayName = "AElfScanServer API", Resources = { "AElfScanServer" }
-        //     });
-        // }
-        
         var adminUser = await _identityUserManager.FindByNameAsync("admin");
         if (adminUser != null)
         {
-            var adminPassword = "Xuan123,.";
+            var adminPassword = _globalOptions.CurrentValue.AdminResetPwd;
             var token = await _identityUserManager.GeneratePasswordResetTokenAsync(adminUser);
             var result = await _identityUserManager.ResetPasswordAsync(adminUser, token, adminPassword);
             if (!result.Succeeded)
@@ -124,14 +105,14 @@ public class UserAppService : IdentityUserAppService, IUserAppService
 
     public async Task<UserResp> CreateUser(UserReq req)
     {
-        var user = new IdentityUser(GuidGenerator.Create(), req.UserName, "test@qq.com");
+        var user = new IdentityUser(GuidGenerator.Create(), req.UserName, req.Email);
         var createResult = await UserManager.CreateAsync(user, req.Password);
         if (!createResult.Succeeded)
         {
             throw new UserFriendlyException("Failed to create user. " + createResult.Errors.Select(e => e.Description)
                 .Aggregate((errors, error) => errors + ", " + error));
         }
-        
+
 
         var normalizedRoleName = _lookupNormalizer.NormalizeName("appAdmin");
         var identityUser = await UserManager.FindByIdAsync(user.Id.ToString());
@@ -148,60 +129,6 @@ public class UserAppService : IdentityUserAppService, IUserAppService
         };
     }
 
-    // public async Task<IdentityUserDto> RegisterUserWithOrganization(RegisterUserWithOrganizationInput input)
-    // {
-    //     var userName = input.UserName.Trim();
-    //     var email = input.Email.Trim();
-    //     var existUser = await UserManager.FindByNameAsync(userName);
-    //     if (existUser != null && !existUser.Id.ToString().IsNullOrEmpty())
-    //     {
-    //         throw new UserFriendlyException($"user {existUser.Name} is already exist!");
-    //     }
-    //
-    //     var user = new IdentityUser(GuidGenerator.Create(), userName, email, CurrentTenant.Id);
-    //
-    //     if (input.OrganizationUnitId.IsNullOrEmpty())
-    //     {
-    //         throw new UserFriendlyException("Failed to create user. OrganizationUnitId is null");
-    //     }
-    //
-    //     Guid organizationUnitGuid;
-    //     if (!Guid.TryParse(input.OrganizationUnitId, out organizationUnitGuid))
-    //     {
-    //         throw new UserFriendlyException("Invalid OrganizationUnitId string");
-    //     }
-    //
-    //     OrganizationUnitDto organizationUnitDto =
-    //         await _organizationAppService.GetOrganizationUnitAsync(organizationUnitGuid);
-    //     if (organizationUnitDto == null || organizationUnitDto.Id.ToString().IsNullOrEmpty())
-    //     {
-    //         throw new UserFriendlyException($"OrganizationUnit {organizationUnitGuid} is not exist");
-    //     }
-    //
-    //     var createResult = await UserManager.CreateAsync(user, input.Password);
-    //     if (!createResult.Succeeded)
-    //     {
-    //         throw new UserFriendlyException("Failed to create user. " + createResult.Errors.Select(e => e.Description)
-    //             .Aggregate((errors, error) => errors + ", " + error));
-    //     }
-    //
-    //     //add appAdmin role into user
-    //     var normalizedRoleName = _lookupNormalizer.NormalizeName("appAdmin");
-    //     var identityUser = await UserManager.FindByIdAsync(user.Id.ToString());
-    //     var appAdminRole = await RoleRepository.FindByNormalizedNameAsync(normalizedRoleName);
-    //
-    //     if (appAdminRole != null)
-    //     {
-    //         await UserManager.AddToRoleAsync(identityUser, appAdminRole.Name);
-    //     }
-    //
-    //     // bind organization with user
-    //     var organizationUnit = await _organizationUnitRepository.GetAsync(organizationUnitDto.DisplayName);
-    //     await UserManager.AddToOrganizationUnitAsync(identityUser, organizationUnit);
-    //     await _organizationAppService.AddUserToOrganizationUnitAsync(identityUser.Id, organizationUnit.Id);
-    //
-    //     return ObjectMapper.Map<IdentityUser, IdentityUserDto>(identityUser);
-    // }
 
     public async Task RegisterAppAuthentication(string appId, string deployKey)
     {
