@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using AElfScanServer.Domain.App;
 using AElfScanServer.Domain.Shared;
 using AElfScanServer.Domain.Shared.Localization;
 using AElfScanServer.Domain.Shared.MultiTenancy;
@@ -99,7 +98,6 @@ public class AElfScanServerAuthServerModule : AbpModule
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         var configuration = context.Services.GetConfiguration();
 
-        context.Services.AddSingleton<IDataSeedContributor, AppDataSeederContributor>();
         Configure<AbpLocalizationOptions>(options =>
         {
             options.Resources

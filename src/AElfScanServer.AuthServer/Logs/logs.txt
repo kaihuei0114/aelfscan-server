@@ -8177,3 +8177,5 @@ MongoDB.Driver.MongoCommandException: This MongoDB deployment does not support r
 2024-08-21 15:24:35.466 +08:00 [INF] Application started. Press Ctrl+C to shut down.
 2024-08-21 15:24:35.466 +08:00 [INF] Hosting environment: Development
 2024-08-21 15:24:35.466 +08:00 [INF] Content root path: /Users/wuhaoxuan/RiderProjects/aelfscan-server/src/AElfScanServer.AuthServer
+2024-08-21 16:05:39.577 +08:00 [INF] Application is shutting down...
+2024-08-21 16:05:39.693 +08:00 [DBG] Stopped background worker: Volo.Abp.OpenIddict.Tokens.TokenCleanupBackgroundWorker
