@@ -34,8 +34,8 @@ public class AppDataSeederContributor: IDataSeedContributor, ITransientDependenc
     [UnitOfWork]
     public async Task SeedAsync(DataSeedContext context)
     {
-        await SeedAdminUserAsync();
-        await SeedAppAdminRoleAsync();
+        // await SeedAdminUserAsync();
+        // await SeedAppAdminRoleAsync();
     }
 
     private async Task SeedAdminUserAsync()

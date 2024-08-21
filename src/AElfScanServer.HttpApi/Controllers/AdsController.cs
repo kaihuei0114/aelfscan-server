@@ -8,6 +8,7 @@ using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Dtos.Ads;
 using AElfScanServer.HttpApi.Dtos.AdsData;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
@@ -49,6 +50,7 @@ public class AdsController : AbpController
 
     [HttpPost]
     [Route("detail")]
+    [Authorize]
     public async Task<AdsIndex> UpdateAdsDetailAsync(UpdateAdsReq req)
     {
         return await _adsService.UpdateAds(req);
@@ -57,6 +59,7 @@ public class AdsController : AbpController
 
     [HttpPost]
     [Route("banner/detail")]
+    [Authorize]
     public async Task<AdsBannerIndex> UpdateAdsBannerDetailAsync(UpdateAdsBannerReq req)
     {
         return await _adsService.UpdateAdsBanner(req);
@@ -65,6 +68,7 @@ public class AdsController : AbpController
 
     [HttpDelete]
     [Route("detail")]
+    [Authorize]
     public async Task<AdsIndex> DeleteAdsDetailAsync(DeleteAdsReq req)
     {
         return await _adsService.DeleteAds(req);
@@ -72,6 +76,7 @@ public class AdsController : AbpController
 
     [HttpDelete]
     [Route("banner/detail")]
+    [Authorize]
     public async Task<AdsBannerIndex> DeleteAdsBannerDetailAsync(DeleteAdsBannerReq req)
     {
         return await _adsService.DeleteAdsBanner(req);
@@ -80,6 +85,7 @@ public class AdsController : AbpController
 
     [HttpGet]
     [Route("list")]
+    [Authorize]
     public async Task<AdsListResp> GetAdsListAsync(GetAdsListReq req)
     {
         return await _adsService.GetAdsList(req);
@@ -87,6 +93,7 @@ public class AdsController : AbpController
 
     [HttpGet]
     [Route("banner/list")]
+    [Authorize]
     public async Task<AdsBannerListResp> GetAdsBannerListAsync(GetAdsBannerListReq req)
     {
         return await _adsService.GetAdsBannerList(req);

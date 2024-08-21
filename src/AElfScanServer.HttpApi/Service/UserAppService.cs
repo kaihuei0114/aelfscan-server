@@ -216,7 +216,7 @@ public class UserAppService : IdentityUserAppService, IUserAppService
             ClientSecret = deployKey,
             ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
             ClientType = OpenIddictConstants.ClientTypes.Confidential,
-            DisplayName = "AeFinder Apps",
+            DisplayName = " Apps",
             Permissions =
             {
                 OpenIddictConstants.Permissions.Endpoints.Token,

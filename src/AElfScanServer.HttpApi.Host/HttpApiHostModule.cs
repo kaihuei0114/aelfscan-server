@@ -52,7 +52,7 @@ public class HttpApiHostModule : AbpModule
             builder.AddDefaultTokenProviders();
         });
         
-        IdentityBuilderExtensions.AddDefaultTokenProviders(context.Services.AddIdentity<IdentityUser, IdentityRole>());
+        // IdentityBuilderExtensions.AddDefaultTokenProviders(context.Services.AddIdentity<IdentityUser, IdentityRole>());
     }
     public override void ConfigureServices(ServiceConfigurationContext context)
     {

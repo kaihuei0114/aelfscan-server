@@ -35,6 +35,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AElfScanServer.Application"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AElfScanServer.Application.Contracts", "src\AElfScanServer.Application.Contracts\AElfScanServer.Application.Contracts.csproj", "{7CAC4244-DA1D-496F-91C4-0C222740227F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AElfScanServer.DbMigrator", "src\AElfScanServer.DbMigrator\AElfScanServer.DbMigrator.csproj", "{7FE8BFF1-4C05-424A-9FF6-334B77057A1B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +99,10 @@ Global
 		{7CAC4244-DA1D-496F-91C4-0C222740227F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7CAC4244-DA1D-496F-91C4-0C222740227F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7CAC4244-DA1D-496F-91C4-0C222740227F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FE8BFF1-4C05-424A-9FF6-334B77057A1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FE8BFF1-4C05-424A-9FF6-334B77057A1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FE8BFF1-4C05-424A-9FF6-334B77057A1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FE8BFF1-4C05-424A-9FF6-334B77057A1B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -116,6 +122,7 @@ Global
 		{A5563C59-EEEA-4DFD-85B5-D52D8E147D2A} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{2585D13E-E9AF-4FFC-B6FD-2F84FE7FF4A5} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{7CAC4244-DA1D-496F-91C4-0C222740227F} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{7FE8BFF1-4C05-424A-9FF6-334B77057A1B} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}
