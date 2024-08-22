@@ -15,14 +15,15 @@ public interface IIndexerTokenProvider
 {
     Task<List<AccountInfoDto>> GetAddressListAsync(string chainId, int skipCount, int maxResultCount);
 
-    Task<List<AccountTokenDto>> GetAddressTokenListAsync(string chainId, string symbol, int skipCount = 0,
+    Task<List<AccountTokenDto>> GetAddressTokenListAsync(string chainId, string symbol, List<string> addressList,
+        int skipCount = 0,
         int maxResultCount = 10);
 
-    Task<List<AccountTokenDto>> GetAddressTokenListAsync(string chainId, string address, string symbol,
+    Task<List<AccountTokenDto>> GetAddressTokenListAsync(string chainId, string address,
+        string symbol,
         int skipCount = 0, int maxResultCount = 10);
 
     Task<long> GetAddressElfBalanceAsync(string chainId, string address);
-
 
 
     Task<List<TransferInfoDto>> GetTransferInfoListAsync(string chainId, string address, int skipCount = 0,
@@ -75,7 +76,8 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
         }
     }
 
-    public async Task<List<AccountTokenDto>> GetAddressTokenListAsync(string chainId, string symbol, int skipCount,
+    public async Task<List<AccountTokenDto>> GetAddressTokenListAsync(string chainId, string symbol,
+        List<string> addressList, int skipCount,
         int maxResultCount)
     {
         try
@@ -84,8 +86,8 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
                 new GraphQLRequest
                 {
                     Query =
-                        @"query($chainId:String!,$symbol:String!,$skipCount:Int!,$maxResultCount:Int!){
-                            accountToken(input: {chainId:$chainId,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount})
+                        @"query($chainId:String!,$symbol:String!,$addressList:[String!],$skipCount:Int!,$maxResultCount:Int!){
+                            accountToken(input: {chainId:$chainId,symbol:$symbol,skipCount:$skipCount,addressList:$addressList,maxResultCount:$maxResultCount})
                            {
                                 totalCount
                                 items {
@@ -114,7 +116,8 @@ public class IndexerTokenProvider : IIndexerTokenProvider, ISingletonDependency
                         }",
                     Variables = new
                     {
-                        chainId = chainId, symbol = symbol, skipCount = skipCount, maxResultCount = maxResultCount
+                        chainId = chainId, symbol = symbol, skipCount = skipCount, maxResultCount = maxResultCount,
+                        addressList = addressList
                     }
                 });
             return result.AccountToken != null ? result.AccountToken.Items : new List<AccountTokenDto>();

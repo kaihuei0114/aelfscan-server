@@ -98,6 +98,20 @@ public class ContractAppService : IContractAppService
         }
 
 
+        var addressList = getContractListResult.ContractList.Items.Select(c => c.Address).ToList();
+
+        var addressTokenList = await _indexerTokenProvider.GetAddressTokenListAsync(input.ChainId,
+            "ELF", addressList, 0, addressList.Count);
+
+        if (addressList.IsNullOrEmpty())
+        {
+            return result;
+        }
+
+
+        var accountTokenDic = addressTokenList.ToDictionary(c => c.Address, c => c);
+
+
         foreach (var info in getContractListResult.ContractList.Items)
         {
             var blockBlockTime = info.Metadata.Block.BlockTime;
@@ -127,9 +141,10 @@ public class ContractAppService : IContractAppService
                 contractInfo.Txns = countInfo == null ? 0 : countInfo.Count;
             }
 
-            var addressTokenList = await _indexerTokenProvider.GetAddressTokenListAsync(input.ChainId, info.Address,
-                "ELF", input.SkipCount, input.MaxResultCount);
-            contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].FormatAmount : 0;
+            if (accountTokenDic.TryGetValue(info.Address, out var v))
+            {
+                contractInfo.Balance = addressTokenList[0].FormatAmount;
+            }
 
 
             result.List.Add(contractInfo);
