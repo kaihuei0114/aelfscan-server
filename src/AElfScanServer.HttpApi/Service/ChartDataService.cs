@@ -549,16 +549,18 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var mainIndexList = queryable.Where(c => c.ChainId == "AELF").OrderBy(c => c.Date).Take(10000).ToList();
 
         var sideIndexList = new List<DailyTotalBurntIndex>();
-
+        var sideList = new List<DailySupplyGrowthIndex>();
 
         var queryableBurnt = await _totalBurntRepository.GetQueryableAsync();
         if (_globalOptions.CurrentValue.IsMainNet)
         {
             sideIndexList = queryableBurnt.Where(c => c.ChainId == "tDVV").OrderBy(c => c.Date).Take(10000).ToList();
+            sideList = queryable.Where(c => c.ChainId == "tDVV").OrderBy(c => c.Date).Take(10000).ToList();
         }
         else
         {
             sideIndexList = queryableBurnt.Where(c => c.ChainId == "tDVW").OrderBy(c => c.Date).Take(10000).ToList();
+            sideList = queryable.Where(c => c.ChainId == "tDVW").OrderBy(c => c.Date).Take(10000).ToList();
         }
 
 
@@ -566,11 +568,18 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var sideDic = sideIndexList.ToDictionary(c => c.DateStr, c => c);
 
+        var sideSupplyDic = sideList.ToDictionary(c => c.DateStr, c => c);
+
         foreach (var dailySupplyGrowth in supplyGrowths)
         {
             if (sideDic.TryGetValue(dailySupplyGrowth.DateStr, out var sideIndex))
             {
                 dailySupplyGrowth.SideChainBurnt = sideIndex.Burnt;
+            }
+
+            if (sideSupplyDic.TryGetValue(dailySupplyGrowth.DateStr, out var sideSupplyIndex))
+            {
+                dailySupplyGrowth.TotalUnReceived += (decimal)sideSupplyIndex.TotalUnReceived;
             }
         }
 

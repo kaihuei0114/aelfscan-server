@@ -377,8 +377,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             var monthlyActiveAddressIndices = new List<MonthlyActiveAddressIndex>();
             var month = list.First().DateMonth;
-            var count = query.Where(c => c.DateMonth == month).Count();
-            var sendCount = query.Where(c => c.DateMonth == month).Where(c => c.Type == "send").Count();
+            var count = query.Where(c => c.DateMonth == month).Select(c => c.Address).Distinct().Count();
+            var sendCount = query.Where(c => c.DateMonth == month).Where(c => c.Type == "from").Count();
             var toCount = query.Where(c => c.DateMonth == month).Where(c => c.Type == "to").Count();
 
             monthlyActiveAddressIndices.Add(new MonthlyActiveAddressIndex()
@@ -392,9 +392,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             var beforeMonth = DateTimeHelper.GetBeforeYYMMDD(month);
 
-            var beforeMonthCount = query.Where(c => c.DateMonth == month).Count();
-            var beforeMonthSendCount = query.Where(c => c.DateMonth == month).Where(c => c.Type == "send").Count();
-            var beforeMonthToCount = query.Where(c => c.DateMonth == month).Where(c => c.Type == "to").Count();
+            var beforeMonthCount =
+                query.Where(c => c.DateMonth == beforeMonth).Select(c => c.Address).Distinct().Count();
+            var beforeMonthSendCount =
+                query.Where(c => c.DateMonth == beforeMonth).Where(c => c.Type == "from").Count();
+            var beforeMonthToCount = query.Where(c => c.DateMonth == beforeMonth).Where(c => c.Type == "to").Count();
             if (beforeMonth > 0)
             {
                 monthlyActiveAddressIndices.Add(new MonthlyActiveAddressIndex()
