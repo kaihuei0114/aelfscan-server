@@ -89,6 +89,14 @@ public static class DateTimeHelper
         return 0;
     }
 
+    public static int GetNowMonth()
+    {
+        DateTime now = DateTime.Now;
+        string formattedDate = now.ToString("yyyyMM", CultureInfo.InvariantCulture);
+
+        return int.Parse(formattedDate);
+    }
+
     public static int GetBeforeYYMMDD(int dateMonth)
     {
         string inputDate = dateMonth.ToString();
@@ -104,6 +112,22 @@ public static class DateTimeHelper
         return int.Parse(previousMonthFormatted);
     }
 
+    
+    public static int GetNextYYMMDD(int dateMonth)
+    {
+        string inputDate = dateMonth.ToString();
+        int year = int.Parse(inputDate.Substring(0, 4));
+        int month = int.Parse(inputDate.Substring(4, 2));
+
+        DateTime date = new DateTime(year, month, 1);
+
+        DateTime previousMonthDate = date.AddMonths(+1);
+
+        string previousMonthFormatted = previousMonthDate.ToString("yyyyMM");
+
+        return int.Parse(previousMonthFormatted);
+    }
+    
 
     public static int ConvertToYYYYMM(long timestamp)
     {

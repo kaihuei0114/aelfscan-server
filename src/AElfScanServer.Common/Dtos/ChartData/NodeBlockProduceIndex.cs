@@ -673,7 +673,7 @@ public class MonthlyActiveAddressInfoIndex : AElfIndexerEntity<string>, IEntityM
     [Keyword]
     public override string Id
     {
-        get { return DateMonth + "_" + Address + "_" + ChainId; }
+        get { return DateMonth + "_" + Address + "_" + ChainId + "_" + Type; }
     }
 
     public long Date { get; set; }

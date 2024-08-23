@@ -15,6 +15,7 @@ using AElfScanServer.HttpApi.Dtos.address;
 using AElfScanServer.HttpApi.Dtos.Indexer;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nito.AsyncEx;
 using Org.BouncyCastle.Ocsp;
 using Volo.Abp;
 using Volo.Abp.Caching;
@@ -83,31 +84,23 @@ public class ContractAppService : IContractAppService
         result.Total = getContractListResult.ContractList.TotalCount;
 
 
-        var list = getContractListResult.ContractList.Items.Select(s => s.Address).ToList();
-
-        var addressTransactionCountList = new List<IndexerAddressTransactionCountDto>();
-
-        try
-        {
-            addressTransactionCountList =
-                await _blockChainIndexerProvider.GetAddressTransactionCount(input.ChainId, list);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("Query address transaction count err:{e}", e);
-        }
-
-
         var addressList = getContractListResult.ContractList.Items.Select(c => c.Address).ToList();
 
-        var addressTokenList = await _indexerTokenProvider.GetAddressTokenListAsync(input.ChainId,
-            "ELF", addressList, 0, addressList.Count);
+        var addressTransactionCountList = new List<IndexerAddressTransactionCountDto>();
+        var addressTokenList = new List<AccountTokenDto>();
 
-        if (addressList.IsNullOrEmpty())
+        var tasks = new List<Task>();
+
+        tasks.Add(_blockChainIndexerProvider.GetAddressTransactionCount(input.ChainId, addressList).ContinueWith(task =>
         {
-            return result;
-        }
+            addressTransactionCountList = task.Result;
+        }));
 
+
+        tasks.Add(_indexerTokenProvider.GetAddressTokenListAsync(input.ChainId,
+            "ELF", addressList, 0, addressList.Count).ContinueWith(task => { addressTokenList = task.Result; }));
+
+        await tasks.WhenAll();
 
         var accountTokenDic = addressTokenList.ToDictionary(c => c.Address, c => c);
 
