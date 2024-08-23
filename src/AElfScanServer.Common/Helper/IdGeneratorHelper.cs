@@ -89,6 +89,29 @@ public static class DateTimeHelper
         return 0;
     }
 
+    public static int GetBeforeYYMMDD(int dateMonth)
+    {
+        string inputDate = dateMonth.ToString();
+        int year = int.Parse(inputDate.Substring(0, 4));
+        int month = int.Parse(inputDate.Substring(4, 2));
+
+        DateTime date = new DateTime(year, month, 1);
+
+        DateTime previousMonthDate = date.AddMonths(-1);
+
+        string previousMonthFormatted = previousMonthDate.ToString("yyyyMM");
+
+        return int.Parse(previousMonthFormatted);
+    }
+
+
+    public static int ConvertToYYYYMM(long timestamp)
+    {
+        DateTime dateTime = DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime;
+        string formattedDate = dateTime.ToString("yyyyMM");
+
+        return int.Parse(formattedDate);
+    }
 
     public static string GetNextDayDate(string dateString)
     {
@@ -100,8 +123,8 @@ public static class DateTimeHelper
 
         return dateTime.AddDays(1).ToUtc8String(dateFormat);
     }
-    
-    
+
+
     public static string GetBeforeDayDate(string dateString)
     {
         string dateFormat = "yyyy-MM-dd";

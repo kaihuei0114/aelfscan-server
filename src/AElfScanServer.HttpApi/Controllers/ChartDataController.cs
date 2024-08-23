@@ -43,6 +43,13 @@ public class ChartDataController : AbpController
     {
         return await _chartDataService.GetActiveAddressCountAsync(request);
     }
+    
+    
+    [HttpGet("monthlyActiveAddresses")]
+    public async Task<MonthlyActiveAddressCountResp> GetMonthlyActiveAddressesCountAsync(ChartDataRequest request)
+    {
+        return await _chartDataService.GetMonthlyActiveAddressCountAsync(request);
+    }
 
 
     [HttpGet("blockProduceRate")]

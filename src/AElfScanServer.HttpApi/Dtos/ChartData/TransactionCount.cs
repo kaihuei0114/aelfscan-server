@@ -302,7 +302,7 @@ public class DailySupplyGrowth
     {
         get
         {
-            var totalSupply = 1000000000 - TotalOrganizationBalance - TotalConsensusBalance - TotalBurnt;
+            var totalSupply = 1000000000 - TotalOrganizationBalance - TotalConsensusBalance - TotalBurnt-UnReceived;
             if (!SideChainBurnt.IsNullOrEmpty())
             {
                 totalSupply -= decimal.Parse(SideChainBurnt);
@@ -333,6 +333,8 @@ public class DailySupplyGrowth
     public decimal TotalConsensusBalance { get; set; }
     public decimal DailyBurnt { get; set; }
     public decimal TotalBurnt { get; set; }
+
+    public decimal UnReceived { get; set; }
     public decimal DailyOrganizationBalance { get; set; }
     public decimal TotalOrganizationBalance { get; set; }
 }

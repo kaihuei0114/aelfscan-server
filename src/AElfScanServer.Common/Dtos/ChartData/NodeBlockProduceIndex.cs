@@ -152,6 +152,9 @@ public class DailyTransactionsChartSet
     public DailyHasFeeTransactionIndex DailyHasFeeTransactionIndex { get; set; }
     public DailySupplyGrowthIndex DailySupplyGrowthIndex { get; set; }
 
+    public Dictionary<string, MonthlyActiveAddressInfoIndex> MonthlyAddressDic { get; set; } = new();
+
+    public double DailyUnReceived { get; set; }
     public List<string> TransactionFeeRecords { get; set; } = new();
     public DailyTVLIndex DailyTVLIndex { get; set; }
 
@@ -600,6 +603,11 @@ public class DailySupplyGrowthIndex : AElfIndexerEntity<string>, IEntityMappingE
     public double DailyBurnt { get; set; }
     public double TotalBurnt { get; set; }
     public double DailyOrganizationBalance { get; set; }
+
+    public double DailyUnReceived { get; set; }
+
+
+    public double TotalUnReceived { get; set; }
     public double TotalOrganizationBalance { get; set; }
     [Keyword] public string ChainId { get; set; }
 }
@@ -658,6 +666,42 @@ public class DailyVotedIndex : AElfIndexerEntity<string>, IEntityMappingEntity
     [Keyword] public string TransactionId { get; set; }
 
     [Keyword] public string ChainId { get; set; }
+}
+
+public class MonthlyActiveAddressInfoIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateMonth + "_" + Address + "_" + ChainId; }
+    }
+
+    public long Date { get; set; }
+    public int DateMonth { get; set; }
+
+
+    [Keyword] public string Address { get; set; }
+
+    [Keyword] public string Type { get; set; }
+    [Keyword] public string ChainId { get; set; }
+}
+
+public class MonthlyActiveAddressIndex : AElfIndexerEntity<string>, IEntityMappingEntity
+{
+    [Keyword]
+    public override string Id
+    {
+        get { return DateMonth + "_" + ChainId; }
+    }
+
+
+    [Keyword] public string ChainId { get; set; }
+    public long AddressCount { get; set; }
+
+    public long SendAddressCount { get; set; }
+    public long ReceiveAddressCount { get; set; }
+
+    public int DateMonth { get; set; }
 }
 
 public class DailyWithDrawnIndex : AElfIndexerEntity<string>, IEntityMappingEntity

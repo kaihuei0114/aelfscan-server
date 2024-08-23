@@ -51,6 +51,8 @@ public interface IChartDataService
 
     public Task<ActiveAddressCountResp> GetActiveAddressCountAsync(ChartDataRequest request);
 
+    public Task<MonthlyActiveAddressCountResp> GetMonthlyActiveAddressCountAsync(ChartDataRequest request);
+
     public Task<BlockProduceRateResp> GetBlockProduceRateAsync(ChartDataRequest request);
 
     public Task<AvgBlockDurationResp> GetAvgBlockDurationRespAsync(ChartDataRequest request);
@@ -128,7 +130,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IDailyHolderProvider _dailyHolderProvider;
     private readonly IPriceServerProvider _priceServerProvider;
     private readonly IEntityMappingRepository<DailyTransactionRecordIndex, string> _transactionRecordIndexRepository;
-
+    private readonly IEntityMappingRepository<MonthlyActiveAddressIndex, string> _monthlyActiveAddressIndexRepository;
 
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
@@ -159,6 +161,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         IEntityMappingRepository<DailyStakedIndex, string> dailyStakedIndexRepository,
         IEntityMappingRepository<DailyTransactionRecordIndex, string> transactionRecordIndexRepository,
         IEntityMappingRepository<DailyTVLIndex, string> dailyTVLRepository,
+        IEntityMappingRepository<MonthlyActiveAddressIndex, string> monthlyActiveAddressIndexRepository,
         IPriceServerProvider priceServerProvider,
         OverviewDataStrategy overviewDataStrategy,
         IDailyHolderProvider dailyHolderProvider,
@@ -198,6 +201,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _dailyTVLRepository = dailyTVLRepository;
         _priceServerProvider = priceServerProvider;
         _overviewDataStrategy = new DataStrategyContext<string, HomeOverviewResponseDto>(overviewDataStrategy);
+        _monthlyActiveAddressIndexRepository = monthlyActiveAddressIndexRepository;
     }
 
     public async Task FixDailyData(FixDailyData request)
@@ -366,6 +370,20 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         };
 
         return resp;
+    }
+
+    public async Task<MonthlyActiveAddressCountResp> GetMonthlyActiveAddressCountAsync(ChartDataRequest request)
+    {
+        var monthlyActiveAddressIndices = _monthlyActiveAddressIndexRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == request.ChainId).OrderBy(c => c.DateMonth).Take(100000).ToList();
+
+        return new MonthlyActiveAddressCountResp
+        {
+            List = monthlyActiveAddressIndices,
+            HighestActiveCount = monthlyActiveAddressIndices.MaxBy(c => c.AddressCount),
+            LowestActiveCount = monthlyActiveAddressIndices.MinBy(c => c.AddressCount),
+            Total = monthlyActiveAddressIndices.Count()
+        };
     }
 
     public async Task<DailyHolderResp> GetDailyHolderRespAsync(ChartDataRequest request)
