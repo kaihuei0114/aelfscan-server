@@ -46,6 +46,7 @@ using Nest;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
+using NUglify.Helpers;
 using StackExchange.Redis;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
@@ -365,99 +366,132 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task UpdateMonthlyActiveAddress()
     {
-        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        try
         {
-            var activeAddressQuery = _monthlyActiveAddressRepository.GetQueryableAsync().Result
-                .Where(c => c.ChainId == chainId);
-
-            var activeAddressIndices = activeAddressQuery.OrderByDescending(c => c.DateMonth).Take(1);
-            var query = _monthlyActiveAddressInfoRepository.GetQueryableAsync().Result
-                .Where(c => c.ChainId == chainId);
-            var monthlyActiveAddressIndices = new List<MonthlyActiveAddressIndex>();
-            var nowMonth = DateTimeHelper.GetNowMonth();
-            if (activeAddressIndices.IsNullOrEmpty())
+            foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
             {
-                var list = query
-                    .OrderBy(c => c.DateMonth).Take(1);
+                var needFindDateMonth = await GetNeedFindDateMonth(chainId);
 
-                if (list.IsNullOrEmpty())
+                var batchUpdate = await GetMonthData(needFindDateMonth, chainId);
+                if (!batchUpdate.IsNullOrEmpty())
                 {
-                    continue;
-                }
-
-                var dateMonth = list.First().DateMonth;
-
-                var count = query.Where(c => c.DateMonth == dateMonth).Select(c => c.Address).Distinct().Count();
-                var sendCount = query.Where(c => c.DateMonth == dateMonth).Where(c => c.Type == "from").Count();
-                var toCount = query.Where(c => c.DateMonth == dateMonth).Where(c => c.Type == "to").Count();
-
-                monthlyActiveAddressIndices.Add(new MonthlyActiveAddressIndex()
-                {
-                    ChainId = chainId,
-                    DateMonth = dateMonth,
-                    AddressCount = count,
-                    SendAddressCount = sendCount,
-                    ReceiveAddressCount = toCount
-                });
-
-                while (true)
-                {
-                    var nextMonth = DateTimeHelper.GetNextYYMMDD(dateMonth);
-                    var nextMonthCount = query.Where(c => c.DateMonth == nextMonth).Select(c => c.Address).Distinct()
-                        .Count();
-                    if (nextMonthCount == 0)
-                    {
-                        break;
-                    }
-
-                    var nextMonthSendCount =
-                        query.Where(c => c.DateMonth == dateMonth).Where(c => c.Type == "from").Count();
-                    var nextMonthToCount =
-                        query.Where(c => c.DateMonth == dateMonth).Where(c => c.Type == "to").Count();
-
-                    monthlyActiveAddressIndices.Add(new MonthlyActiveAddressIndex()
-                    {
-                        ChainId = chainId,
-                        DateMonth = nextMonth,
-                        AddressCount = nextMonthCount,
-                        SendAddressCount = nextMonthSendCount,
-                        ReceiveAddressCount = nextMonthToCount
-                    });
+                    await _monthlyActiveAddressRepository.AddOrUpdateManyAsync(batchUpdate);
                 }
             }
-            else
-            {
-                var dateMonth = activeAddressIndices.First().DateMonth;
-                while (true)
-                {
-                    var monthCount = query.Where(c => c.DateMonth == dateMonth).Select(c => c.Address).Distinct()
-                        .Count();
-                    if (monthCount == 0)
-                    {
-                        break;
-                    }
-
-                    var monthSendCount =
-                        query.Where(c => c.DateMonth == dateMonth).Where(c => c.Type == "from").Count();
-                    var monthToCount =
-                        query.Where(c => c.DateMonth == dateMonth).Where(c => c.Type == "to").Count();
-
-                    monthlyActiveAddressIndices.Add(new MonthlyActiveAddressIndex()
-                    {
-                        ChainId = chainId,
-                        DateMonth = dateMonth,
-                        AddressCount = monthCount,
-                        SendAddressCount = monthSendCount,
-                        ReceiveAddressCount = monthToCount
-                    });
-
-                    dateMonth = DateTimeHelper.GetNextYYMMDD(dateMonth);
-                }
-            }
-
-
-            await _monthlyActiveAddressRepository.AddOrUpdateManyAsync(monthlyActiveAddressIndices);
         }
+        catch (Exception e)
+        {
+            _logger.LogError("UpdateMonthlyActiveAddress:{e}", e.ToString());
+        }
+    }
+
+
+    public async Task<int> GetNeedFindDateMonth(string chainId)
+    {
+        var needFindDateMonth = 0;
+        var activeAddressIndices = _monthlyActiveAddressRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == chainId).OrderByDescending(c => c.DateMonth).Take(1);
+        var infoQuery = _monthlyActiveAddressInfoRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == chainId);
+
+        var batchUpdate = new List<MonthlyActiveAddressIndex>();
+        if (activeAddressIndices.IsNullOrEmpty())
+        {
+            _logger.LogInformation("UpdateMonthlyActiveAddress first");
+            var list = infoQuery
+                .OrderBy(c => c.DateMonth).Take(1);
+
+            if (list.IsNullOrEmpty())
+            {
+                return 0;
+            }
+
+            needFindDateMonth = list.First().DateMonth;
+
+            return needFindDateMonth;
+        }
+        else
+        {
+            needFindDateMonth = activeAddressIndices.First().DateMonth;
+            needFindDateMonth = DateTimeHelper.GetNextYYMMDD(needFindDateMonth);
+        }
+
+        return needFindDateMonth;
+    }
+
+
+    public async Task<List<MonthlyActiveAddressIndex>> GetMonthData(int needFindDateMonth, string chainId)
+    {
+        var query = _monthlyActiveAddressInfoRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == chainId);
+        var infoQuery = _monthlyActiveAddressInfoRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == chainId);
+
+        var monthlyActiveAddressInfoIndices = infoQuery.OrderByDescending(c => c.DateMonth).Take(1).ToList();
+
+        if (monthlyActiveAddressInfoIndices.IsNullOrEmpty())
+        {
+            return null;
+        }
+
+        var maxMonth = monthlyActiveAddressInfoIndices.First().DateMonth;
+
+        var list = new List<MonthlyActiveAddressIndex>();
+        while (needFindDateMonth < maxMonth)
+        {
+            _logger.LogInformation("UpdateMonthlyActiveAddress needFindDateMonth:{p1},maxMonth:{p2}", needFindDateMonth,
+                maxMonth);
+            var count = await GetMonthlyActiveAddressCount(needFindDateMonth, chainId);
+            var sendCount = query.Where(c => c.DateMonth == needFindDateMonth).Where(c => c.Type == "from")
+                .Count();
+            var toCount = query.Where(c => c.DateMonth == needFindDateMonth).Where(c => c.Type == "to")
+                .Count();
+
+            list.Add(new MonthlyActiveAddressIndex()
+            {
+                ChainId = chainId,
+                DateMonth = needFindDateMonth,
+                AddressCount = count,
+                SendAddressCount = sendCount,
+                ReceiveAddressCount = toCount
+            });
+
+            needFindDateMonth = DateTimeHelper.GetNextYYMMDD(needFindDateMonth);
+        }
+
+        return list;
+    }
+
+    public async Task<long> GetMonthlyActiveAddressCount(int month, string chainId)
+    {
+        try
+        {
+            var searchResponse = _elasticClient.Search<MonthlyActiveAddressInfoIndex>(s => s
+                .Index("monthlyactiveaddressinfoindex").Query(q => q
+                    .Bool(b => b
+                        .Must(
+                            m => m.Term(t => t.Field("dateMonth").Value(month)),
+                            m => m.Term(t => t.Field("chainId").Value(chainId))
+                        )
+                    )
+                )
+                .Aggregations(a => a
+                    .Terms("unique_addresses", t => t.Field("address").Size(10000))
+                )
+            );
+
+
+            if (searchResponse.IsValid)
+            {
+                return searchResponse.Aggregations.Terms("unique_addresses").Buckets.Count;
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("GetMonthlyActiveAddressCount {e}", e.ToString());
+        }
+
+        return 0;
     }
 
     public async Task BatchPullBlockSize(string chainId)
