@@ -476,15 +476,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     )
                 )
                 .Aggregations(a => a
-                    .Terms("unique_addresses", t => t.Field("address").Size(10000))
+                    .Cardinality("unique_addresses", t => t.Field("address"))
                 )
             );
 
-
-            if (searchResponse.IsValid)
-            {
-                return searchResponse.Aggregations.Terms("unique_addresses").Buckets.Count;
-            }
+            var uniqueAddressesCount = searchResponse.Aggregations.Cardinality("unique_addresses").Value;
+            return (int)uniqueAddressesCount;
         }
         catch (Exception e)
         {
