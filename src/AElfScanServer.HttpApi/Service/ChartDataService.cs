@@ -51,6 +51,8 @@ public interface IChartDataService
 
     public Task<ActiveAddressCountResp> GetActiveAddressCountAsync(ChartDataRequest request);
 
+    public Task<MonthlyActiveAddressCountResp> GetMonthlyActiveAddressCountAsync(ChartDataRequest request);
+
     public Task<BlockProduceRateResp> GetBlockProduceRateAsync(ChartDataRequest request);
 
     public Task<AvgBlockDurationResp> GetAvgBlockDurationRespAsync(ChartDataRequest request);
@@ -128,7 +130,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     private readonly IDailyHolderProvider _dailyHolderProvider;
     private readonly IPriceServerProvider _priceServerProvider;
     private readonly IEntityMappingRepository<DailyTransactionRecordIndex, string> _transactionRecordIndexRepository;
-
+    private readonly IEntityMappingRepository<MonthlyActiveAddressIndex, string> _monthlyActiveAddressIndexRepository;
 
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
@@ -159,6 +161,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         IEntityMappingRepository<DailyStakedIndex, string> dailyStakedIndexRepository,
         IEntityMappingRepository<DailyTransactionRecordIndex, string> transactionRecordIndexRepository,
         IEntityMappingRepository<DailyTVLIndex, string> dailyTVLRepository,
+        IEntityMappingRepository<MonthlyActiveAddressIndex, string> monthlyActiveAddressIndexRepository,
         IPriceServerProvider priceServerProvider,
         OverviewDataStrategy overviewDataStrategy,
         IDailyHolderProvider dailyHolderProvider,
@@ -198,6 +201,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         _dailyTVLRepository = dailyTVLRepository;
         _priceServerProvider = priceServerProvider;
         _overviewDataStrategy = new DataStrategyContext<string, HomeOverviewResponseDto>(overviewDataStrategy);
+        _monthlyActiveAddressIndexRepository = monthlyActiveAddressIndexRepository;
     }
 
     public async Task FixDailyData(FixDailyData request)
@@ -368,6 +372,20 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         return resp;
     }
 
+    public async Task<MonthlyActiveAddressCountResp> GetMonthlyActiveAddressCountAsync(ChartDataRequest request)
+    {
+        var monthlyActiveAddressIndices = _monthlyActiveAddressIndexRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == request.ChainId).OrderBy(c => c.DateMonth).Take(100000).ToList();
+
+        return new MonthlyActiveAddressCountResp
+        {
+            List = monthlyActiveAddressIndices,
+            HighestActiveCount = monthlyActiveAddressIndices.MaxBy(c => c.AddressCount),
+            LowestActiveCount = monthlyActiveAddressIndices.MinBy(c => c.AddressCount),
+            Total = monthlyActiveAddressIndices.Count()
+        };
+    }
+
     public async Task<DailyHolderResp> GetDailyHolderRespAsync(ChartDataRequest request)
     {
         var dailyHolderListAsync = await _dailyHolderProvider.GetDailyHolderListAsync(request.ChainId);
@@ -531,16 +549,18 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var mainIndexList = queryable.Where(c => c.ChainId == "AELF").OrderBy(c => c.Date).Take(10000).ToList();
 
         var sideIndexList = new List<DailyTotalBurntIndex>();
-
+        var sideList = new List<DailySupplyGrowthIndex>();
 
         var queryableBurnt = await _totalBurntRepository.GetQueryableAsync();
         if (_globalOptions.CurrentValue.IsMainNet)
         {
             sideIndexList = queryableBurnt.Where(c => c.ChainId == "tDVV").OrderBy(c => c.Date).Take(10000).ToList();
+            sideList = queryable.Where(c => c.ChainId == "tDVV").OrderBy(c => c.Date).Take(10000).ToList();
         }
         else
         {
             sideIndexList = queryableBurnt.Where(c => c.ChainId == "tDVW").OrderBy(c => c.Date).Take(10000).ToList();
+            sideList = queryable.Where(c => c.ChainId == "tDVW").OrderBy(c => c.Date).Take(10000).ToList();
         }
 
 
@@ -548,11 +568,18 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
         var sideDic = sideIndexList.ToDictionary(c => c.DateStr, c => c);
 
+        var sideSupplyDic = sideList.ToDictionary(c => c.DateStr, c => c);
+
         foreach (var dailySupplyGrowth in supplyGrowths)
         {
             if (sideDic.TryGetValue(dailySupplyGrowth.DateStr, out var sideIndex))
             {
                 dailySupplyGrowth.SideChainBurnt = sideIndex.Burnt;
+            }
+
+            if (sideSupplyDic.TryGetValue(dailySupplyGrowth.DateStr, out var sideSupplyIndex))
+            {
+                dailySupplyGrowth.TotalUnReceived += (decimal)sideSupplyIndex.TotalUnReceived;
             }
         }
 
@@ -1286,25 +1313,73 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
     public async Task<UniqueAddressCountResp> GetUniqueAddressCountAsync(ChartDataRequest request)
     {
         var queryable = await _uniqueAddressRepository.GetQueryableAsync();
-        var indexList = queryable.Where(c => c.ChainId == request.ChainId).OrderBy(c => c.Date).Take(10000).ToList();
+        var mainIndexList = queryable.Where(c => c.ChainId == "AELF").OrderBy(c => c.Date).Take(10000).ToList();
 
-        var dataList = _objectMapper.Map<List<DailyUniqueAddressCountIndex>, List<DailyUniqueAddressCount>>(indexList);
-
-        dataList[0].TotalUniqueAddressees = dataList[0].AddressCount;
-
-        for (int i = 1; i < dataList.Count; i++)
+        var sideIndexList = new List<DailyUniqueAddressCountIndex>();
+        if (_globalOptions.CurrentValue.IsMainNet)
         {
-            var count1 = dataList[i - 1].TotalUniqueAddressees;
-            var count2 = dataList[i].AddressCount;
-            dataList[i].TotalUniqueAddressees = count1 + count2;
+            sideIndexList = queryable.Where(c => c.ChainId == "tDVV").OrderBy(c => c.Date).Take(10000).ToList();
+        }
+        else
+        {
+            sideIndexList = queryable.Where(c => c.ChainId == "tDVW").OrderBy(c => c.Date).Take(10000).ToList();
+        }
+
+
+        var mainDataList =
+            _objectMapper.Map<List<DailyUniqueAddressCountIndex>, List<DailyUniqueAddressCount>>(mainIndexList);
+        var sideDataList =
+            _objectMapper.Map<List<DailyUniqueAddressCountIndex>, List<DailyUniqueAddressCount>>(sideIndexList);
+
+        mainDataList[0].TotalUniqueAddressees = mainDataList[0].AddressCount;
+
+        for (int i = 1; i < mainDataList.Count; i++)
+        {
+            var count1 = mainDataList[i - 1].TotalUniqueAddressees;
+            var count2 = mainDataList[i].AddressCount;
+            mainDataList[i].TotalUniqueAddressees = count1 + count2;
+        }
+
+        sideDataList[0].TotalUniqueAddressees = sideDataList[0].AddressCount;
+
+        for (int i = 1; i < sideDataList.Count; i++)
+        {
+            var count1 = sideDataList[i - 1].TotalUniqueAddressees;
+            var count2 = sideDataList[i].AddressCount;
+            sideDataList[i].TotalUniqueAddressees = count1 + count2;
+        }
+
+
+        var dic = new Dictionary<string, DailyUniqueAddressCount>();
+        var ownerList = new List<DailyUniqueAddressCount>();
+
+        if (request.ChainId == "AELF")
+        {
+            dic = sideDataList.ToDictionary(c => c.DateStr, c => c);
+            ownerList = mainDataList;
+        }
+        else
+        {
+            dic = mainDataList.ToDictionary(c => c.DateStr, c => c);
+            ownerList = sideDataList;
+        }
+
+
+        foreach (var data in ownerList)
+        {
+            data.OwnerUniqueAddressees = data.TotalUniqueAddressees;
+            if (dic.TryGetValue(data.DateStr, out var v))
+            {
+                data.TotalUniqueAddressees += v.TotalUniqueAddressees;
+            }
         }
 
         var resp = new UniqueAddressCountResp()
         {
-            List = dataList,
-            Total = dataList.Count,
-            HighestIncrease = dataList.MaxBy(c => c.AddressCount),
-            LowestIncrease = dataList.MinBy(c => c.AddressCount),
+            List = ownerList,
+            Total = ownerList.Count,
+            HighestIncrease = ownerList.MaxBy(c => c.AddressCount),
+            LowestIncrease = ownerList.MinBy(c => c.AddressCount),
         };
 
         return resp;

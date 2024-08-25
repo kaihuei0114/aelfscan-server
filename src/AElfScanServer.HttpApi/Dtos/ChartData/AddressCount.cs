@@ -20,6 +20,17 @@ public class ActiveAddressCountResp
     public string ChainId { get; set; }
 }
 
+
+public class MonthlyActiveAddressCountResp
+{
+    public long Total { get; set; }
+    public List<MonthlyActiveAddressIndex> List { get; set; }
+    public MonthlyActiveAddressIndex HighestActiveCount { get; set; }
+    public MonthlyActiveAddressIndex LowestActiveCount { get; set; }
+    public string ChainId { get; set; }
+}
+
+
 public class BlockProduceRateResp
 {
     public long Total { get; set; }

@@ -16,6 +16,9 @@ public class DailyUniqueAddressCount
 
     public int TotalUniqueAddressees { get; set; }
 
+    public int OwnerUniqueAddressees { get; set; }
+
+
     public string DateStr { get; set; }
 }
 

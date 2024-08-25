@@ -15,6 +15,7 @@ using AElfScanServer.HttpApi.Dtos.address;
 using AElfScanServer.HttpApi.Dtos.Indexer;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nito.AsyncEx;
 using Org.BouncyCastle.Ocsp;
 using Volo.Abp;
 using Volo.Abp.Caching;
@@ -83,19 +84,25 @@ public class ContractAppService : IContractAppService
         result.Total = getContractListResult.ContractList.TotalCount;
 
 
-        var list = getContractListResult.ContractList.Items.Select(s => s.Address).ToList();
+        var addressList = getContractListResult.ContractList.Items.Select(c => c.Address).ToList();
 
         var addressTransactionCountList = new List<IndexerAddressTransactionCountDto>();
+        var addressTokenList = new List<AccountTokenDto>();
 
-        try
+        var tasks = new List<Task>();
+
+        tasks.Add(_blockChainIndexerProvider.GetAddressTransactionCount(input.ChainId, addressList).ContinueWith(task =>
         {
-            addressTransactionCountList =
-                await _blockChainIndexerProvider.GetAddressTransactionCount(input.ChainId, list);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("Query address transaction count err:{e}", e);
-        }
+            addressTransactionCountList = task.Result;
+        }));
+
+
+        tasks.Add(_indexerTokenProvider.GetAddressTokenListAsync(input.ChainId,
+            "ELF", addressList, 0, addressList.Count).ContinueWith(task => { addressTokenList = task.Result; }));
+
+        await tasks.WhenAll();
+
+        var accountTokenDic = addressTokenList.ToDictionary(c => c.Address, c => c);
 
 
         foreach (var info in getContractListResult.ContractList.Items)
@@ -127,9 +134,10 @@ public class ContractAppService : IContractAppService
                 contractInfo.Txns = countInfo == null ? 0 : countInfo.Count;
             }
 
-            var addressTokenList = await _indexerTokenProvider.GetAddressTokenListAsync(input.ChainId, info.Address,
-                "ELF", input.SkipCount, input.MaxResultCount);
-            contractInfo.Balance = addressTokenList.Count > 0 ? addressTokenList[0].FormatAmount : 0;
+            if (accountTokenDic.TryGetValue(info.Address, out var v))
+            {
+                contractInfo.Balance = addressTokenList[0].FormatAmount;
+            }
 
 
             result.List.Add(contractInfo);
