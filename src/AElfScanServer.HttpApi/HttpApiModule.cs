@@ -103,6 +103,7 @@ public class HttpApiModule : AbpModule
 
         Configure<DecompilerOption>(configuration.GetSection("Decompiler"));
         Configure<AELFIndexerOptions>(configuration.GetSection("AELFIndexer"));
+        Configure<SecretOptions>(configuration.GetSection("Secret"));
         Configure<GlobalOptions>(configuration.GetSection("BlockChain"));
         Configure<ElasticsearchOptions>(configuration.GetSection("Elasticsearch"));
         Configure<WorkerOptions>(configuration.GetSection("Worker"));

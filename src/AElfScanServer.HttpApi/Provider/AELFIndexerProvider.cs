@@ -33,6 +33,7 @@ public class AELFIndexerProvider : ISingletonDependency
 {
     private readonly ILogger<AELFIndexerProvider> _logger;
     private readonly AELFIndexerOptions _aelfIndexerOptions;
+    private readonly SecretOptions _secretOptions;
     private readonly IHttpProvider _httpProvider;
     private readonly IDistributedCache<string> _tokenCache;
     private readonly IDistributedCache<string> _blockHeightCache;
@@ -42,7 +43,7 @@ public class AELFIndexerProvider : ISingletonDependency
     public const string BlockHeightCacheKey = "AELFIndexerBlockHeight";
 
     public AELFIndexerProvider(ILogger<AELFIndexerProvider> logger,
-        IOptionsMonitor<AELFIndexerOptions> aelfIndexerOptions, IHttpProvider httpProvider,
+        IOptionsMonitor<AELFIndexerOptions> aelfIndexerOptions, IOptionsMonitor<SecretOptions> secretOptions,IHttpProvider httpProvider,
         IDistributedCache<string> tokenCache, IDistributedCache<string> blockHeightCache)
     {
         _logger = logger;
@@ -50,6 +51,7 @@ public class AELFIndexerProvider : ISingletonDependency
         _httpProvider = httpProvider;
         _tokenCache = tokenCache;
         _blockHeightCache = blockHeightCache;
+        _secretOptions = secretOptions.CurrentValue;
     }
 
     public async Task<string> GetAccessTokenAsync()
@@ -66,7 +68,7 @@ public class AELFIndexerProvider : ISingletonDependency
                 RequestMediaType.Form, new Dictionary<string, string>
                 {
                     { "grant_type", "client_credentials" }, { "scope", "AeFinder" },
-                    { "client_id", _aelfIndexerOptions.ClientId }, { "client_secret", _aelfIndexerOptions.ClientSecret }
+                    { "client_id", _secretOptions.ClientId }, { "client_secret", _secretOptions.ClientSecret }
                 },
                 new Dictionary<string, string>
                 {

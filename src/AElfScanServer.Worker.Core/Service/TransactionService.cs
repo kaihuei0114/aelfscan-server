@@ -89,6 +89,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly BlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly HomePageProvider _homePageProvider;
     private readonly IOptionsMonitor<AELFIndexerOptions> _aelfIndexerOptions;
+    private readonly SecretOptions _secretOptions;
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly IStorageProvider _storageProvider;
@@ -189,6 +190,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IIndexerGenesisProvider indexerGenesisProvider,
         IEntityMappingRepository<DailyWithDrawnIndex, string> dailyWithDrawnIndexRepository,
         IEntityMappingRepository<LogEventIndex, string> logEventRepository,
+        IOptionsMonitor<SecretOptions> secretOptions,
         IPriceServerProvider priceServerProvider) :
         base(optionsAccessor)
     {
@@ -241,6 +243,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _indexerGenesisProvider = indexerGenesisProvider;
         _logEventRepository = logEventRepository;
         _dailyWithDrawnIndexRepository = dailyWithDrawnIndexRepository;
+        _secretOptions = secretOptions.CurrentValue;
     }
 
 
