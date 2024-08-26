@@ -812,7 +812,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             catch (Exception e)
             {
                 _logger.LogError(
-                    "BatchPullTransactionTask err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
+                    "BatchParseLogEventJob err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
                     chainId,
                     e, lastBlockHeight,
                     lastBlockHeight + PullLogEventTransactionInterval);
