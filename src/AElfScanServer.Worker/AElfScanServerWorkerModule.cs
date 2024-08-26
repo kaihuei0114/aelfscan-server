@@ -234,5 +234,6 @@ public class AElfScanServerWorkerModule : AbpModule
         context.AddBackgroundWorkerAsync<BlockSizeWorker>();
         context.AddBackgroundWorkerAsync<CurrentBpProduceWorker>();
         context.AddBackgroundWorkerAsync<FixDailyTransactionWorker>();
+        context.AddBackgroundWorkerAsync<ContractFileWorker>();
     }
 }

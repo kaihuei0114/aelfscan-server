@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using AElfScanServer.Common.Dtos;
 
 namespace AElfScanServer.HttpApi.Dtos.address;
 
