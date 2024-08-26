@@ -35,6 +35,7 @@ using AElfScanServer.HttpApi.Provider;
 using Aetherlink.PriceServer;
 using Aetherlink.PriceServer.Dtos;
 using Binance.Spot;
+using DeviceDetectorNET;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -45,6 +46,7 @@ using Nest;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
+using NUglify.Helpers;
 using StackExchange.Redis;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
@@ -73,6 +75,8 @@ public interface ITransactionService
 
     public Task BatchPullTransactionTask();
 
+
+    public Task UpdateMonthlyActiveAddress();
 
     public Task BatchPullLogEventTask();
 
@@ -129,6 +133,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<DailySupplyChange, string> _dailySupplyChangeRepository;
     private readonly IEntityMappingRepository<DailyTVLIndex, string> _dailyTVLIndexRepository;
 
+    private readonly IEntityMappingRepository<MonthlyActiveAddressInfoIndex, string>
+        _monthlyActiveAddressInfoRepository;
+
+    private readonly IEntityMappingRepository<MonthlyActiveAddressIndex, string> _monthlyActiveAddressRepository;
 
     private readonly IEntityMappingRepository<LogEventIndex, string> _logEventRepository;
     private readonly IPriceServerProvider _priceServerProvider;
@@ -145,6 +153,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private static int ContractListMax = 10000;
     private static int BlockSizeInterval = 1;
     private static long BpStakedAmount = 100000;
+    private static int BatchUpdateMaxSize = 1000;
     private static object _lock = new object();
     private static long PullLogEventTransactionInterval = 100 - 1;
     private static Timer timer;
@@ -191,6 +200,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IEntityMappingRepository<DailyWithDrawnIndex, string> dailyWithDrawnIndexRepository,
         IEntityMappingRepository<LogEventIndex, string> logEventRepository,
         IOptionsMonitor<SecretOptions> secretOptions,
+        IEntityMappingRepository<MonthlyActiveAddressInfoIndex, string> monthlyActiveAddressInfoRepository,
+        IEntityMappingRepository<MonthlyActiveAddressIndex, string> monthlyActiveAddressRepository,
         IPriceServerProvider priceServerProvider) :
         base(optionsAccessor)
     {
@@ -244,6 +255,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _logEventRepository = logEventRepository;
         _dailyWithDrawnIndexRepository = dailyWithDrawnIndexRepository;
         _secretOptions = secretOptions.CurrentValue;
+        _monthlyActiveAddressInfoRepository = monthlyActiveAddressInfoRepository;
+        _monthlyActiveAddressRepository = monthlyActiveAddressRepository;
     }
 
 
@@ -352,6 +365,133 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         {
             _logger.LogInformation("delete contract event:{p1},{p2},{p3}", chainId, contractAddress, resp.Deleted);
         }
+    }
+
+    public async Task UpdateMonthlyActiveAddress()
+    {
+        try
+        {
+            foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+            {
+                var needFindDateMonth = await GetNeedFindDateMonth(chainId);
+
+                var batchUpdate = await GetMonthData(needFindDateMonth, chainId);
+                if (!batchUpdate.IsNullOrEmpty())
+                {
+                    await _monthlyActiveAddressRepository.AddOrUpdateManyAsync(batchUpdate);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("UpdateMonthlyActiveAddress:{e}", e.ToString());
+        }
+    }
+
+
+    public async Task<int> GetNeedFindDateMonth(string chainId)
+    {
+        var needFindDateMonth = 0;
+        var activeAddressIndices = _monthlyActiveAddressRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == chainId).OrderByDescending(c => c.DateMonth).Take(1);
+        var infoQuery = _monthlyActiveAddressInfoRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == chainId);
+
+        var batchUpdate = new List<MonthlyActiveAddressIndex>();
+        if (activeAddressIndices.IsNullOrEmpty())
+        {
+            _logger.LogInformation("UpdateMonthlyActiveAddress first");
+            var list = infoQuery
+                .OrderBy(c => c.DateMonth).Take(1);
+
+            if (list.IsNullOrEmpty())
+            {
+                return 0;
+            }
+
+            needFindDateMonth = list.First().DateMonth;
+
+            return needFindDateMonth;
+        }
+        else
+        {
+            needFindDateMonth = activeAddressIndices.First().DateMonth;
+            needFindDateMonth = DateTimeHelper.GetNextYYMMDD(needFindDateMonth);
+        }
+
+        return needFindDateMonth;
+    }
+
+
+    public async Task<List<MonthlyActiveAddressIndex>> GetMonthData(int needFindDateMonth, string chainId)
+    {
+        var query = _monthlyActiveAddressInfoRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == chainId);
+        var infoQuery = _monthlyActiveAddressInfoRepository.GetQueryableAsync().Result
+            .Where(c => c.ChainId == chainId);
+
+        var monthlyActiveAddressInfoIndices = infoQuery.OrderByDescending(c => c.DateMonth).Take(1).ToList();
+
+        if (monthlyActiveAddressInfoIndices.IsNullOrEmpty())
+        {
+            return null;
+        }
+
+        var maxMonth = monthlyActiveAddressInfoIndices.First().DateMonth;
+
+        var list = new List<MonthlyActiveAddressIndex>();
+        while (needFindDateMonth < maxMonth)
+        {
+            _logger.LogInformation("UpdateMonthlyActiveAddress needFindDateMonth:{p1},maxMonth:{p2}", needFindDateMonth,
+                maxMonth);
+            var count = await GetMonthlyActiveAddressCount(needFindDateMonth, chainId);
+            var sendCount = query.Where(c => c.DateMonth == needFindDateMonth).Where(c => c.Type == "from")
+                .Count();
+            var toCount = query.Where(c => c.DateMonth == needFindDateMonth).Where(c => c.Type == "to")
+                .Count();
+
+            list.Add(new MonthlyActiveAddressIndex()
+            {
+                ChainId = chainId,
+                DateMonth = needFindDateMonth,
+                AddressCount = count,
+                SendAddressCount = sendCount,
+                ReceiveAddressCount = toCount
+            });
+
+            needFindDateMonth = DateTimeHelper.GetNextYYMMDD(needFindDateMonth);
+        }
+
+        return list;
+    }
+
+    public async Task<long> GetMonthlyActiveAddressCount(int month, string chainId)
+    {
+        try
+        {
+            var searchResponse = _elasticClient.Search<MonthlyActiveAddressInfoIndex>(s => s
+                .Index("monthlyactiveaddressinfoindex").Query(q => q
+                    .Bool(b => b
+                        .Must(
+                            m => m.Term(t => t.Field("dateMonth").Value(month)),
+                            m => m.Term(t => t.Field("chainId").Value(chainId))
+                        )
+                    )
+                )
+                .Aggregations(a => a
+                    .Cardinality("unique_addresses", t => t.Field("address"))
+                )
+            );
+
+            var uniqueAddressesCount = searchResponse.Aggregations.Cardinality("unique_addresses").Value;
+            return (int)uniqueAddressesCount;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("GetMonthlyActiveAddressCount {e}", e.ToString());
+        }
+
+        return 0;
     }
 
     public async Task BatchPullBlockSize(string chainId)
@@ -950,11 +1090,17 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         crossChainReceived.MergeFrom(logEvent);
                         await SetAddressSet(crossChainReceived.From.ToBase58(), crossChainReceived.To.ToBase58(),
                             dailyData);
-                        if (crossChainReceived.Symbol == "ELF" && chainId == "AELF")
+
+                        if (crossChainReceived.Symbol == "ELF")
                         {
-                            await CalculateSupplyByAddress(crossChainReceived.From.ToBase58(),
-                                crossChainReceived.To.ToBase58(),
-                                crossChainReceived.Amount, dailyData, transaction.TransactionId);
+                            dailyData.DailyUnReceived -= crossChainReceived.Amount;
+
+                            if (chainId == "AELF")
+                            {
+                                await CalculateSupplyByAddress(crossChainReceived.From.ToBase58(),
+                                    crossChainReceived.To.ToBase58(),
+                                    crossChainReceived.Amount, dailyData, transaction.TransactionId);
+                            }
                         }
 
                         break;
@@ -966,6 +1112,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         if (crossChainTransferred.Symbol == "ELF")
                         {
                             dailyData.DailyBurnt -= crossChainTransferred.Amount;
+                            dailyData.DailyUnReceived += crossChainTransferred.Amount;
                         }
 
                         break;
@@ -1226,6 +1373,14 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             await _dailySupplyChangeRepository.AddOrUpdateAsync(needUpdateData.DailySupplyChange);
 
+            if (!needUpdateData.MonthlyAddressDic.IsNullOrEmpty())
+            {
+                var monthlyActiveAddressIndices = needUpdateData.MonthlyAddressDic.Values.ToList();
+                await _monthlyActiveAddressInfoRepository.AddOrUpdateManyAsync(monthlyActiveAddressIndices);
+            }
+
+            await BatchUpdateMonthlyActiveAddressInfo(needUpdateData);
+
             startNew.Stop();
             needUpdateData.WirteFinishiTime = DateTime.UtcNow;
             needUpdateData.CostTime = startNew.Elapsed.TotalSeconds;
@@ -1240,15 +1395,37 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     }
 
 
+    public async Task BatchUpdateMonthlyActiveAddressInfo(DailyTransactionsChartSet dailyData)
+    {
+        if (dailyData.MonthlyAddressDic.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        var list = dailyData.MonthlyAddressDic.Values.ToList();
+        while (list.Count() > BatchUpdateMaxSize)
+        {
+            await _monthlyActiveAddressInfoRepository.AddOrUpdateManyAsync(list.Take(BatchUpdateMaxSize).ToList());
+            list = list.Skip(BatchUpdateMaxSize).ToList();
+        }
+
+        if (!list.IsNullOrEmpty())
+        {
+            await _monthlyActiveAddressInfoRepository.AddOrUpdateManyAsync(list);
+        }
+    }
+
     public async Task HandleSupplyChart(DailyTransactionsChartSet dailyData)
     {
         dailyData.DailyConsensusBalance /= 1e8;
         dailyData.DailyBurnt /= 1e8;
         dailyData.DailyOrganizationBalance /= 1e8;
+        dailyData.DailyUnReceived /= 1e8;
 
         dailyData.DailySupplyGrowthIndex.DailyBurnt = dailyData.DailyBurnt;
         dailyData.DailySupplyGrowthIndex.DailyConsensusBalance = dailyData.DailyConsensusBalance;
         dailyData.DailySupplyGrowthIndex.DailyOrganizationBalance = dailyData.DailyOrganizationBalance;
+        dailyData.DailySupplyGrowthIndex.DailyUnReceived = dailyData.DailyUnReceived;
 
         var beforeDaySupply = _dailySupplyGrowthIndexRepository.GetQueryableAsync().Result
             .Where(c => c.ChainId == dailyData.ChainId)
@@ -1263,12 +1440,16 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             dailyData.DailySupplyGrowthIndex.TotalOrganizationBalance =
                 beforeDaySupply.First().TotalOrganizationBalance + dailyData.DailyOrganizationBalance;
+
+            dailyData.DailySupplyGrowthIndex.TotalUnReceived =
+                beforeDaySupply.First().TotalUnReceived + dailyData.DailyUnReceived;
         }
         else
         {
             dailyData.DailySupplyGrowthIndex.TotalBurnt = dailyData.DailyBurnt;
             dailyData.DailySupplyGrowthIndex.TotalConsensusBalance = dailyData.DailyConsensusBalance;
             dailyData.DailySupplyGrowthIndex.TotalOrganizationBalance = dailyData.DailyOrganizationBalance;
+            dailyData.DailySupplyGrowthIndex.TotalUnReceived = dailyData.DailyUnReceived;
         }
 
         await _dailySupplyGrowthIndexRepository.AddOrUpdateAsync(dailyData.DailySupplyGrowthIndex);
@@ -1280,12 +1461,38 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         {
             dailyData.AddressFromSet.Add(from);
             dailyData.AddressSet.Add(from);
+
+            var key = "from" + from;
+            if (!dailyData.MonthlyAddressDic.ContainsKey(key))
+            {
+                dailyData.MonthlyAddressDic[key] = new MonthlyActiveAddressInfoIndex()
+                {
+                    ChainId = dailyData.ChainId,
+                    Address = from,
+                    Type = "from",
+                    DateMonth = DateTimeHelper.ConvertToYYYYMM(dailyData.DateTimeStamp),
+                    Date = dailyData.DateTimeStamp
+                };
+            }
         }
 
         if (!to.IsNullOrEmpty())
         {
             dailyData.AddressToSet.Add(to);
             dailyData.AddressSet.Add(to);
+
+            var key = "to" + to;
+            if (!dailyData.MonthlyAddressDic.ContainsKey(key))
+            {
+                dailyData.MonthlyAddressDic[key] = new MonthlyActiveAddressInfoIndex()
+                {
+                    ChainId = dailyData.ChainId,
+                    Address = to,
+                    Type = "to",
+                    DateMonth = DateTimeHelper.ConvertToYYYYMM(dailyData.DateTimeStamp),
+                    Date = dailyData.DateTimeStamp
+                };
+            }
         }
     }
 

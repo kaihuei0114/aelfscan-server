@@ -40,6 +40,7 @@ namespace AElfScanServer.Worker
                 builder.Configuration.AddJsonFile("apollo.appsettings.json");
                 builder.Configuration.AddJsonFile("secrets.json");
                 builder.Host.AddAppSettingsSecretsJson()
+                    .UseOrleansClient()
                     .UseAutofac()
                     .UseApollo()
                     .UseSerilog();

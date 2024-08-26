@@ -148,7 +148,8 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                         externalInfo { key, value },
                         holderCount,
                         transferCount,
-                        itemCount
+                        itemCount,
+                        type
                   }
                 }
             }",

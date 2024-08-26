@@ -25,6 +25,7 @@
         <PackageReference Include="Volo.Abp.Caching" Version="8.2.0"/>
         <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="8.2.0"/>
         <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.2" />
+        <PackageReference Include="Orleans.Providers.MongoDB" Version="8.0.3" />
     </ItemGroup>
 
     <ItemGroup>

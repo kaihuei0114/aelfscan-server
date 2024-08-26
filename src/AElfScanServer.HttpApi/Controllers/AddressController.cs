@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using AElf.OpenTelemetry.ExecutionTime;
+using AElfScanServer.Common.Dtos;
 using AElfScanServer.HttpApi.Dtos.address;
 using AElfScanServer.HttpApi.Service;
 using Asp.Versioning;
@@ -54,7 +55,7 @@ public class AddressController : AbpController
         => await _contractAppService.GetContractListAsync(input);
 
     [HttpGet("contract/file")]
-    public async Task<GetContractFileResultDto> GetContractFileAsync(
+    public async Task<ContractFileResultDto> GetContractFileAsync(
         GetContractFileInput input) => await _contractAppService.GetContractFileAsync(input);
 
     [HttpGet("contract/events")]

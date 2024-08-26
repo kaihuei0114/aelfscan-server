@@ -64,7 +64,7 @@ public class AElfScanServerWorkerModule : AbpModule
         Configure<ContractInfoSyncWorkerOptions>(configuration.GetSection("Contract"));
         Configure<SecretOptions>(configuration.GetSection("Secret"));
         Configure<WorkerOptions>(configuration.GetSection("Worker"));
-        
+
         context.Services.AddHostedService<AElfScanServerHostedService>();
         context.Services.AddHttpClient();
     }
@@ -220,7 +220,7 @@ public class AElfScanServerWorkerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-       
+        context.AddBackgroundWorkerAsync<MonthlyActiveAddressWorker>();
         context.AddBackgroundWorkerAsync<TransactionIndexWorker>();
         context.AddBackgroundWorkerAsync<LogEventWorker>();
         context.AddBackgroundWorkerAsync<LogEventDelWorker>();
@@ -235,5 +235,6 @@ public class AElfScanServerWorkerModule : AbpModule
         context.AddBackgroundWorkerAsync<BlockSizeWorker>();
         context.AddBackgroundWorkerAsync<CurrentBpProduceWorker>();
         context.AddBackgroundWorkerAsync<FixDailyTransactionWorker>();
+        context.AddBackgroundWorkerAsync<ContractFileWorker>();
     }
 }
