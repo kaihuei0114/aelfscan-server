@@ -58,9 +58,6 @@ public class AddressController : AbpController
     public async Task<ContractFileResultDto> GetContractFileAsync(
         GetContractFileInput input) => await _contractAppService.GetContractFileAsync(input);
     
-    [HttpGet("contract/update")]
-    public async Task UpdateContractHeightAsync(
-        SynchronizationDto input) => await _contractAppService.UpdateContractHeightAsync(input);
 
     [HttpGet("contract/events")]
     public async Task<GetContractEventResp> GetContractEventsAsync(
