@@ -8,7 +8,7 @@ public class TokenInfoOptions
 {
     public HashSet<string> NonResourceSymbols { get; set; } = new();
 
-    public Dictionary<string, TokenInfo> TokenInfos { get; set; } = new();
+    public Dictionary<string, TokenInfoDto> TokenInfos { get; set; } = new();
     
     public List<MarketInfoDto> MarketInfos { get; set; }= new();
     
@@ -20,7 +20,7 @@ public class TokenInfoOptions
     }
 }
 
-public class TokenInfo
+public class TokenInfoDto
 {
     public string ImageUrl { get; set; }
 }

@@ -239,51 +239,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
         }
     }
 
-
-    public async Task<string> GetTokenImageAsync(string symbol)
-    {
-        try
-        {
-            if (_tokenImageUrlCache.TryGetValue(symbol, out var imageBase64))
-            {
-                return imageBase64;
-            }
-
-
-            AElfClient elfClient = new AElfClient(_globalOptions.ChainNodeHosts["AELF"]);
-            var tokenInfoInput = new GetTokenInfoInput
-            {
-                Symbol = symbol
-            };
-            var transactionGetToken =
-                await elfClient.GenerateTransactionAsync(
-                    elfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
-                    "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
-                    "GetTokenInfo",
-                    tokenInfoInput);
-            var txWithSignGetToken = elfClient.SignTransaction(GlobalOptions.PrivateKey, transactionGetToken);
-            var transactionGetTokenResult = await elfClient.ExecuteTransactionAsync(new ExecuteTransactionDto
-            {
-                RawTransaction = txWithSignGetToken.ToByteArray().ToHex()
-            });
-
-            var token = new TokenInfo();
-            token.MergeFrom(ByteArrayHelper.HexStringToByteArray(transactionGetTokenResult));
-
-            if (token.ExternalInfo.Value.TryGetValue("__ft_image_uri", out var url))
-            {
-                _tokenImageUrlCache.Add(symbol, url);
-                return url;
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("get token:{0} image base64  error:{1}", symbol, e);
-        }
-
-
-        return "";
-    }
+    
 
 
     public async Task<int> GetTokenDecimals(string symbol, string chainId)
