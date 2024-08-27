@@ -312,10 +312,10 @@ public class ContractAppService : IContractAppService
                         Address = contractRecord.Address,
                         LastBlockHeight = contractRecord.Metadata.Block.BlockHeight,
                         ContractName = GetContractName(chainId, contractRecord.Address),
-                        ContractVersion = contractRecord.ContractVersion,
+                        ContractVersion = contractRecord.ContractVersion == "" ? contractRecord.Version.ToString() : contractRecord.ContractVersion,
                         ContractSourceCode = getFilesResult.Data
                     });
-               
+                    _logger.LogInformation("SaveContractFileAsync ChainId:{ChainId}, LastBlockHeight {LastBlockHeight}",chainId,contractRecord.Metadata.Block.BlockHeight);
                 }
             }
         } while (flag);
