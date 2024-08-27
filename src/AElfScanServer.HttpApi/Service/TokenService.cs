@@ -220,7 +220,8 @@ public class TokenService : ITokenService, ISingletonDependency
             tokenListDto.CirculatingSupply =
                 DecimalHelper.Divide(tokenListDto.CirculatingSupply, indexerTokenInfoDto.Decimals);
             //handle image url
-            tokenListDto.Token.ImageUrl = await _tokenInfoProvider.GetTokenImageAsync(indexerTokenInfoDto.Symbol);
+            tokenListDto.Token.ImageUrl = await _tokenIndexerProvider.GetTokenImageAsync(indexerTokenInfoDto.Symbol,
+                indexerTokenInfoDto.IssueChainId, indexerTokenInfoDto.ExternalInfo);
 
 
             if (tokenHolderCountDic.TryGetValue(indexerTokenInfoDto.Symbol, out var beforeCount) && beforeCount != 0)

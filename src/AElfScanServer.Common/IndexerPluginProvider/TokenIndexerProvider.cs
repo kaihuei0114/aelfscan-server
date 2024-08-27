@@ -33,6 +33,9 @@ public interface ITokenIndexerProvider
     public Task<List<IndexerTokenInfoDto>> GetTokenDetailAsync(string chainId, string symbol);
     public Task<IndexerTokenTransferListDto> GetTokenTransferInfoAsync(TokenTransferInput input);
 
+    public Task<string> GetTokenImageAsync(string symbol, string chainId,
+        List<ExternalInfoDto> externalInfo = null);
+
     public Task<int> GetAccountCountAsync(string chainId);
     Task<IndexerTokenHolderInfoListDto> GetTokenHolderInfoAsync(TokenHolderInput input);
     Task<List<HolderInfo>> GetHolderInfoAsync(string chainId, string address, List<SymbolType> types);
@@ -52,22 +55,29 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
     private readonly IGraphQlFactory _graphQlFactory;
     private readonly IObjectMapper _objectMapper;
     private readonly ITokenInfoProvider _tokenInfoProvider;
+    private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptionsMonitor;
     private readonly IGenesisPluginProvider _genesisPluginProvider;
-  
+    private readonly string TokenImageUrlKey = "__ft_image_uri";
+    private Dictionary<string, string> _tokenImageUrlCache;
+    private readonly GlobalOptions _globalOptions;
 
 
     private ILogger<TokenIndexerProvider> _logger;
 
 
     public TokenIndexerProvider(IGraphQlFactory graphQlFactory, IObjectMapper objectMapper,
-        ITokenInfoProvider tokenInfoProvider, IGenesisPluginProvider genesisPluginProvider,ILogger<TokenIndexerProvider> logger)
+        ITokenInfoProvider tokenInfoProvider, IGenesisPluginProvider genesisPluginProvider,
+        IOptionsMonitor<GlobalOptions> globalOptions, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
+        ILogger<TokenIndexerProvider> logger)
     {
         _graphQlFactory = graphQlFactory;
         _objectMapper = objectMapper;
         _tokenInfoProvider = tokenInfoProvider;
         _genesisPluginProvider = genesisPluginProvider;
+        _tokenImageUrlCache = new Dictionary<string, string>();
         _logger = logger;
- 
+        _globalOptions = globalOptions.CurrentValue;
+        _tokenInfoOptionsMonitor = tokenInfoOptions;
     }
 
     public async Task<List<BlockBurnFeeDto>> GetBlockBurntFeeListAsync(string chainId, long startBlockHeight,
@@ -330,6 +340,55 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         return indexerResult == null ? new IndexerTokenHolderInfoListDto() : indexerResult.AccountCollection;
     }
 
+    public async Task<string> GetTokenImageAsync(string symbol, string chainId,
+        List<ExternalInfoDto> externalInfo = null)
+    {
+        try
+        {
+            var imageUrl = "";
+            if (_tokenImageUrlCache.TryGetValue(symbol, out imageUrl))
+            {
+                return imageUrl;
+            }
+
+            if (externalInfo == null)
+            {
+                var input = new TokenListInput
+                {
+                    ChainId = chainId,
+                    Symbols = new List<string>() { symbol },
+                    MaxResultCount = 1
+                };
+
+                var indexerTokenListDto = await GetTokenListAsync(input);
+                externalInfo = indexerTokenListDto.Items.First().ExternalInfo;
+            }
+
+
+            var list = externalInfo.Where(e => e.Key == TokenImageUrlKey).Select(e => e.Value).ToList();
+            if (!list.IsNullOrEmpty())
+            {
+                imageUrl = list.First();
+                _tokenImageUrlCache.Add(symbol, imageUrl);
+                return imageUrl;
+            }
+
+
+            if (_tokenInfoOptionsMonitor.CurrentValue.TokenInfos.TryGetValue(symbol, out var tokenInfo))
+            {
+                _tokenImageUrlCache.Add(symbol, tokenInfo.ImageUrl);
+                return tokenInfo.ImageUrl;
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("get token:{0} image base64  error:{1}", symbol, e);
+        }
+
+
+        return "";
+    }
+
     private IGraphQlHelper GetGraphQlHelper()
     {
         return _graphQlFactory.GetGraphQlHelper(AElfIndexerConstant.TokenIndexer);
@@ -447,11 +506,11 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             {
                 tokenTransferDto.Symbol = tokenInfo.Symbol;
                 tokenTransferDto.SymbolName = tokenInfo.TokenName;
-                tokenTransferDto.SymbolImageUrl = await _tokenInfoProvider.GetTokenImageAsync(tokenInfo.Symbol);
+                tokenTransferDto.SymbolImageUrl =
+                    await GetTokenImageAsync(tokenInfo.Symbol, tokenInfo.IssueChainId, tokenInfo.ExternalInfo);
             }
 
-            tokenTransferDto.TransactionFeeList =
-                await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
+            await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
             tokenTransferDto.From = BaseConverter.OfCommonAddress(indexerTransferInfoDto.From, contractInfoDict);
             tokenTransferDto.To = BaseConverter.OfCommonAddress(indexerTransferInfoDto.To, contractInfoDict);
             list.Add(tokenTransferDto);
@@ -459,8 +518,6 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
 
         return list;
     }
-
-  
 
 
     public async Task<List<IndexerTokenInfoDto>> GetAllTokenInfosAsync(TokenListInput input)
