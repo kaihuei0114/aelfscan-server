@@ -481,7 +481,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                             From = ConvertAddress(transferred.From.ToBase58(), transactionIndex.ChainId),
                             To = ConvertAddress(transferred.To.ToBase58(), transactionIndex.ChainId),
                             ImageUrl = await _tokenIndexerProvider.GetTokenImageAsync(transferred.Symbol,
-                                transferred.Symbol),
+                                txnLogEvent.ChainId),
                             NowPrice = await _blockChainProvider.TransformTokenToUsdValueAsync(transferred.Symbol,
                                 transferred.Amount)
                         };
