@@ -93,6 +93,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly BlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly HomePageProvider _homePageProvider;
     private readonly IOptionsMonitor<AELFIndexerOptions> _aelfIndexerOptions;
+    private readonly SecretOptions _secretOptions;
     private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly IStorageProvider _storageProvider;
@@ -198,6 +199,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IIndexerGenesisProvider indexerGenesisProvider,
         IEntityMappingRepository<DailyWithDrawnIndex, string> dailyWithDrawnIndexRepository,
         IEntityMappingRepository<LogEventIndex, string> logEventRepository,
+        IOptionsMonitor<SecretOptions> secretOptions,
         IEntityMappingRepository<MonthlyActiveAddressInfoIndex, string> monthlyActiveAddressInfoRepository,
         IEntityMappingRepository<MonthlyActiveAddressIndex, string> monthlyActiveAddressRepository,
         IPriceServerProvider priceServerProvider) :
@@ -252,6 +254,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _indexerGenesisProvider = indexerGenesisProvider;
         _logEventRepository = logEventRepository;
         _dailyWithDrawnIndexRepository = dailyWithDrawnIndexRepository;
+        _secretOptions = secretOptions.CurrentValue;
         _monthlyActiveAddressInfoRepository = monthlyActiveAddressInfoRepository;
         _monthlyActiveAddressRepository = monthlyActiveAddressRepository;
     }
@@ -809,7 +812,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             catch (Exception e)
             {
                 _logger.LogError(
-                    "BatchPullTransactionTask err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
+                    "BatchParseLogEventJob err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
                     chainId,
                     e, lastBlockHeight,
                     lastBlockHeight + PullLogEventTransactionInterval);
@@ -941,10 +944,10 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     TransactionId = txn.TransactionId,
                     ChainId = chainId,
                     BlockHeight = txn.BlockHeight,
-                    MethodName = txn.MethodName,
+                    MethodName = curEvent.EventName,
                     BlockTime = txn.BlockTime,
                     TimeStamp = txn.BlockTime.ToUtcMilliSeconds(),
-                    ToAddress = txn.To,
+                    ToAddress = curEvent.ContractAddress,
                     ContractAddress = curEvent.ContractAddress,
                     EventName = curEvent.EventName,
                     NonIndexed = nonIndexed,

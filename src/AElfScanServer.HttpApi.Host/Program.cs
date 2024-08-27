@@ -40,6 +40,7 @@ public class Program
             Log.Information("Starting BlockChainDataFunction Host.");
             var builder = WebApplication.CreateBuilder(args);
             builder.Configuration.AddJsonFile("apollo.appsettings.json");
+            builder.Configuration.AddJsonFile("secrets.json");
             builder.Services.AddSerilog(loggerConfiguration => {},
                 true, writeToProviders: true);
             builder.Host.AddAppSettingsSecretsJson()

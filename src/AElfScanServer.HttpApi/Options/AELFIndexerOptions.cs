@@ -7,17 +7,10 @@ public class AELFIndexerOptions
     public string GetTokenHost { get; set; }
 
     public string AELFIndexerHost { get; set; }
-    
-    
-
-    public string ClientId { get; set; }
 
     public int AccessTokenExpireDurationSeconds { get; set; }
 
     public int TransactionRateKeyExpireDurationSeconds { get; set; }
-
-    public string ClientSecret { get; set; }
-
 
     public List<string> ChainIds { get; set; }
 

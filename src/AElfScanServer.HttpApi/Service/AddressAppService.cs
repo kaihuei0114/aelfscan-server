@@ -24,6 +24,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.ObjectMapping;
+using TokenInfoDto = AElfScanServer.Common.Dtos.TokenInfoDto;
 
 namespace AElfScanServer.HttpApi.Service;
 
@@ -196,7 +197,7 @@ public class AddressAppService : IAddressAppService
             result.CodeHash = contractInfo.ContractList.Items[0].CodeHash;
             result.AddressType = AddressType.ContractAddress;
         }
-       
+
 
         result.ElfBalance = holderInfo.Balance;
         result.ElfPriceInUsd = Math.Round(priceDto.Price, CommonConstant.UsdValueDecimals);
@@ -386,8 +387,7 @@ public class AddressAppService : IAddressAppService
             {
                 // handle image url
                 tokenHolderInfo.Token.Name = tokenInfo.TokenName;
-                tokenHolderInfo.Token.ImageUrl = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
-                    () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol));
+                tokenHolderInfo.Token.ImageUrl = await _tokenInfoProvider.GetTokenImageAsync(tokenInfo.Symbol);
             }
 
             if (_tokenInfoOptions.CurrentValue.NonResourceSymbols.Contains(symbol))

@@ -38,7 +38,9 @@ namespace AElfScanServer.Worker
                 Log.Information("Starting Worker.");
                 var builder = WebApplication.CreateBuilder(args);
                 builder.Configuration.AddJsonFile("apollo.appsettings.json");
+                builder.Configuration.AddJsonFile("secrets.json");
                 builder.Host.AddAppSettingsSecretsJson()
+                    .UseOrleansClient()
                     .UseAutofac()
                     .UseApollo()
                     .UseSerilog();

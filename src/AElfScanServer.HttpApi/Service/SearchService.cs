@@ -228,8 +228,7 @@ public class SearchService : ISearchService, ISingletonDependency
             var searchToken = new SearchToken
             {
                 Name = tokenInfo.TokenName, Symbol = tokenInfo.Symbol, Type = tokenInfo.Type,
-                Image = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
-                    () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol))
+                Image = await _tokenInfoProvider.GetTokenImageAsync(tokenInfo.Symbol)
             };
             switch (tokenInfo.Type)
             {

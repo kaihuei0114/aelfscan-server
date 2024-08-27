@@ -50,7 +50,12 @@ public static class OrleansHostExtensions
                         settings.ObjectCreationHandling = ObjectCreationHandling.Replace;
                         settings.DefaultValueHandling = DefaultValueHandling.Populate;
                     })
-                .AddMemoryGrainStorageAsDefault()
+               .ConfigureServices(services => services.AddSingleton<IGrainStateSerializer,AElfScanServerJsonGrainStateSerializer>())
+                .AddMongoDBGrainStorageAsDefault(op =>
+                {
+                    op.CollectionPrefix = "aelfscan";
+                    op.DatabaseName = configSection.GetValue<string>("DataBase");
+                })
                 .UseMongoDBReminders(options =>
                 {
                     options.DatabaseName = configSection.GetValue<string>("DataBase");

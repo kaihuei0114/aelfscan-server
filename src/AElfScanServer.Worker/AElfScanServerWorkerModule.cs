@@ -62,6 +62,7 @@ public class AElfScanServerWorkerModule : AbpModule
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AElfScanServer:"; });
         Configure<BlockChainProducerInfoSyncWorkerOptions>(configuration.GetSection("BlockChainProducer"));
         Configure<ContractInfoSyncWorkerOptions>(configuration.GetSection("Contract"));
+        Configure<SecretOptions>(configuration.GetSection("Secret"));
         Configure<WorkerOptions>(configuration.GetSection("Worker"));
 
         context.Services.AddHostedService<AElfScanServerHostedService>();
@@ -234,5 +235,6 @@ public class AElfScanServerWorkerModule : AbpModule
         context.AddBackgroundWorkerAsync<BlockSizeWorker>();
         context.AddBackgroundWorkerAsync<CurrentBpProduceWorker>();
         context.AddBackgroundWorkerAsync<FixDailyTransactionWorker>();
+        context.AddBackgroundWorkerAsync<ContractFileWorker>();
     }
 }
