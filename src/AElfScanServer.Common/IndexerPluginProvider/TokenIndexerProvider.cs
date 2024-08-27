@@ -3,6 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Client.Dto;
+using AElf.Client.Service;
+using AElf.Contracts.MultiToken;
 using AElfScanServer.Common.Constant;
 using AElfScanServer.Common.Contract.Provider;
 using AElfScanServer.Common.Dtos;
@@ -10,11 +14,15 @@ using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.GraphQL;
 using AElfScanServer.Common.Helper;
+using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token.Provider;
+using Google.Protobuf;
 using GraphQL;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
+using GetTokenInfoInput = AElf.Client.MultiToken.GetTokenInfoInput;
 
 namespace AElfScanServer.Common.IndexerPluginProvider;
 
@@ -32,9 +40,10 @@ public interface ITokenIndexerProvider
     Task<Dictionary<string, IndexerTokenInfoDto>> GetTokenDictAsync(string chainId, List<string> symbols);
     Task<TokenTransferInfosDto> GetTokenTransfersAsync(TokenTransferInput input);
 
+
     Task<List<BlockBurnFeeDto>> GetBlockBurntFeeListAsync(string chainId, long startBlockHeight, long endBlockHeight);
-    
-    
+
+
     Task<IndexerTokenHolderInfoListDto> GetCollectionHolderInfoAsync(TokenHolderInput input);
 }
 
@@ -44,18 +53,21 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
     private readonly IObjectMapper _objectMapper;
     private readonly ITokenInfoProvider _tokenInfoProvider;
     private readonly IGenesisPluginProvider _genesisPluginProvider;
-    
+  
+
+
     private ILogger<TokenIndexerProvider> _logger;
 
 
     public TokenIndexerProvider(IGraphQlFactory graphQlFactory, IObjectMapper objectMapper,
-        ITokenInfoProvider tokenInfoProvider, IGenesisPluginProvider genesisPluginProvider, ILogger<TokenIndexerProvider> logger)
+        ITokenInfoProvider tokenInfoProvider, IGenesisPluginProvider genesisPluginProvider,ILogger<TokenIndexerProvider> logger)
     {
         _graphQlFactory = graphQlFactory;
         _objectMapper = objectMapper;
         _tokenInfoProvider = tokenInfoProvider;
         _genesisPluginProvider = genesisPluginProvider;
         _logger = logger;
+ 
     }
 
     public async Task<List<BlockBurnFeeDto>> GetBlockBurntFeeListAsync(string chainId, long startBlockHeight,
@@ -158,7 +170,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                 chainId = input.ChainId, types = input.Types, symbols = input.Symbols, skipCount = input.SkipCount,
                 maxResultCount = input.MaxResultCount, collectionSymbols = input.CollectionSymbols,
                 search = input.Search, sort = input.Sort, orderBy = input.OrderBy,
-                exactSearch = input.ExactSearch, fuzzySearch = input.FuzzySearch,searchAfter = input.SearchAfter
+                exactSearch = input.ExactSearch, fuzzySearch = input.FuzzySearch, searchAfter = input.SearchAfter
             }
         });
         return indexerResult?.TokenInfo ?? new IndexerTokenInfoListDto();
@@ -282,8 +294,8 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         });
         return indexerResult == null ? new IndexerTokenHolderInfoListDto() : indexerResult.AccountToken;
     }
-    
-     public async Task<IndexerTokenHolderInfoListDto> GetCollectionHolderInfoAsync(TokenHolderInput input)
+
+    public async Task<IndexerTokenHolderInfoListDto> GetCollectionHolderInfoAsync(TokenHolderInput input)
     {
         var graphQlHelper = GetGraphQlHelper();
         var indexerResult = await graphQlHelper.QueryAsync<IndexerCollectionHolderInfosDto>(new GraphQLRequest
@@ -311,7 +323,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             {
                 chainId = input.ChainId, symbol = input.CollectionSymbol,
                 skipCount = input.SkipCount, maxResultCount = input.MaxResultCount, address = input.Address,
-                sort = input.Sort, orderBy = input.OrderBy, 
+                sort = input.Sort, orderBy = input.OrderBy,
                 orderInfos = input.OrderInfos, searchAfter = input.SearchAfter
             }
         });
@@ -435,8 +447,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             {
                 tokenTransferDto.Symbol = tokenInfo.Symbol;
                 tokenTransferDto.SymbolName = tokenInfo.TokenName;
-                tokenTransferDto.SymbolImageUrl = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
-                    () => _tokenInfoProvider.BuildImageUrl(tokenInfo.Symbol));
+                tokenTransferDto.SymbolImageUrl = await _tokenInfoProvider.GetTokenImageAsync(tokenInfo.Symbol);
             }
 
             tokenTransferDto.TransactionFeeList =
@@ -448,6 +459,9 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
 
         return list;
     }
+
+  
+
 
     public async Task<List<IndexerTokenInfoDto>> GetAllTokenInfosAsync(TokenListInput input)
     {

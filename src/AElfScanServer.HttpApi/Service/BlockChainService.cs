@@ -33,6 +33,7 @@ using Castle.Components.DictionaryAdapter.Xml;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
+using AElfScanServer.Common.Token.Provider;
 using AElfScanServer.DataStrategy;
 using AElfScanServer.HttpApi.DataStrategy;
 using Newtonsoft.Json;
@@ -72,6 +73,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
     private readonly BlockChainDataProvider _blockChainProvider;
     private readonly LogEventProvider _logEventProvider;
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
+    private readonly ITokenInfoProvider _tokenInfoProvider;
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptionsMonitor;
     private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
     private IDistributedCache<TransactionDetailResponseDto> _transactionDetailCache;
@@ -86,7 +88,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         BlockChainDataProvider blockChainProvider, IBlockChainIndexerProvider blockChainIndexerProvider,
         ITokenIndexerProvider tokenIndexerProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
         OverviewDataStrategy overviewDataStrategy,
-        IDistributedCache<TransactionDetailResponseDto> transactionDetailCache)
+        IDistributedCache<TransactionDetailResponseDto> transactionDetailCache, ITokenInfoProvider tokenInfoProvider)
     {
         _logger = logger;
         _globalOptions = blockChainOptions;
@@ -99,6 +101,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
         _tokenInfoOptionsMonitor = tokenInfoOptions;
         _overviewDataStrategy = new DataStrategyContext<string, HomeOverviewResponseDto>(overviewDataStrategy);
         _transactionDetailCache = transactionDetailCache;
+        _tokenInfoProvider = tokenInfoProvider;
     }
 
 
@@ -477,7 +480,7 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                                 await _blockChainProvider.GetDecimalAmountAsync(transferred.Symbol, transferred.Amount),
                             From = ConvertAddress(transferred.From.ToBase58(), transactionIndex.ChainId),
                             To = ConvertAddress(transferred.To.ToBase58(), transactionIndex.ChainId),
-                            ImageUrl = await _blockChainProvider.GetTokenImageAsync(transferred.Symbol),
+                            ImageUrl = await _tokenInfoProvider.GetTokenImageAsync(transferred.Symbol),
                             NowPrice = await _blockChainProvider.TransformTokenToUsdValueAsync(transferred.Symbol,
                                 transferred.Amount)
                         };
