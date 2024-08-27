@@ -511,7 +511,6 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             }
             tokenTransferDto.TransactionFeeList =
                 await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
-            await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
             tokenTransferDto.From = BaseConverter.OfCommonAddress(indexerTransferInfoDto.From, contractInfoDict);
             tokenTransferDto.To = BaseConverter.OfCommonAddress(indexerTransferInfoDto.To, contractInfoDict);
             list.Add(tokenTransferDto);
