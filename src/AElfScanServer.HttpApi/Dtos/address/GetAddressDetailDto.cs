@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AElfScanServer.Common.Dtos;
 
@@ -22,6 +23,7 @@ public class GetAddressDetailResultDto
     public decimal TotalValueOfUsd { get; set; }
     public decimal TotalValueOfElf { get; set; }
     public decimal TotalValueOfUsdChangeRate { get; set; }
+    public List<string> AddressTypeList { get; set; }
 
     // only address type is caAddress|eocAddress
     public TransactionInfoDto FirstTransactionSend { get; set; }

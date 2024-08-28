@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace AElfScanServer.Common.Dtos;
 
 public class TokenDetailDto : TokenCommonDto
@@ -7,4 +9,7 @@ public class TokenDetailDto : TokenCommonDto
     public double PricePercentChange24h { get; set; }
 
     public string TokenContractAddress { get; set; }
+    
+    public List<string> AddressTypeList { get; set; }
 }
+
