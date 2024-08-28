@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -23,7 +24,6 @@ public interface ITokenInfoProvider
     TokenBaseInfo OfTokenBaseInfo(IndexerTokenInfoDto tokenInfo);
 
     string BuildImageUrl(string symbol, bool useAssetUrl = false);
-    Task<string> GetTokenImageAsync(string symbol);
 
     Task<List<TransactionFeeDto>> ConvertTransactionFeeAsync(Dictionary<string, CommonTokenPriceDto> priceDict,
         List<ExternalInfoDto> externalInfos);
@@ -34,20 +34,19 @@ public class TokenInfoProvider : ITokenInfoProvider, ISingletonDependency
     private readonly IOptionsMonitor<TokenInfoOptions> _tokenInfoOptionsMonitor;
     private readonly IOptionsMonitor<AssetsInfoOptions> _assetsInfoOptionsMonitor;
     private readonly ITokenPriceService _tokenPriceService;
-    private Dictionary<string, string> _tokenImageUrlCache;
-    private readonly GlobalOptions _globalOptions;
+
+
     private ILogger<TokenInfoProvider> _logger;
 
+
     public TokenInfoProvider(IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
-        IOptionsMonitor<AssetsInfoOptions> assetsInfoOptions, IOptionsMonitor<GlobalOptions> globalOptions,
+        IOptionsMonitor<AssetsInfoOptions> assetsInfoOptions,
         ITokenPriceService tokenPriceService, ILogger<TokenInfoProvider> logger)
     {
         _tokenInfoOptionsMonitor = tokenInfoOptions;
         _assetsInfoOptionsMonitor = assetsInfoOptions;
         _tokenPriceService = tokenPriceService;
-        _tokenImageUrlCache = new Dictionary<string, string>();
 
-        _globalOptions = globalOptions.CurrentValue;
         _logger = logger;
     }
 
@@ -58,54 +57,11 @@ public class TokenInfoProvider : ITokenInfoProvider, ISingletonDependency
             Name = tokenInfo.TokenName,
             Symbol = tokenInfo.Symbol,
             Decimals = tokenInfo.Decimals,
-            ImageUrl = GetTokenImageAsync(tokenInfo.Symbol).Result
+            ImageUrl = TokenInfoHelper.GetImageUrl(tokenInfo.ExternalInfo,
+                () => BuildImageUrl(tokenInfo.Symbol))
         };
     }
 
-    public async Task<string> GetTokenImageAsync(string symbol)
-    {
-        try
-        {
-            if (_tokenImageUrlCache.TryGetValue(symbol, out var imageBase64))
-            {
-                return imageBase64;
-            }
-
-
-            AElfClient elfClient = new AElfClient(_globalOptions.ChainNodeHosts["AELF"]);
-            var tokenInfoInput = new GetTokenInfoInput
-            {
-                Symbol = symbol
-            };
-            var transactionGetToken =
-                await elfClient.GenerateTransactionAsync(
-                    elfClient.GetAddressFromPrivateKey(GlobalOptions.PrivateKey),
-                    "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
-                    "GetTokenInfo",
-                    tokenInfoInput);
-            var txWithSignGetToken = elfClient.SignTransaction(GlobalOptions.PrivateKey, transactionGetToken);
-            var transactionGetTokenResult = await elfClient.ExecuteTransactionAsync(new ExecuteTransactionDto
-            {
-                RawTransaction = txWithSignGetToken.ToByteArray().ToHex()
-            });
-
-            var token = new TokenInfo();
-            token.MergeFrom(ByteArrayHelper.HexStringToByteArray(transactionGetTokenResult));
-
-            if (token.ExternalInfo.Value.TryGetValue("__ft_image_uri", out var url))
-            {
-                _tokenImageUrlCache.Add(symbol, url);
-                return url;
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("get token:{0} image base64  error:{1}", symbol, e);
-        }
-
-
-        return "";
-    }
 
     public string BuildImageUrl(string symbol, bool useAssetUrl = false)
     {

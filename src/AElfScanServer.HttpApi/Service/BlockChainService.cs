@@ -480,17 +480,12 @@ public class BlockChainService : IBlockChainService, ITransientDependency
                                 await _blockChainProvider.GetDecimalAmountAsync(transferred.Symbol, transferred.Amount),
                             From = ConvertAddress(transferred.From.ToBase58(), transactionIndex.ChainId),
                             To = ConvertAddress(transferred.To.ToBase58(), transactionIndex.ChainId),
-                            ImageUrl = await _tokenInfoProvider.GetTokenImageAsync(transferred.Symbol),
+                            ImageUrl = await _tokenIndexerProvider.GetTokenImageAsync(transferred.Symbol,
+                                txnLogEvent.ChainId),
                             NowPrice = await _blockChainProvider.TransformTokenToUsdValueAsync(transferred.Symbol,
                                 transferred.Amount)
                         };
 
-                        if (token.ImageUrl.IsNullOrEmpty() &&
-                            _tokenInfoOptionsMonitor.CurrentValue.TokenInfos.TryGetValue(
-                                transferred.Symbol, out var info))
-                        {
-                            token.ImageUrl = info.ImageUrl;
-                        }
 
                         detailDto.TokenTransferreds.Add(token);
                     }

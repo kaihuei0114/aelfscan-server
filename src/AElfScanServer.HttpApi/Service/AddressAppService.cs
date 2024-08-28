@@ -387,7 +387,9 @@ public class AddressAppService : IAddressAppService
             {
                 // handle image url
                 tokenHolderInfo.Token.Name = tokenInfo.TokenName;
-                tokenHolderInfo.Token.ImageUrl = await _tokenInfoProvider.GetTokenImageAsync(tokenInfo.Symbol);
+                tokenHolderInfo.Token.ImageUrl =
+                    await _tokenIndexerProvider.GetTokenImageAsync(tokenInfo.Symbol, tokenInfo.IssueChainId,
+                        tokenInfo.ExternalInfo);
             }
 
             if (_tokenInfoOptions.CurrentValue.NonResourceSymbols.Contains(symbol))
