@@ -108,16 +108,6 @@ public class BlockChainService : IBlockChainService, ITransientDependency
 
     public async Task<TransactionDetailResponseDto> GetTransactionDetailAsync(TransactionDetailRequestDto request)
     {
-        try
-        {
-            var num = 0;
-            var a = 1 / num;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetTransactionDetailAsync qqqqq");
-        }
-
         var transactionDetailResponseDto = new TransactionDetailResponseDto();
         if (!_globalOptions.CurrentValue.ChainIds.Exists(s => s == request.ChainId))
         {
