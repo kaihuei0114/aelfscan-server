@@ -103,6 +103,7 @@ Global
 		{7FE8BFF1-4C05-424A-9FF6-334B77057A1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7FE8BFF1-4C05-424A-9FF6-334B77057A1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7FE8BFF1-4C05-424A-9FF6-334B77057A1B}.Release|Any CPU.Build.0 = Release|Any CPU
+	
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

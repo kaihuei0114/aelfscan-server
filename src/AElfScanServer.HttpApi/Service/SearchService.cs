@@ -133,19 +133,9 @@ public class SearchService : ISearchService, ISingletonDependency
             return;
         }
 
-        var contractAddress = "";
-        var eoaAddress = "";
 
-        var tasks = new List<Task>();
+        var contractAddress = await FindContractAddress(request.ChainId, request.Keyword);
 
-        tasks.Add(FindContractAddress(request.ChainId, request.Keyword).ContinueWith(task =>
-        {
-            contractAddress = task.Result;
-        }));
-
-        tasks.Add(FindEoaAddress(request.ChainId, request.Keyword).ContinueWith(task => { eoaAddress = task.Result; }));
-
-        await tasks.WhenAll();
 
         if (!contractAddress.IsNullOrEmpty())
         {
@@ -154,12 +144,10 @@ public class SearchService : ISearchService, ISingletonDependency
                 Address = request.Keyword,
                 Name = BlockHelper.GetContractName(_globalOptions.CurrentValue, request.ChainId, request.Keyword)
             });
-            return;
         }
-
-        if (!eoaAddress.IsNullOrEmpty())
+        else
         {
-            searchResponseDto.Accounts.Add(eoaAddress);
+            searchResponseDto.Accounts.Add(request.Keyword);
         }
     }
 

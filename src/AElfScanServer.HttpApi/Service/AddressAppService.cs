@@ -52,6 +52,7 @@ public class AddressAppService : IAddressAppService
     private readonly IAddressInfoProvider _addressInfoProvider;
     private readonly IGenesisPluginProvider _genesisPluginProvider;
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
+    private readonly IAddressTypeService _addressTypeService;
 
 
     public AddressAppService(IObjectMapper objectMapper, ILogger<AddressAppService> logger,
@@ -60,7 +61,8 @@ public class AddressAppService : IAddressAppService
         ITokenInfoProvider tokenInfoProvider, IOptionsMonitor<TokenInfoOptions> tokenInfoOptions,
         IOptionsSnapshot<GlobalOptions> globalOptions, ITokenAssetProvider tokenAssetProvider,
         IAddressInfoProvider addressInfoProvider, IGenesisPluginProvider genesisPluginProvider,
-        IBlockChainIndexerProvider blockChainIndexerProvider)
+        IBlockChainIndexerProvider blockChainIndexerProvider,
+        IAddressTypeService addressTypeService)
     {
         _logger = logger;
         _objectMapper = objectMapper;
@@ -74,6 +76,7 @@ public class AddressAppService : IAddressAppService
         _genesisPluginProvider = genesisPluginProvider;
         _globalOptions = globalOptions.Value;
         _blockChainIndexerProvider = blockChainIndexerProvider;
+        _addressTypeService = addressTypeService;
     }
 
     public async Task<GetAddressListResultDto> GetAddressListAsync(GetListInputInput input)
@@ -145,6 +148,7 @@ public class AddressAppService : IAddressAppService
         var contractInfoTask = _indexerGenesisProvider.GetContractListAsync(input.ChainId, 0, 1, "", "", input.Address);
         var transferInput = new TokenTransferInput { ChainId = input.ChainId, Address = input.Address };
         transferInput.OfOrderInfos((SortField.BlockHeight, SortDirection.Desc));
+        var addressTypeTask = _addressTypeService.GetAddressTypeList(input.ChainId, input.Address);
 
         var firstTransactionInput = new TransactionsRequestDto()
         {
@@ -183,6 +187,7 @@ public class AddressAppService : IAddressAppService
         var firstTransaction = await firstTransactionTask;
         var lastTransaction = await lastTransactionTask;
         var contractInfo = await contractInfoTask;
+        var addressTypeList = await addressTypeTask;
 
         _logger.LogInformation("GetAddressDetail chainId: {chainId}, dailyAddressAsset: {dailyAddressAsset}",
             input.ChainId, JsonConvert.SerializeObject(dailyAddressAsset));
@@ -204,7 +209,7 @@ public class AddressAppService : IAddressAppService
         result.ElfBalanceOfUsd = Math.Round(holderInfo.Balance * priceDto.Price, CommonConstant.UsdValueDecimals);
         result.TotalValueOfElf = new decimal(curAddressAsset.GetTotalValueOfElf());
         result.TotalValueOfUsd = Math.Round(result.TotalValueOfElf * priceDto.Price, CommonConstant.UsdValueDecimals);
-
+        result.AddressTypeList = addressTypeList;
         if (dailyAddressAsset != null && dailyAddressAsset.GetTotalValueOfElf() != 0 && priceHisDto.Price > 0)
         {
             var dailyTotalValueOfUsd = (decimal)dailyAddressAsset.GetTotalValueOfElf() * priceHisDto.Price;

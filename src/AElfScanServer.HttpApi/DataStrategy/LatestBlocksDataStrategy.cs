@@ -57,13 +57,13 @@ public class LatestBlocksDataStrategy : DataStrategyBase<string, BlocksResponseD
             latestBlockDto.Timestamp = DateTimeHelper.GetTotalSeconds(indexerBlockDto.BlockTime);
             latestBlockDto.TransactionCount = indexerBlockDto.TransactionIds.Count;
             latestBlockDto.ProducerAddress = indexerBlockDto.Miner;
-            // if (_globalOptions.CurrentValue.BPNames.TryGetValue(chainId, out var bpNames))
-            // {
-            //     if (bpNames.TryGetValue(indexerBlockDto.Miner, out var name))
-            //     {
-            //         latestBlockDto.ProducerName = name;
-            //     }
-            // }
+            if (_globalOptions.CurrentValue.BPNames.TryGetValue(chainId, out var bpNames))
+            {
+                if (bpNames.TryGetValue(indexerBlockDto.Miner, out var name))
+                {
+                    latestBlockDto.ProducerName = name;
+                }
+            }
 
             if (i == 0)
             {

@@ -44,12 +44,14 @@ public class TokenService : ITokenService, ISingletonDependency
     private readonly ITokenInfoProvider _tokenInfoProvider;
     private readonly IGenesisPluginProvider _genesisPluginProvider;
     private readonly ILogger<TokenService> _logger;
+    private readonly IAddressTypeService _addressTypeService;
 
 
     public TokenService(ITokenIndexerProvider tokenIndexerProvider,
         ITokenHolderPercentProvider tokenHolderPercentProvider, IObjectMapper objectMapper,
         IOptionsMonitor<ChainOptions> chainOptions, ITokenPriceService tokenPriceService,
         IOptionsMonitor<TokenInfoOptions> tokenInfoOptions, ITokenInfoProvider tokenInfoProvider,
+        IAddressTypeService addressTypeService,
         IGenesisPluginProvider genesisPluginProvider, ILogger<TokenService> logger)
     {
         _objectMapper = objectMapper;
@@ -61,6 +63,7 @@ public class TokenService : ITokenService, ISingletonDependency
         _tokenIndexerProvider = tokenIndexerProvider;
         _tokenHolderPercentProvider = tokenHolderPercentProvider;
         _logger = logger;
+        _addressTypeService = addressTypeService;
     }
 
     public async Task<ListResponseDto<TokenCommonDto>> GetTokenListAsync(TokenListInput input)

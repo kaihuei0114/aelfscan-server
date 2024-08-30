@@ -164,9 +164,9 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     }
 
 
-    public async Task<string> GetDecimalAmountAsync(string symbol, long amount)
+    public async Task<string> GetDecimalAmountAsync(string symbol, long amount,string chainId)
     {
-        var tokenDecimals = await GetTokenDecimals(symbol, "AELF");
+        var tokenDecimals = await GetTokenDecimals(symbol, chainId);
 
         return amount.ToDecimalsString(tokenDecimals);
     }
