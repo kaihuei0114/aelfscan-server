@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElfScanServer.Common.IndexerPluginProvider;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AElfScanServer.HttpApi.Service;
 
@@ -27,7 +28,7 @@ public class AddressTypeService : IAddressTypeService
         foreach (var implementation in _implementations)
         {
             var t = await implementation.GetAddressType(chainId, address);
-            if (t != null)
+            if (!t.IsNullOrEmpty())
             {
                 list.Add(t);
             }
