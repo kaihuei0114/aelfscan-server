@@ -382,7 +382,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError("get token:{0} image base64  error:{1}", symbol, e);
+            _logger.LogError(e, "get token:{symbol} image", symbol);
         }
 
 
@@ -509,6 +509,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                 tokenTransferDto.SymbolImageUrl =
                     await GetTokenImageAsync(tokenInfo.Symbol, tokenInfo.IssueChainId, tokenInfo.ExternalInfo);
             }
+
             tokenTransferDto.TransactionFeeList =
                 await _tokenInfoProvider.ConvertTransactionFeeAsync(priceDict, indexerTransferInfoDto.ExtraProperties);
             tokenTransferDto.From = BaseConverter.OfCommonAddress(indexerTransferInfoDto.From, contractInfoDict);

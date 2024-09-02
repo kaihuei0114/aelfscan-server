@@ -107,11 +107,10 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
 
     public async Task<HomeOverviewResponseDto> GetBlockchainOverviewAsync(BlockchainOverviewRequestDto req)
     {
-        _logger.LogInformation("GetBlockchainOverviewAsync:{c}", req.ChainId);
         var overviewResp = new HomeOverviewResponseDto();
         if (!_globalOptions.CurrentValue.ChainIds.Exists(s => s == req.ChainId))
         {
-            _logger.LogWarning("Get blockchain overview chainId not exist:{c},chainIds:{l}", req.ChainId,
+            _logger.LogWarning("Get blockchain overview chainId not exist:{chainId},chainIds:{chainIds}", req.ChainId,
                 _globalOptions.CurrentValue.ChainIds);
             return overviewResp;
         }
@@ -151,7 +150,7 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "get home page overview err,chainId:{c}", req.ChainId);
+            _logger.LogError(e, "get home page overview err,chainId:{chainId}", req.ChainId);
         }
 
         return overviewResp;

@@ -58,7 +58,7 @@ public class GenesisPluginProvider : IGenesisPluginProvider, ISingletonDependenc
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Determine whether it is a contract address failed.address:{a}", address);
+            _logger.LogError(e, "Determine whether it is a contract address failed.address:{address}", address);
             return false;
         }
     }

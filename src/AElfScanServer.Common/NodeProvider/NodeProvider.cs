@@ -64,7 +64,7 @@ public class NodeProvider : AbpRedisCache, ISingletonDependency
             await _blockSizeErrInfoIndexRepository.AddOrUpdateAsync(blockSizeErrInfoIndex);
             var blockSizeDto = new BlockSizeDto();
             blockSizeDto.PullFalse = true;
-            _logger.LogError("GetBlockSize {c},blockHiegh:{h} ,error: {0}", chainId, blockHeight, e);
+            _logger.LogError(e,"GetBlockSize {chainId},blockHeight:{blockHeight}", chainId, blockHeight);
             return null;
         }
     }

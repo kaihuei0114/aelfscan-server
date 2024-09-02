@@ -37,7 +37,7 @@ public class CurrentBpProduceWorker : AsyncPeriodicBackgroundWorkerBase
     {
         foreach (var chainId in _workerOptions.CurrentValue.ChainIds)
         {
-            _logger.LogInformation("Start to load  bp produce info for chain {0}", chainId);
+            _logger.LogInformation("Start to load  bp produce info for chain {chainId}", chainId);
             await _bpDataStrategy.LoadData(chainId);
         }
     }

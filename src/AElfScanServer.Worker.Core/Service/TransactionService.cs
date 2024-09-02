@@ -281,7 +281,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         {
             await ConnectAsync();
             RedisDatabase.StringSet(RedisKeyHelper.LogEventTransactionLastBlockHeight(v.Key), v.Value);
-            _logger.LogInformation("Init log event {p1},{p2}", v.Key, v.Value);
+            _logger.LogInformation("Init log event {logEventKey},{logEventValue}", v.Key, v.Value);
         }
 
         var tasks = new List<Task>();
@@ -343,7 +343,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         else
         {
-            _logger.LogError("Error: {e}", searchResponse.ServerError.Error.Reason);
+            _logger.LogError("Error: {Reason}", searchResponse.ServerError.Error.Reason);
             return;
         }
 
@@ -363,7 +363,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         );
         if (resp.Deleted > 0)
         {
-            _logger.LogInformation("delete contract event:{p1},{p2},{p3}", chainId, contractAddress, resp.Deleted);
+            _logger.LogInformation("delete contract event:{chainId},{contractAddress},{isDeleted}", chainId,
+                contractAddress, resp.Deleted);
         }
     }
 
@@ -442,7 +443,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         var list = new List<MonthlyActiveAddressIndex>();
         while (needFindDateMonth < maxMonth)
         {
-            _logger.LogInformation("UpdateMonthlyActiveAddress needFindDateMonth:{p1},maxMonth:{p2}", needFindDateMonth,
+            _logger.LogInformation(
+                "UpdateMonthlyActiveAddress needFindDateMonth:{needFindDateMonth},maxMonth:{maxMonth}",
+                needFindDateMonth,
                 maxMonth);
             var count = await GetMonthlyActiveAddressCount(needFindDateMonth, chainId);
             var sendCount = query.Where(c => c.DateMonth == needFindDateMonth).Where(c => c.Type == "from")
@@ -538,7 +541,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             {
                 if (blockSize.Header == null)
                 {
-                    _logger.LogInformation("Block size index header is null:{c}", chainId);
+                    _logger.LogInformation("Block size index header is null:{chainId}", chainId);
                     continue;
                 }
 
@@ -582,7 +585,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             startNew.Stop();
             _logger.LogInformation(
-                "BatchPullBlockSize :{c},count:{1},time:{2},startBlockHeight:{s1},endBlockHeight:{s2}",
+                "BatchPullBlockSize :{chainId},count:{count},time:{costTime},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
                 chainId, blockSizeIndices.Count, startNew.Elapsed.TotalSeconds, lastBlockHeight - BlockSizeInterval,
                 lastBlockHeight);
             if (dic.Count >= 2)
@@ -748,12 +751,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 }).ToList();
 
 
-                _logger.LogInformation("Fix daily data:{c},start:{s}", chainId, startBlockHeight);
+                _logger.LogInformation("Fix daily data:{chainId},start:{startBlockHeight}", chainId, startBlockHeight);
                 var updateDailyTransactionData = await UpdateDailyTransactionData(batchTransactionList, chainId, dic);
 
                 if (updateDailyTransactionData != null)
                 {
-                    _logger.LogInformation("Fix daily data finished:{c},{c2}", chainId,
+                    _logger.LogInformation("Fix daily data finished:{chainId},{dateStr}", chainId,
                         updateDailyTransactionData.DateStr);
                     break;
                 }
@@ -762,7 +765,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
             catch (Exception e)
             {
-                _logger.LogError("Fix daily data err:{c},{e}", chainId, e.ToString());
+                _logger.LogError(e, "Fix daily data err:{chainId}", chainId);
                 break;
             }
         }
@@ -787,7 +790,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                         PullLogEventTransactionInterval = 0;
                     }
 
-                    _logger.LogInformation("Set log event PullLogEventTransactionInterval to 0:{p1},{p2}", chainId,
+                    _logger.LogInformation(
+                        "Set log event PullLogEventTransactionInterval to 0:{chainId},{lastBlockHeight}", chainId,
                         lastBlockHeight);
                 }
 
@@ -812,7 +816,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             catch (Exception e)
             {
                 _logger.LogError(
-                    "BatchParseLogEventJob err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
+                    "BatchParseLogEventJob err:{chainId},err msg:{msg},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
                     chainId,
                     e, lastBlockHeight,
                     lastBlockHeight + PullLogEventTransactionInterval);
@@ -873,7 +877,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 stopwatch.Stop();
                 _logger.LogInformation(
-                    "BatchPullTransactionTask:{e} end date:{d},count:{1},time:{2},startBlockHeight:{s1},endBlockHeight:{s2}",
+                    "BatchPullTransactionTask:{dateList} end date:{chainId},count:{count},time:{costTime},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
                     dateSet.ToList(),
                     chainId, batchTransactionList.Count, stopwatch.Elapsed.TotalSeconds, lastBlockHeight,
                     lastBlockHeight + PullTransactioninterval);
@@ -908,7 +912,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             catch (Exception e)
             {
                 _logger.LogError(
-                    "BatchPullTransactionTask err:{c},err msg:{e},startBlockHeight:{s1},endBlockHeight:{s2}",
+                    "BatchPullTransactionTask err:{chainId},err msg:{msg},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
                     chainId,
                     e, lastBlockHeight,
                     lastBlockHeight + PullTransactioninterval);
@@ -972,7 +976,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             await _logEventRepository.AddOrUpdateManyAsync(logEventIndices);
         }
 
-        _logger.LogInformation("ParseLogEventList,insert:{c},{c1}", chainId, total);
+        _logger.LogInformation("ParseLogEventList,insert:{chainId},{total}", chainId, total);
     }
 
     public async Task<DailyTransactionsChartSet> UpdateDailyTransactionData(List<TransactionData> transactionList,
@@ -981,7 +985,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     {
         if (transactionList.IsNullOrEmpty())
         {
-            _logger.LogInformation("Date str list is null:{c}", chainId);
+            _logger.LogInformation("Date str list is null:{chainId}", chainId);
             return null;
         }
 
@@ -1386,7 +1390,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             needUpdateData.CostTime = startNew.Elapsed.TotalSeconds;
             dic.Remove(minDate);
 
-            _logger.LogInformation("Update daily transaction data,chainId:{c} date:{d},", chainId, minDate);
+            _logger.LogInformation("Update daily transaction data,chainId:{chainId} date:{minDate},", chainId, minDate);
             return needUpdateData;
         }
 
@@ -1608,7 +1612,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogError("GetWithDrawVotedAmount {chainId},{list},err:{e}", chainId, voteIds, e);
+            _logger.LogError(e,"GetWithDrawVotedAmount {chainId},{list}", chainId, voteIds);
             return 0;
         }
     }
@@ -1680,7 +1684,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                     if (round.Blcoks == 0 || round.DurationSeconds == 0)
                     {
-                        _logger.LogWarning("Round duration or blocks is zero,chainId:{0},round number:{1}", chainId,
+                        _logger.LogWarning("Round duration or blocks is zero,chainId:{chainId},round number:{roundNumber}", chainId,
                             round.RoundNumber);
                         continue;
                     }
@@ -1722,12 +1726,13 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 await _blockProduceRepository.AddOrUpdateAsync(blockProduceIndex);
                 await _blockProduceDurationRepository.AddOrUpdateAsync(dailyBlockProduceDurationIndex);
                 await _cycleCountRepository.AddOrUpdateAsync(dailyCycleCountIndex);
-                _logger.LogInformation("Insert daily network statistic count index chainId:{0},date:{1}", chainId,
+                _logger.LogInformation("Insert daily network statistic count index chainId:{chainId},date:{dateStr}",
+                    chainId,
                     DateTimeHelper.GetDateTimeString(startTime));
             }
             catch (Exception e)
             {
-                _logger.LogError("UpdateDailyNetwork err，UpdateDailyNetwork {c},{e}", chainId, e);
+                _logger.LogError(e,"UpdateDailyNetwork err，UpdateDailyNetwork {chainId}", chainId);
             }
         }
     }
@@ -1743,7 +1748,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 var initStartRound = currentRound.RoundNumber - 40900;
 
                 RedisDatabase.StringSet(RedisKeyHelper.LatestRound(chainId), initStartRound);
-                _logger.LogInformation("Init round:{c},round:{r}", chainId, initStartRound);
+                _logger.LogInformation("Init round:{chainId},round:{initStartRound}", chainId, initStartRound);
             }
         }
 
@@ -1783,7 +1788,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     startRoundNumber + BatchPullRoundCount - 1 >= currentRound.RoundNumber)
                 {
                     BatchPullRoundCount = 1;
-                    _logger.LogInformation("BatchUpdateNetwork Stop update round:{c},{r}", chainId, startRoundNumber);
+                    _logger.LogInformation("BatchUpdateNetwork Stop update round:{chainId},{startRoundNumber}", chainId,
+                        startRoundNumber);
                     await Task.Delay(1000 * 60 * 5);
                     continue;
                 }
@@ -1824,21 +1830,23 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 await _roundIndexRepository.AddOrUpdateManyAsync(roundIndices);
                 await _nodeBlockProduceRepository.AddOrUpdateManyAsync(nodeBlockProduceIndices);
-                _logger.LogInformation("Insert batch round index chainId:{0},round number:{1},date:{2}", chainId,
+                _logger.LogInformation(
+                    "Insert batch round index chainId:{chainId},round number:{startRoundNumber},date:{dateStr}",
+                    chainId,
                     startRoundNumber, DateTimeHelper.GetDateTimeString(roundIndices.First().StartTime));
                 stopwatch.Stop();
                 var insertCost = stopwatch.Elapsed.TotalSeconds;
                 _logger.LogInformation(
-                    "BatchUpdateNetwork cost time,round index find cost time:{t},insert cost time:{t2},start:{s1},end:{s2},chainId:{c},,round count:{n},node produce count:{c2}",
-                    findCost, insertCost, chainId, startRoundNumber, startRoundNumber + BatchPullRoundCount - 1,
-                    roundIndices.Count, nodeBlockProduceIndices.Count);
+                    "BatchUpdateNetwork cost time,round index find cost time:{findCost},insert cost time:{insertCost},start:{startRoundNumber},end:{endRoundNumber},chainId:{chainId},,round count:{count},node produce count:{nodeProduceCount}",
+                    findCost, insertCost, startRoundNumber, startRoundNumber + BatchPullRoundCount - 1,
+                    chainId, roundIndices.Count, nodeBlockProduceIndices.Count);
 
                 RedisDatabase.StringSet(RedisKeyHelper.LatestRound(chainId), startRoundNumber + BatchPullRoundCount);
                 await Task.Delay(1000 * 10);
             }
             catch (Exception e)
             {
-                _logger.LogError("BatchUpdateNetwork err:{c},{e}", chainId, e);
+                _logger.LogError(e,"BatchUpdateNetwork err:{chainId}", chainId);
                 await Task.Delay(1000 * 10);
             }
         }
@@ -1990,7 +1998,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     {
                         if (task.Result.IsNullOrEmpty())
                         {
-                            _logger.LogError("Get batch transaction list is null,chainId:{0},start:{1},end:{2}",
+                            _logger.LogError("Get batch transaction list is null,chainId:{chainId},start:{startBlockHeight},end:{endBlockHeight}",
                                 chainId, start, end);
                             return;
                         }
@@ -2003,10 +2011,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
         await tasks.WhenAll();
 
-        stopwatch.Stop();
-        _logger.LogInformation("Get batch transaction list from chainId:{0},start:{1},end:{2},count:{3},time:{4}",
-            chainId, startBlockHeight, endBlockHeight, batchList.Count, stopwatch.Elapsed.TotalSeconds);
-
+  
 
         return batchList;
     }
@@ -2032,7 +2037,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     {
                         if (task.Result.IsNullOrEmpty())
                         {
-                            _logger.LogError("Get batch transaction list is null,chainId:{0},start:{1},end:{2}",
+                            _logger.LogError("Get batch transaction list is null,chainId:{chainId},start:{startBlockHeight},end:{endBlockHeight}",
                                 chainId, start, end);
                             return;
                         }
@@ -2045,9 +2050,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
         await tasks.WhenAll();
 
-        stopwatch.Stop();
-        _logger.LogInformation("Get batch transaction list from chainId:{0},start:{1},end:{2},count:{3},time:{4}",
-            chainId, startBlockHeight, endBlockHeight, batchList.Count, stopwatch.Elapsed.TotalSeconds);
+
 
 
         return batchList;
@@ -2067,7 +2070,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
             foreach (var chainId in chainIds)
             {
-                _logger.LogInformation("start find transaction info:{c}", chainId);
                 var chartDataKey = RedisKeyHelper.TransactionChartData(chainId);
 
                 var nowMilliSeconds = DateTimeHelper.GetNowMilliSeconds();
@@ -2095,19 +2097,17 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 if (transactionsAsync == null)
                 {
-                    _logger.LogError("Not query transaction list from blockchain app plugin,chainId:{e}",
+                    _logger.LogError("Not query transaction list from blockchain app plugin,chainId:{chainId}",
                         chainId);
                     continue;
                 }
 
                 if (transactionsAsync.Items.IsNullOrEmpty())
                 {
-                    _logger.LogWarning("transaction is null,chainId:{0}", chainId);
+                    _logger.LogWarning("transaction is null,chainId:{chainId}", chainId);
                     continue;
                 }
 
-                _logger.LogInformation("find transaction data chainId:{0},count:{1}", chainId,
-                    transactionsAsync.Items.Count);
 
                 var transactionChartData =
                     await ParseToTransactionChartDataAsync(chartDataKey, transactionsAsync.Items);
@@ -2115,25 +2115,25 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                 if (transactionChartData.IsNullOrEmpty())
                 {
-                    _logger.LogInformation("merge transaction data is null:{0}", chainId);
+                    _logger.LogInformation("merge transaction data is null:{chainId}", chainId);
                     continue;
                 }
 
-                _logger.LogInformation("transaction chart data:{c},count:{1}", chainId, transactionChartData.Count);
+                _logger.LogInformation("transaction chart data:{chainId},count:{count}", chainId, transactionChartData.Count);
 
                 if (transactionChartData.Count > 180)
                 {
                     transactionChartData = transactionChartData.Skip(transactionChartData.Count - 180).ToList();
                 }
 
-                _logger.LogInformation("sub transaction chart data:{c},count:{1}", chainId, transactionChartData.Count);
+                _logger.LogInformation("sub transaction chart data:{chainId},count:{count}", chainId, transactionChartData.Count);
 
                 mergeList.Add(transactionChartData);
                 var serializeObject = JsonConvert.SerializeObject(transactionChartData);
 
 
                 await RedisDatabase.StringSetAsync(chartDataKey, serializeObject);
-                _logger.LogInformation("Set transaction count per minute to cache success!!,redis key:{k}",
+                _logger.LogInformation("Set transaction count per minute to cache success!!,redis key:{chartDataKey}",
                     chartDataKey);
             }
 
@@ -2151,18 +2151,18 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 merge = merge.Skip(merge.Count - 180).ToList();
             }
 
-            _logger.LogInformation("merge count {c}", merge.Count);
+            _logger.LogInformation("merge count {count}", merge.Count);
 
             var mergeSerializeObject = JsonConvert.SerializeObject(merge);
             var mergeKey = RedisKeyHelper.TransactionChartData("merge");
             await RedisDatabase.StringSetAsync(RedisKeyHelper.TransactionChartData("merge"), mergeSerializeObject);
 
-            _logger.LogInformation("Set transaction count per minute to cache success!!,redis key:{k}",
+            _logger.LogInformation("Set transaction count per minute to cache success!!,redis key:{mergeKey}",
                 mergeKey);
         }
         catch (Exception e)
         {
-            _logger.LogError("Update transaction count per minute error:{e}", e);
+            _logger.LogError(e,"Update transaction count per minute error");
         }
     }
 
@@ -2216,14 +2216,14 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 subOldList = newList;
             }
 
-            _logger.LogInformation("Merge transaction per minute data chainId:{0},oldList:{1},newList:{2}", key,
+            _logger.LogInformation("Merge transaction per minute data chainId:{chainId},oldList:{oldList},newList:{newList}", key,
                 oldList.Count, newList.Count);
 
             return subOldList;
         }
         catch (Exception e)
         {
-            _logger.LogInformation("Parse key:{0} data to transaction err:{1}", key, e);
+            _logger.LogInformation(e,"Parse key:{key} data to transaction err", key);
         }
 
         return newList;
@@ -2256,12 +2256,12 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 Close = s
             });
 
-            _logger.LogInformation("GetElfPrice date:{d},price{e}", date, s);
+            _logger.LogInformation("GetElfPrice date:{dateStr},price{price}", date, s);
             return (double)res.Data.Price / 1e8;
         }
         catch (Exception e)
         {
-            _logger.LogError("GetElfPrice err:{e},date:{d}", e, date.Replace("-", ""));
+            _logger.LogError("GetElfPrice err:{e},date:{dateStr}", e, date.Replace("-", ""));
             return 0;
         }
     }

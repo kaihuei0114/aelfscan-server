@@ -37,7 +37,7 @@ public class LatestBlocksWorker : AsyncPeriodicBackgroundWorkerBase
     {
         foreach (var chainId in _workerOptions.CurrentValue.ChainIds)
         {
-            _logger.LogInformation("Start to load latest blocks for chain {0}", chainId);
+            _logger.LogInformation("Start to load latest blocks for chain {chainId}", chainId);
             await _latestBlockssDataStrategy.LoadData(chainId);
         }
     }

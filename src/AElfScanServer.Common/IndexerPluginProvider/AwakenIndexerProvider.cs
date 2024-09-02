@@ -55,7 +55,7 @@ public class AwakenIndexerProvider : IAwakenIndexerProvider, ISingletonDependenc
         }
         catch (Exception e)
         {
-            _logger.LogError("GetAwakenTvl error: {0}", e);
+            _logger.LogError(e,"GetAwakenTvl error");
             return null;
         }
     }

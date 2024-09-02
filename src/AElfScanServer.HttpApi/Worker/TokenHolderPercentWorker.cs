@@ -42,11 +42,11 @@ public class TokenHolderPercentWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task UpdateTokenHolderCount(string chainId)
     {
         var today = DateTime.Now.ToString("yyyyMMdd");
-        _logger.LogInformation("Update TokenHolderCount date {date}", today);
+        _logger.LogInformation("Update TokenHolderCount date {dateStr}", today);
         var exist = await _tokenHolderPercentProvider.CheckExistAsync(chainId, today);
         if (exist)
         {
-            _logger.LogInformation("Update TokenHolderCount date {date} exist.", today);
+            _logger.LogInformation("Update TokenHolderCount date {dateStr} exist.", today);
             return;
         }
 

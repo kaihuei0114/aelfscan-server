@@ -212,7 +212,6 @@ public class TokenService : ITokenService, ISingletonDependency
     {
         var tokenHolderCountDic =
             await _tokenHolderPercentProvider.GetTokenHolderCount(chainId, DateTime.Now.ToString("yyyyMMdd"));
-        _logger.LogInformation("tokenHolderCountDic {n}", tokenHolderCountDic.Count);
 
 
         var list = new List<TokenCommonDto>();
@@ -229,8 +228,7 @@ public class TokenService : ITokenService, ISingletonDependency
 
             if (tokenHolderCountDic.TryGetValue(indexerTokenInfoDto.Symbol, out var beforeCount) && beforeCount != 0)
             {
-                _logger.LogInformation("tokenHolderCountDic {s}, now hodlers:{n}  beforeHolders{n1}",
-                    indexerTokenInfoDto.Symbol, tokenListDto.Holders, beforeCount);
+              
                 tokenListDto.HolderPercentChange24H = Math.Round(
                     (double)(tokenListDto.Holders - beforeCount) / beforeCount * 100,
                     CommonConstant.PercentageValueDecimals);
