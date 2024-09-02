@@ -196,9 +196,9 @@ public class AELFIndexerProvider : ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(
-                "get transaction list from AELFIndexer error:{c}:{error},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
-                chainId, e, startBlockHeight, endBlockHeight);
+            _logger.LogError(e,
+                "get transaction list from AELFIndexer error:{chainId},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
+                chainId, startBlockHeight, endBlockHeight);
             return new List<TransactionIndex>();
         }
     }
@@ -232,9 +232,9 @@ public class AELFIndexerProvider : ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(
-                "get transaction data list from AELFIndexer error:{c}:{error},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
-                chainId, e, startBlockHeight, endBlockHeight);
+            _logger.LogError(e,
+                "get transaction data list from AELFIndexer error:{c},startBlockHeight:{startBlockHeight},endBlockHeight:{endBlockHeight}",
+                chainId,  startBlockHeight, endBlockHeight);
             return new List<TransactionData>();
         }
     }

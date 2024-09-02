@@ -928,8 +928,8 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
                 .Take(10000)
                 .OrderBy(c => c.RoundNumber).ToList();
 
-            _logger.LogInformation("InitDailyNetwork chainId:{c},date:{d},end:{e},endstr:{e}", request.ChainId,
-                DateTimeHelper.GetDateTimeString(start) + "_count:" + indices.Count, end,
+            _logger.LogInformation("InitDailyNetwork chainId:{chainId},date:{dateStr},endStr:{endStr}", request.ChainId,
+                DateTimeHelper.GetDateTimeString(start) + "_count:" + indices.Count, 
                 DateTimeHelper.GetDateTimeString(end));
             if (!indices.IsNullOrEmpty())
             {
@@ -1003,7 +1003,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         }
 
         await _hourNodeBlockProduceRepository.AddOrUpdateManyAsync(hourNodeBlockProduceIndices);
-        _logger.LogInformation("Insert hour node block produce index chainId:{c},start date:{d1},end date{d2}", chainId,
+        _logger.LogInformation("Insert hour node block produce index chainId:{chainId},start date:{dateStr},end date{endStr}", chainId,
             DateTimeHelper.GetDateTimeString(start), DateTimeHelper.GetDateTimeString(end));
     }
 
@@ -1050,7 +1050,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
 
             if (round.Blcoks == 0 || round.DurationSeconds == 0)
             {
-                _logger.LogWarning("Round duration or blocks is zero,chainId:{0},round number:{1}", chainId,
+                _logger.LogWarning("Round duration or blocks is zero,chainId:{chainId},round number:{roundNumber}", chainId,
                     round.RoundNumber);
                 continue;
             }
@@ -1092,7 +1092,7 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         await _blockProduceIndexRepository.AddOrUpdateAsync(blockProduceIndex);
         await _blockProduceDurationRepository.AddOrUpdateAsync(dailyBlockProduceDurationIndex);
         await _cycleCountRepository.AddOrUpdateAsync(dailyCycleCountIndex);
-        _logger.LogInformation("Insert daily network statistic count index chainId:{0},date:{1}", chainId,
+        _logger.LogInformation("Insert daily network statistic count index chainId:{chainId},date:{dateStr}", chainId,
             DateTimeHelper.GetDateTimeString(todayTotalSeconds));
     }
 
@@ -1504,12 +1504,12 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
                 Close = s
             });
 
-            _logger.LogInformation("GetElfPrice date:{d},price{e}", date, s);
+            _logger.LogInformation("GetElfPrice date:{dateStr},price{elfPrice}", date, s);
             return (double)res.Data.Price / 1e8;
         }
         catch (Exception e)
         {
-            _logger.LogError("GetElfPrice err:{e},date:{d}", e, date.Replace("-", ""));
+            _logger.LogError("GetElfPrice err:{e},date:{dateStr}", e, date.Replace("-", ""));
             return 0;
         }
     }

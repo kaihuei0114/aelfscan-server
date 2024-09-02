@@ -36,7 +36,7 @@ public class HomePageOverviewWorker : AsyncPeriodicBackgroundWorkerBase
     {
         foreach (var chainId in _workerOptions.CurrentValue.ChainIds)
         {
-            _logger.LogInformation("Start to load home page overview data for chain {0}", chainId);
+            _logger.LogInformation("Start to load home page overview data for chain {chainId}", chainId);
             await _overviewDataStrategy.LoadData(chainId);
         }
     }

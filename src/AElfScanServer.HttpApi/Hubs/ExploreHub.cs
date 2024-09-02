@@ -63,7 +63,7 @@ public class ExploreHub : AbpHub
         _logger.LogInformation("RequestBpProduce: {chainId}", request.ChainId);
         await Clients.Caller.SendAsync("ReceiveBpProduce", resp);
         startNew.Stop();
-        _logger.LogInformation("RequestBpProduce costTime:{p1},{p2}", request.ChainId,
+        _logger.LogInformation("RequestBpProduce costTime:{chainId},{costTime}", request.ChainId,
             startNew.Elapsed.TotalSeconds);
         PushRequestBpProduceAsync(request.ChainId);
     }
@@ -95,7 +95,7 @@ public class ExploreHub : AbpHub
                 await _hubContext.Clients.Groups(HubGroupHelper.GetBpProduceGroupName(chainId))
                     .SendAsync("ReceiveBpProduce", resp);
                 startNew.Stop();
-                _logger.LogInformation("PushRequestBpProduceAsync costTime:{p1},{p2}", chainId,
+                _logger.LogInformation("PushRequestBpProduceAsync costTime:{chainId},{costTime}", chainId,
                     startNew.Elapsed.TotalSeconds);
             }
         }
@@ -127,7 +127,7 @@ public class ExploreHub : AbpHub
         await Clients.Caller.SendAsync("ReceiveMergeBlockInfo", resp);
 
         startNew.Stop();
-        _logger.LogInformation("RequestMergeBlockInfo costTime:{p1},{p2}", request.ChainId,
+        _logger.LogInformation("RequestMergeBlockInfo costTime:{chainId},{costTime}", request.ChainId,
             startNew.Elapsed.TotalSeconds);
 
         PushMergeBlockInfoAsync(request.ChainId);
@@ -158,7 +158,7 @@ public class ExploreHub : AbpHub
                 await _hubContext.Clients.Groups(HubGroupHelper.GetMergeBlockInfoGroupName(chainId))
                     .SendAsync("ReceiveMergeBlockInfo", resp);
                 startNew.Stop();
-                _logger.LogInformation("PushMergeBlockInfoAsync costTime:{p1},{p2}", chainId,
+                _logger.LogInformation("PushMergeBlockInfoAsync costTime:{chainId},{costTime}", chainId,
                     startNew.Elapsed.TotalSeconds);
             }
         }
@@ -190,7 +190,7 @@ public class ExploreHub : AbpHub
         PushBlockOverViewAsync(request.ChainId);
 
         startNew.Stop();
-        _logger.LogInformation("RequestBlockchainOverview costTime:{p1},{p2}", request.ChainId,
+        _logger.LogInformation("RequestBlockchainOverview costTime:{chainId},{costTime}", request.ChainId,
             startNew.Elapsed.TotalSeconds);
     }
 
@@ -221,7 +221,7 @@ public class ExploreHub : AbpHub
                     .SendAsync("ReceiveBlockchainOverview", resp);
 
                 startNew.Stop();
-                _logger.LogInformation("PushBlockOverViewAsync costTime:{p1},{p2}", chainId,
+                _logger.LogInformation("PushBlockOverViewAsync costTime:{chainId},{costTime}", chainId,
                     startNew.Elapsed.TotalSeconds);
             }
         }
@@ -251,7 +251,7 @@ public class ExploreHub : AbpHub
         PushTransactionCountPerMinuteAsync(request.ChainId);
 
         startNew.Stop();
-        _logger.LogInformation("RequestTransactionDataChart costTime:{p1},{p2}", request.ChainId,
+        _logger.LogInformation("RequestTransactionDataChart costTime:{chainId},{costTime}", request.ChainId,
             startNew.Elapsed.TotalSeconds);
     }
 
@@ -283,7 +283,7 @@ public class ExploreHub : AbpHub
                 await _hubContext.Clients.Groups(HubGroupHelper.GetTransactionCountPerMinuteGroupName(chainId))
                     .SendAsync("ReceiveTransactionDataChart", resp);
                 startNew.Stop();
-                _logger.LogInformation("PushTransactionCountPerMinuteAsync costTime:{p1},{p2}", chainId,
+                _logger.LogInformation("PushTransactionCountPerMinuteAsync costTime:{chainId},{costTime}", chainId,
                     startNew.Elapsed.TotalSeconds);
             }
         }

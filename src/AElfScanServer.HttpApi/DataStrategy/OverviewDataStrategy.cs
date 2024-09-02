@@ -54,7 +54,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
 
     public override async Task<HomeOverviewResponseDto> QueryData(string chainId)
     {
-        DataStrategyLogger.LogInformation("GetBlockchainOverviewAsync:{c}", chainId);
+        DataStrategyLogger.LogInformation("GetBlockchainOverviewAsync:{chainId}", chainId);
         var overviewResp = new HomeOverviewResponseDto();
         try
         {
@@ -96,11 +96,11 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
             await Task.WhenAll(tasks);
 
 
-            DataStrategyLogger.LogInformation("Set home page overview success:{c}", chainId);
+            DataStrategyLogger.LogInformation("Set home page overview success:{chainId}", chainId);
         }
         catch (Exception e)
         {
-            DataStrategyLogger.LogError(e, "get home page overview err,chainId:{c}", chainId);
+            DataStrategyLogger.LogError(e, "get home page overview err,chainId:{chainId}", chainId);
         }
 
         return overviewResp;

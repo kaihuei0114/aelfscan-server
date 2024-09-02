@@ -129,7 +129,7 @@ public class SearchService : ISearchService, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogWarning("address is invalid,{a},{e}", request.Keyword, e.ToString());
+            _logger.LogWarning(e,"address is invalid,{keyword}", request.Keyword);
             return;
         }
 

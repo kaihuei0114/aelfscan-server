@@ -37,7 +37,7 @@ public class LatestTransactionsWorker : AsyncPeriodicBackgroundWorkerBase
     {
         foreach (var chainId in _workerOptions.CurrentValue.ChainIds)
         {
-            _logger.LogInformation("Start to load latest transaction for chain {0}", chainId);
+            _logger.LogInformation("Start to load latest transaction for chain {chainId}", chainId);
             await _latestTransactionsDataStrategy.LoadData(chainId);
         }
     }

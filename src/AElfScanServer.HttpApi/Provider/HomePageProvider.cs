@@ -66,17 +66,15 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
                 return 0;
             }
 
-            _logger.LogInformation("Get reward,chainId:{c}", chainId);
             await ConnectAsync();
             var redisValue = RedisDatabase.StringGet(RedisKeyHelper.RewardKey(chainId));
             if (!redisValue.IsNullOrEmpty)
             {
-                _logger.LogInformation("Get reward from cache,chainId:{c},cache value:{s}", chainId, redisValue);
+                _logger.LogInformation("Get reward from cache,chainId:{chainId},cache value:{redisValue}", chainId, redisValue);
                 return Convert.ToInt64(redisValue);
             }
 
             var nodeHost = _globalOptions.CurrentValue.ChainNodeHosts[chainId];
-            _logger.LogInformation("Get chainId node host,chainId:{c},nodeHost:{n}", chainId, nodeHost);
             var aElfClient = new AElfClient(nodeHost);
 
             if (_globalOptions.CurrentValue.ConsensusContractAddress.IsNullOrEmpty())
@@ -129,12 +127,12 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
 
             RedisDatabase.StringSet(RedisKeyHelper.RewardKey(chainId), amount,
                 TimeSpan.FromSeconds(_globalOptions.CurrentValue.RewardCacheExpiration));
-            _logger.LogInformation("Set cache when Get reward from chain,chainId:{c},amount:{a}", chainId, amount);
+            _logger.LogInformation("Set cache when Get reward from chain,chainId:{chainId},amount:{amount}", chainId, amount);
             return amount;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Get reward err,chainId:{c}", chainId);
+            _logger.LogError(e, "Get reward err,chainId:{chainId}", chainId);
         }
 
         return 0;
@@ -148,7 +146,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
             var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionChartData(chainId));
             if (redisValue.IsNullOrEmpty)
             {
-                _logger.LogWarning("Get transaction count per minute is null,chainId:{0}", chainId);
+                _logger.LogWarning("Get transaction count per minute is null,chainId:{chainId}", chainId);
                 return 0;
             }
 
@@ -156,7 +154,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
                 JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);
             if (transactionCountPerMinuteDtos.IsNullOrEmpty())
             {
-                _logger.LogWarning("Transaction count per minute redis cache is null chainId:{c}", chainId);
+                _logger.LogWarning("Transaction count per minute redis cache is null chainId:{chainId}", chainId);
                 return 0;
             }
 
@@ -165,7 +163,7 @@ public class HomePageProvider : AbpRedisCache, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Get  transaction count per minute err,chainId:{c}", chainId);
+            _logger.LogError(e, "Get  transaction count per minute err,chainId:{chainId}", chainId);
             return 0;
         }
     }
