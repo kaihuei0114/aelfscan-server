@@ -1612,7 +1612,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogError(e,"GetWithDrawVotedAmount {chainId},{list}", chainId, voteIds);
+            _logger.LogError(e, "GetWithDrawVotedAmount {chainId},{list}", chainId, voteIds);
             return 0;
         }
     }
@@ -1684,7 +1684,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
                     if (round.Blcoks == 0 || round.DurationSeconds == 0)
                     {
-                        _logger.LogWarning("Round duration or blocks is zero,chainId:{chainId},round number:{roundNumber}", chainId,
+                        _logger.LogWarning(
+                            "Round duration or blocks is zero,chainId:{chainId},round number:{roundNumber}", chainId,
                             round.RoundNumber);
                         continue;
                     }
@@ -1732,7 +1733,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
             catch (Exception e)
             {
-                _logger.LogError(e,"UpdateDailyNetwork err，UpdateDailyNetwork {chainId}", chainId);
+                _logger.LogError(e, "UpdateDailyNetwork err，UpdateDailyNetwork {chainId}", chainId);
             }
         }
     }
@@ -1846,7 +1847,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
             }
             catch (Exception e)
             {
-                _logger.LogError(e,"BatchUpdateNetwork err:{chainId}", chainId);
+                _logger.LogError(e, "BatchUpdateNetwork err:{chainId}", chainId);
                 await Task.Delay(1000 * 10);
             }
         }
@@ -1998,7 +1999,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     {
                         if (task.Result.IsNullOrEmpty())
                         {
-                            _logger.LogError("Get batch transaction list is null,chainId:{chainId},start:{startBlockHeight},end:{endBlockHeight}",
+                            _logger.LogError(
+                                "Get batch transaction list is null,chainId:{chainId},start:{startBlockHeight},end:{endBlockHeight}",
                                 chainId, start, end);
                             return;
                         }
@@ -2011,7 +2013,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
         await tasks.WhenAll();
 
-  
 
         return batchList;
     }
@@ -2037,7 +2038,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     {
                         if (task.Result.IsNullOrEmpty())
                         {
-                            _logger.LogError("Get batch transaction list is null,chainId:{chainId},start:{startBlockHeight},end:{endBlockHeight}",
+                            _logger.LogError(
+                                "Get batch transaction list is null,chainId:{chainId},start:{startBlockHeight},end:{endBlockHeight}",
                                 chainId, start, end);
                             return;
                         }
@@ -2049,8 +2051,6 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
 
         await tasks.WhenAll();
-
-
 
 
         return batchList;
@@ -2119,14 +2119,16 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     continue;
                 }
 
-                _logger.LogInformation("transaction chart data:{chainId},count:{count}", chainId, transactionChartData.Count);
+                _logger.LogInformation("transaction chart data:{chainId},count:{count}", chainId,
+                    transactionChartData.Count);
 
                 if (transactionChartData.Count > 180)
                 {
                     transactionChartData = transactionChartData.Skip(transactionChartData.Count - 180).ToList();
                 }
 
-                _logger.LogInformation("sub transaction chart data:{chainId},count:{count}", chainId, transactionChartData.Count);
+                _logger.LogInformation("sub transaction chart data:{chainId},count:{count}", chainId,
+                    transactionChartData.Count);
 
                 mergeList.Add(transactionChartData);
                 var serializeObject = JsonConvert.SerializeObject(transactionChartData);
@@ -2162,7 +2164,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogError(e,"Update transaction count per minute error");
+            _logger.LogError(e, "Update transaction count per minute error");
         }
     }
 
@@ -2216,14 +2218,15 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                 subOldList = newList;
             }
 
-            _logger.LogInformation("Merge transaction per minute data chainId:{chainId},oldList:{oldList},newList:{newList}", key,
+            _logger.LogInformation(
+                "Merge transaction per minute data chainId:{chainId},oldList:{oldList},newList:{newList}", key,
                 oldList.Count, newList.Count);
 
             return subOldList;
         }
         catch (Exception e)
         {
-            _logger.LogInformation(e,"Parse key:{key} data to transaction err", key);
+            _logger.LogInformation(e, "Parse key:{key} data to transaction err", key);
         }
 
         return newList;
@@ -2261,7 +2264,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         }
         catch (Exception e)
         {
-            _logger.LogError("GetElfPrice err:{e},date:{dateStr}", e, date.Replace("-", ""));
+            _logger.LogError(e, "GetElfPrice err,date:{dateStr}", date.Replace("-", ""));
             return 0;
         }
     }
