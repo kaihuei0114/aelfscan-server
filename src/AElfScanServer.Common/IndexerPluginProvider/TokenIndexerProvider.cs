@@ -384,7 +384,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
             if (_tokenInfoOptionsMonitor.CurrentValue.TokenInfos.TryGetValue(TokenSymbolHelper.GetCollectionSymbol(symbol), out var v))
             {
                 _tokenImageUrlCache.Add(symbol, v.ImageUrl);
-                return tokenInfo.ImageUrl;
+                return v.ImageUrl;
             }
             
         }

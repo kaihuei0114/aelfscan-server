@@ -847,12 +847,13 @@ public class ChartDataService : AbpRedisCache, IChartDataService, ITransientDepe
         var supplyDic = dailySupplyGrowthRespAsync.List.ToDictionary(c => c.DateStr, c => c);
         foreach (var data in datList)
         {
-            if (supplyDic.ContainsKey(data.DateStr))
+            if (supplyDic.ContainsKey(data.DateStr) && !supplyDic[data.DateStr].Reward.IsNullOrEmpty())
             {
-                if (!supplyDic[data.DateStr].Reward.IsNullOrEmpty())
-                {
-                    data.BlockReward = double.Parse(supplyDic[data.DateStr].Reward).ToString("F6");
-                }
+                data.BlockReward = double.Parse(supplyDic[data.DateStr].Reward).ToString("F6");
+            }
+            else
+            {
+                data.BlockReward = "0";
             }
         }
 
