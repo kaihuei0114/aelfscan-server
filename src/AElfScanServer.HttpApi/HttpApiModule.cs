@@ -18,6 +18,7 @@ using Aetherlink.PriceServer;
 using Localization.Resources.AbpUi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Volo.Abp;
 using Volo.Abp.Account;
 using Volo.Abp.AspNetCore.Mvc;
@@ -98,6 +99,7 @@ public class HttpApiModule : AbpModule
         context.Services.AddTransient<IChartDataService, ChartDataService>();
         context.Services.AddTransient<IUserAppService, UserAppService>();
         context.Services.AddTransient<IAddressTypeService, AddressTypeService>();
+        context.Services.AddSingleton<IDynamicTransactionService, DynamicTransactionService>();
 
         var configuration = context.Services.GetConfiguration();
         Configure<BlockChainOption>(configuration.GetSection("BlockChainServer"));
@@ -117,7 +119,6 @@ public class HttpApiModule : AbpModule
         context.Services.AddSingleton<BlockChainDataProvider, BlockChainDataProvider>();
         context.Services.AddSingleton<ITokenIndexerProvider, TokenIndexerProvider>();
         context.Services.AddSingleton<IBlockChainIndexerProvider, BlockChainIndexerProvider>();
-
 
         context.Services.AddSignalR();
     }
