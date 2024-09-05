@@ -70,6 +70,7 @@ public class DynamicTransactionService : IDynamicTransactionService
     private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
     private IDistributedCache<TransactionDetailResponseDto> _transactionDetailCache;
     private readonly ILogger<HomePageService> _logger;
+    
 
 
     public DynamicTransactionService(

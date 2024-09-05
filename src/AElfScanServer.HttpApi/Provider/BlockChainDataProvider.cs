@@ -313,7 +313,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
 
 
         var response =
-            await _httpProvider.PostAsync(_globalOptions.ScanChainNodeHosts[chainId] + apiPath,
+            await _httpProvider.PostAsync(_globalOptions.ChainNodeHosts[chainId] + apiPath,
                 RequestMediaType.Json, new Dictionary<string, string>
                 {
                     { "ContractAddress", contractAddress }, { "MethodName", methodName },
