@@ -164,7 +164,7 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
     }
 
 
-    public async Task<string> GetDecimalAmountAsync(string symbol, long amount,string chainId)
+    public async Task<string> GetDecimalAmountAsync(string symbol, long amount, string chainId)
     {
         var tokenDecimals = await GetTokenDecimals(symbol, chainId);
 
@@ -239,8 +239,6 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
         }
     }
 
-    
-
 
     public async Task<int> GetTokenDecimals(string symbol, string chainId)
     {
@@ -302,6 +300,25 @@ public class BlockChainDataProvider : AbpRedisCache, ISingletonDependency
         var response =
             await _httpProvider.InvokeAsync<NodeTransactionDto>(_globalOptions.ChainNodeHosts[chainId],
                 new ApiInfo(HttpMethod.Get, apiPath));
+
+
+        return response;
+    }
+
+
+    public async Task<string> GeFormatTransactionParamAsync(string chainId, string contractAddress, string methodName,
+        string param)
+    {
+        var apiPath = string.Format("/api/contract/formatTransactionParams");
+
+
+        var response =
+            await _httpProvider.PostAsync(_globalOptions.ChainNodeHosts[chainId] + apiPath,
+                RequestMediaType.Json, new Dictionary<string, string>
+                {
+                    { "ContractAddress", contractAddress }, { "MethodName", methodName },
+                    { "Param", param }
+                });
 
 
         return response;

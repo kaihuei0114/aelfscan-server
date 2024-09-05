@@ -379,6 +379,14 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                 _tokenImageUrlCache.Add(symbol, tokenInfo.ImageUrl);
                 return tokenInfo.ImageUrl;
             }
+
+            if (TokenSymbolHelper.GetSymbolType(symbol) == SymbolType.Nft)
+            {
+                imageUrl = TokenInfoHelper.GetImageUrl(externalInfo,
+                    () => (_tokenInfoProvider.BuildImageUrl(symbol)));
+                _tokenImageUrlCache.Add(symbol, imageUrl);
+                return imageUrl;
+            }
         }
         catch (Exception e)
         {
