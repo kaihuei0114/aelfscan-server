@@ -806,6 +806,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     continue;
                 }
 
+                _logger.LogInformation("BatchParseLogEventJob :{chainId},start:{startBlockHeight}", chainId, lastBlockHeight);
                 await ParseLogEventList(batchTransactionList, chainId);
                 lastBlockHeight += PullLogEventTransactionInterval + 1;
                 RedisDatabase.StringSet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId),
