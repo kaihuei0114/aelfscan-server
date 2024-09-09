@@ -777,7 +777,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         await ConnectAsync();
         var redisValue = RedisDatabase.StringGet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId));
         lastBlockHeight = redisValue.IsNullOrEmpty ? 2 : long.Parse(redisValue) + 1;
-        _logger.LogInformation("BatchParseLogEventJob {ChainId} lastBlockHeight {LastBlockHeight}",chainId,lastBlockHeight);
+        _logger.LogInformation("BatchParseLogEventJob {ChainId} lastBlockHeight {LastBlockHeight} PullLogEventTransactionInterval {PullLogEventTransactionInterval}",chainId,lastBlockHeight,PullLogEventTransactionInterval);
         while (true)
         {
             try
