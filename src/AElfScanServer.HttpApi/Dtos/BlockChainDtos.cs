@@ -454,6 +454,10 @@ public class TransactionResponseDto
     public string TransactionValue { get; set; }
 
     public string TransactionFee { get; set; }
+
+    public DateTime BlockTime { get; set; }
+
+    public string ChainId { get; set; }
 }
 
 public class TransactionPerMinuteResponseDto

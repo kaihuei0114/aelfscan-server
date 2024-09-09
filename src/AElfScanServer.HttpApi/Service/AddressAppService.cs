@@ -102,7 +102,7 @@ public class AddressAppService : IAddressAppService
         var result = new GetAddressListResultDto
         {
             Total = indexerTokenHolderInfo.TotalCount,
-            TotalBalance = DecimalHelper.Divide(tokenInfo.Supply, tokenInfo.Decimals)
+            TotalBalance = DecimalHelper.Divide(indexerTokenList.Sum(c => c.Supply), tokenInfo.Decimals)
         };
 
 
@@ -117,7 +117,7 @@ public class AddressAppService : IAddressAppService
             var addressResult = _objectMapper.Map<IndexerTokenHolderInfoDto, GetAddressInfoResultDto>(info);
             addressResult.Percentage = Math.Round((decimal)info.Amount / tokenInfo.Supply * 100,
                 CommonConstant.LargerPercentageValueDecimals);
-            addressResult.AddressType = contractInfosDict.TryGetValue(info.Address, out var addressInfo)
+            addressResult.AddressType = contractInfosDict.TryGetValue(info.Address + info.Id, out var addressInfo)
                 ? AddressType.ContractAddress
                 : AddressType.EoaAddress;
             addressList.Add(addressResult);
