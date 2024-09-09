@@ -131,7 +131,6 @@ public class HttpApiModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        context.AddBackgroundWorkerAsync<NftCollectionHolderInfoWorker>();
         context.AddBackgroundWorkerAsync<TokenHolderPercentWorker>();
     }
 
