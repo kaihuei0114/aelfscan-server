@@ -38,6 +38,8 @@ public class GlobalOptions
 
     public List<string> ChainIds { get; set; }
 
+    public string SideChainId { get; set; }
+
     public Dictionary<string, long> LogEventStartBlockHeightInit { get; set; } = new();
 
     public Dictionary<string, List<string>> SkipContractAddress { get; set; }

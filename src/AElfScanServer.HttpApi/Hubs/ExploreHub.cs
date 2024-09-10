@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using AElfScanServer.Common.Options;
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.DataStrategy;
 using AElfScanServer.HttpApi.Helper;
@@ -13,6 +14,7 @@ using AElfScanServer.HttpApi.Service;
 using AElfScanServer.DataStrategy;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Volo.Abp.AspNetCore.SignalR;
 using Timer = System.Timers.Timer;
 
@@ -24,6 +26,7 @@ public class ExploreHub : AbpHub
     private readonly IBlockChainService _blockChainService;
     private readonly IHubContext<ExploreHub> _hubContext;
     private readonly ILogger<ExploreHub> _logger;
+    private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private static Timer _timer = new Timer();
     private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
     private readonly DataStrategyContext<string, TransactionsResponseDto> _latestTransactionsDataStrategy;
@@ -38,7 +41,7 @@ public class ExploreHub : AbpHub
         IBlockChainService blockChainService, IHubContext<ExploreHub> hubContext,
         OverviewDataStrategy overviewDataStrategy, LatestTransactionDataStrategy latestTransactionsDataStrategy,
         CurrentBpProduceDataStrategy bpDataStrategy,
-        LatestBlocksDataStrategy latestBlocksDataStrategy)
+        LatestBlocksDataStrategy latestBlocksDataStrategy,IOptionsMonitor<GlobalOptions> globalOptions)
     {
         _HomePageService = homePageService;
         _logger = logger;
@@ -50,6 +53,7 @@ public class ExploreHub : AbpHub
         _latestBlocksDataStrategy =
             new DataStrategyContext<string, BlocksResponseDto>(latestBlocksDataStrategy);
         _bpDataStrategy = new DataStrategyContext<string, BlockProduceInfoDto>(bpDataStrategy);
+        _globalOptions = globalOptions;
     }
 
 
@@ -182,6 +186,7 @@ public class ExploreHub : AbpHub
     public async Task RequestBlockchainOverview(BlockchainOverviewRequestDto request)
     {
         var startNew = Stopwatch.StartNew();
+   
         var resp = await _overviewDataStrategy.DisplayData(request.ChainId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId,

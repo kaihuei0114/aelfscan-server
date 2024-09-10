@@ -46,7 +46,7 @@ public class TransactionsRequestDto : BaseInput
             return;
         }
 
-        OfOrderInfos((SortField.BlockHeight, SortDirection.Desc), (SortField.TransactionId, SortDirection.Desc));
+        OfOrderInfos((SortField.BlockTime, SortDirection.Desc), (SortField.TransactionId, SortDirection.Desc));
     }
 
 
@@ -454,6 +454,10 @@ public class TransactionResponseDto
     public string TransactionValue { get; set; }
 
     public string TransactionFee { get; set; }
+
+    public DateTime BlockTime { get; set; }
+
+    public List<string> ChainIds { get; set; } = new();
 }
 
 public class TransactionPerMinuteResponseDto
