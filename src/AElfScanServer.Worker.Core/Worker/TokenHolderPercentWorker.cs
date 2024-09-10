@@ -3,15 +3,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.IndexerPluginProvider;
-using AElfScanServer.HttpApi.Options;
 using AElfScanServer.HttpApi.Provider;
+using AElfScanServer.Worker.Core.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
-namespace AElfScanServer.HttpApi.Worker;
+namespace AElfScanServer.Worker.Core.Worker;
 
 public class TokenHolderPercentWorker : AsyncPeriodicBackgroundWorkerBase
 {
@@ -35,7 +35,7 @@ public class TokenHolderPercentWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        var tasks = _workerOptions.CurrentValue.ChainInfos.Select(info => UpdateTokenHolderCount(info.ChainId));
+        var tasks = _workerOptions.CurrentValue.Chains.Select(info => UpdateTokenHolderCount(info.ChainId));
         await Task.WhenAll(tasks);
     }
 
@@ -50,7 +50,7 @@ public class TokenHolderPercentWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        var batchSize = _workerOptions.CurrentValue.BatchSize;
+        var batchSize = 1000;
         var skipCount = 0;
         var moreData = true;
         while (moreData)

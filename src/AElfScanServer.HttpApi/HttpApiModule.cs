@@ -12,7 +12,6 @@ using AElfScanServer.Common.Options;
 using AElfScanServer.Common.Token;
 using AElfScanServer.Domain.Shared;
 using AElfScanServer.Domain.Shared.Localization;
-using AElfScanServer.HttpApi.Worker;
 using AElfScanServer.MongoDB;
 using Aetherlink.PriceServer;
 using Localization.Resources.AbpUi;
@@ -109,7 +108,6 @@ public class HttpApiModule : AbpModule
         Configure<SecretOptions>(configuration.GetSection("Secret"));
         Configure<GlobalOptions>(configuration.GetSection("BlockChain"));
         Configure<ElasticsearchOptions>(configuration.GetSection("Elasticsearch"));
-        Configure<WorkerOptions>(configuration.GetSection("Worker"));
         ConfigureGraphQl(context, configuration);
 
 
@@ -131,7 +129,7 @@ public class HttpApiModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        context.AddBackgroundWorkerAsync<TokenHolderPercentWorker>();
+       
     }
 
     private void ConfigureLocalization()
