@@ -26,7 +26,7 @@ public class ExploreHub : AbpHub
     private readonly IBlockChainService _blockChainService;
     private readonly IHubContext<ExploreHub> _hubContext;
     private readonly ILogger<ExploreHub> _logger;
-    private readonly OptionsMonitor<GlobalOptions> _globalOptions;
+    private readonly IOptionsMonitor<GlobalOptions> _globalOptions;
     private static Timer _timer = new Timer();
     private readonly DataStrategyContext<string, HomeOverviewResponseDto> _overviewDataStrategy;
     private readonly DataStrategyContext<string, TransactionsResponseDto> _latestTransactionsDataStrategy;
@@ -41,7 +41,7 @@ public class ExploreHub : AbpHub
         IBlockChainService blockChainService, IHubContext<ExploreHub> hubContext,
         OverviewDataStrategy overviewDataStrategy, LatestTransactionDataStrategy latestTransactionsDataStrategy,
         CurrentBpProduceDataStrategy bpDataStrategy,
-        LatestBlocksDataStrategy latestBlocksDataStrategy,OptionsMonitor<GlobalOptions> globalOptions)
+        LatestBlocksDataStrategy latestBlocksDataStrategy,IOptionsMonitor<GlobalOptions> globalOptions)
     {
         _HomePageService = homePageService;
         _logger = logger;

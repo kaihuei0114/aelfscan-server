@@ -76,7 +76,8 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("GetContractListAsync");
         var result = new GetContractListResultDto { List = new List<ContractDto>() };
 
-        var key = IdGeneratorHelper.GenerateId(input.SkipCount, input.MaxResultCount, input.ChainId);
+        var key = IdGeneratorHelper.GenerateId("GetContractListAsync", input.SkipCount, input.MaxResultCount,
+            input.ChainId);
         var contractDtos =
             await _contractListCache.GetAsync(key);
         if (contractDtos != null)
@@ -105,11 +106,11 @@ public class ContractAppService : IContractAppService
 
 
         tasks.Add(_indexerTokenProvider.GetAddressTokenListAsync(input.ChainId,
-            "ELF", addressList, 0, addressList.Count*2).ContinueWith(task => { addressTokenList = task.Result; }));
+            "ELF", addressList, 0, addressList.Count * 2).ContinueWith(task => { addressTokenList = task.Result; }));
 
         await tasks.WhenAll();
 
-        var accountTokenDic = addressTokenList.ToDictionary(c => c.Address + c.Id, c => c);
+        var accountTokenDic = addressTokenList.ToDictionary(c => c.Address + c.ChainId, c => c);
 
         var txnCountDic = addressTransactionCountList.ToDictionary(c => c.Address + c.ChainId, c => c);
         foreach (var info in getContractListResult.ContractList.Items)
@@ -138,11 +139,12 @@ public class ContractAppService : IContractAppService
             }
 
 
-            if (accountTokenDic.TryGetValue(info.Address, out var v))
+            if (accountTokenDic.TryGetValue(info.Address + info.Metadata.ChainId, out var v))
             {
                 contractInfo.Balance = addressTokenList[0].FormatAmount;
             }
 
+            contractInfo.ChainIds = new List<string>() { info.Metadata.ChainId };
 
             result.List.Add(contractInfo);
         }

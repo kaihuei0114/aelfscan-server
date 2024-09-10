@@ -419,6 +419,7 @@ public class DynamicTransactionService : IDynamicTransactionService
 
         try
         {
+            requestDto.SetDefaultSort();
             var indexerTransactionList = await _blockChainIndexerProvider.GetTransactionsAsync(requestDto);
 
 
@@ -434,7 +435,7 @@ public class DynamicTransactionService : IDynamicTransactionService
                     Status = transactionIndex.Status,
                     TransactionFee = transactionIndex.Fee.ToString(),
                     BlockTime = transactionIndex.Metadata.Block.BlockTime,
-                    ChainId = transactionIndex.Metadata.ChainId
+                    ChainIds = new List<string>() { transactionIndex.Metadata.ChainId }
                 };
 
 
