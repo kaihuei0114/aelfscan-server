@@ -12,12 +12,14 @@ using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.DataStrategy;
+using AElfScanServer.HttpApi.Service;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.Caching;
+using AddressIndex = AElfScanServer.Common.Dtos.ChartData.AddressIndex;
 
 namespace AElfScanServer.HttpApi.DataStrategy;
 
@@ -30,7 +32,8 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
     private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly IEntityMappingRepository<DailyUniqueAddressCountIndex, string> _uniqueAddressRepository;
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
-
+    private readonly IChartDataService _chartDataService;
+    private readonly IEntityMappingRepository<AddressIndex, string> _addressRepository;
 
     public OverviewDataStrategy(IOptions<RedisCacheOptions> optionsAccessor,
         IOptionsMonitor<GlobalOptions> globalOptions,
@@ -40,7 +43,8 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         ITokenIndexerProvider tokenIndexerProvider,
         IBlockChainIndexerProvider blockChainIndexerProvider,
         IEntityMappingRepository<DailyUniqueAddressCountIndex, string> uniqueAddressRepository,
-        ILogger<DataStrategyBase<string, HomeOverviewResponseDto>> logger, IDistributedCache<string> cache) : base(
+        ILogger<DataStrategyBase<string, HomeOverviewResponseDto>> logger, IDistributedCache<string> cache,
+        IChartDataService chartDataService, IEntityMappingRepository<AddressIndex, string> addressRepository) : base(
         optionsAccessor, logger, cache)
     {
         _globalOptions = globalOptions;
@@ -50,6 +54,8 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         _tokenIndexerProvider = tokenIndexerProvider;
         _blockChainIndexerProvider = blockChainIndexerProvider;
         _uniqueAddressRepository = uniqueAddressRepository;
+        _chartDataService = chartDataService;
+        _addressRepository = addressRepository;
     }
 
     public override async Task<HomeOverviewResponseDto> QueryData(string chainId)
@@ -114,6 +120,51 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         return overviewResp;
     }
 
+    public async Task<string> GetMarketCap()
+    {
+        var marketCap = await _cache.GetAsync("MarketCap");
+        if (marketCap.IsNullOrEmpty())
+        {
+            try
+            {
+                var marketCapInfo = await _chartDataService.GetDailyMarketCapRespAsync();
+                marketCap = marketCapInfo.List.Last().TotalMarketCap;
+                await _cache.SetAsync("MarketCap", marketCap);
+            }
+            catch (Exception e)
+            {
+                DataStrategyLogger.LogError(e, "get market cap err");
+            }
+        }
+
+        return marketCap;
+    }
+
+
+    public async Task<long> GetTotalAccount()
+    {
+        var totalCount = 0;
+        try
+        {
+            var count = await _cache.GetAsync("TotalAccount");
+
+            if (count.IsNullOrEmpty())
+            {
+                totalCount = _addressRepository.GetQueryableAsync().Result.Count();
+                await _cache.SetAsync("TotalAccount", totalCount.ToString());
+                return totalCount;
+            }
+
+            return long.Parse(count);
+        }
+        catch (Exception e)
+        {
+            DataStrategyLogger.LogError(e, "get total account err");
+        }
+
+        return totalCount;
+    }
+
     public async Task<HomeOverviewResponseDto> QueryMergeChainData()
     {
         var overviewResp = new HomeOverviewResponseDto();
@@ -123,8 +174,6 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
             decimal sideChainTps = 0;
 
             var tasks = new List<Task>();
-            tasks.Add(_aelfIndexerProvider.GetLatestBlockHeightAsync("AELF").ContinueWith(
-                task => { overviewResp.BlockHeight = task.Result; }));
 
 
             tasks.Add(_blockChainIndexerProvider.GetTransactionCount("").ContinueWith(task =>
@@ -133,21 +182,12 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
             }));
 
 
-            // tasks.Add(_uniqueAddressRepository.GetQueryableAsync().ContinueWith(
-            //     task =>
-            //     {
-            //         overviewResp.Accounts =
-            //             task.Result.Where(c => c.ChainId == chainId).OrderByDescending(c => c.Date).Take(1).ToList()
-            //                 .First().TotalUniqueAddressees;
-            //     }));
-
-
-            // tasks.Add(_homePageProvider.GetRewardAsync(chainId).ContinueWith(
-            //     task =>
-            //     {
-            //         overviewResp.Reward = task.Result.ToDecimalsString(8);
-            //         overviewResp.CitizenWelfare = (task.Result * 0.75).ToDecimalsString(8);
-            //     }));
+            tasks.Add(_homePageProvider.GetRewardAsync("AELF").ContinueWith(
+                task =>
+                {
+                    overviewResp.Reward = task.Result.ToDecimalsString(8);
+                    overviewResp.CitizenWelfare = (task.Result * 0.75).ToDecimalsString(8);
+                }));
 
             tasks.Add(_blockChainProvider.GetTokenUsd24ChangeAsync("ELF").ContinueWith(
                 task =>
@@ -163,7 +203,9 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
                 .ContinueWith(
                     task => { sideChainTps = (task.Result / 60); }));
 
+            tasks.Add(GetMarketCap().ContinueWith(task => { overviewResp.MarketCap = task.Result; }));
 
+            tasks.Add(GetTotalAccount().ContinueWith(task => { overviewResp.Accounts = task.Result; }));
             await Task.WhenAll(tasks);
             overviewResp.Tps = (mainChainTps + sideChainTps).ToString("F2");
 

@@ -91,12 +91,14 @@ public class HomeOverviewResponseDto
     public decimal TokenPriceInUsd { get; set; }
     public decimal TokenPriceRate24h { get; set; }
     public long Transactions { get; set; }
+
+    public string MarketCap { get; set; }
     public string Tps { get; set; }
 
     public DateTime TpsTime { get; set; }
     public string Reward { get; set; }
     public long BlockHeight { get; set; }
-    public int Accounts { get; set; }
+    public long Accounts { get; set; }
     public string CitizenWelfare { get; set; }
 }
 
@@ -117,6 +119,8 @@ public class WebSocketMergeBlockInfoDto
 {
     public TransactionsResponseDto LatestTransactions { get; set; }
     public BlocksResponseDto LatestBlocks { get; set; }
+
+    public TopTokenDto TopTokens { get; set; }
 }
 
 public class TransactionsResponseDto
@@ -278,7 +282,7 @@ public class SearchResponseDto
 {
     public List<SearchToken> Tokens { get; set; } = new();
     public List<SearchToken> Nfts { get; set; } = new();
-    public List<string> Accounts { get; set; } = new();
+    public List<SearchAccount> Accounts { get; set; } = new();
     public List<SearchContract> Contracts { get; set; } = new();
     public SearchBlock Block { get; set; }
     public SearchTransaction Transaction { get; set; }
@@ -310,12 +314,21 @@ public class SearchContract
 {
     public string Name { get; set; }
     public string Address { get; set; }
+
+    public List<string> ChainIds { get; set; }
 }
 
 public class LatestBlocksRequestDto
 {
     public string ChainId { get; set; }
     public int MaxResultCount { get; set; } = 6;
+}
+
+public class SearchAccount
+{
+    public string Address { get; set; }
+
+    public List<string> ChainIds { get; set; }
 }
 
 public class LatestTransactionsResponseSto
@@ -328,6 +341,14 @@ public class BlocksResponseDto
 {
     public List<BlockResponseDto> Blocks { get; set; }
     public long Total { get; set; }
+}
+
+public class TopTokenDto
+{
+    public string Symbol { get; set; }
+    public List<string> ChainIds { get; set; }
+    public long Transfers { get; set; }
+    public long Holder { get; set; }
 }
 
 public class BlockDetailRequestDto

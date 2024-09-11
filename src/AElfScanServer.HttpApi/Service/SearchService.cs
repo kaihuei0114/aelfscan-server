@@ -116,8 +116,15 @@ public class SearchService : ISearchService, ISingletonDependency
 
     private bool ValidParam(string chainId, string keyword)
     {
-        return _globalOptions.CurrentValue.ChainIds.Exists(s => s == chainId)
-               && !Regex.IsMatch(keyword, CommonConstant.SearchKeyPattern);
+        if (string.IsNullOrEmpty(chainId))
+        {
+            return !Regex.IsMatch(keyword, CommonConstant.SearchKeyPattern);
+        }
+        else
+        {
+            return (_globalOptions.CurrentValue.ChainIds.Exists(s => s == chainId)
+                    && !Regex.IsMatch(keyword, CommonConstant.SearchKeyPattern));
+        }
     }
 
 
@@ -129,29 +136,46 @@ public class SearchService : ISearchService, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogWarning(e,"address is invalid,{keyword}", request.Keyword);
+            _logger.LogWarning(e, "address is invalid,{keyword}", request.Keyword);
             return;
         }
 
 
-        var contractAddress = await FindContractAddress(request.ChainId, request.Keyword);
+        var contractAddressList = await FindContractAddress(request.ChainId, request.Keyword);
 
 
-        if (!contractAddress.IsNullOrEmpty())
+        if (!contractAddressList.IsNullOrEmpty())
         {
-            searchResponseDto.Contracts.Add(new SearchContract
+            foreach (var contractInfoDto in contractAddressList)
             {
-                Address = request.Keyword,
-                Name = BlockHelper.GetContractName(_globalOptions.CurrentValue, request.ChainId, request.Keyword)
-            });
+                searchResponseDto.Contracts.Add(new SearchContract
+                {
+                    Address = request.Keyword,
+                    Name = BlockHelper.GetContractName(_globalOptions.CurrentValue, contractInfoDto.ChainId,
+                        request.Keyword),
+                    ChainIds = new List<string>() { contractInfoDto.ChainId }
+                });
+            }
         }
         else
         {
-            searchResponseDto.Accounts.Add(request.Keyword);
+            if (request.ChainId.IsNullOrEmpty())
+            {
+                var findEoaAddress = await FindEoaAddress(request.Keyword);
+                searchResponseDto.Accounts = findEoaAddress;
+            }
+            else
+            {
+                searchResponseDto.Accounts.Add(new SearchAccount()
+                {
+                    Address = request.Keyword,
+                    ChainIds = new List<string>() { request.ChainId }
+                });
+            }
         }
     }
 
-    public async Task<string> FindContractAddress(string chainId, string contractAddress)
+    public async Task<List<ContractInfoDto>> FindContractAddress(string chainId, string contractAddress)
     {
         var contractListAsync =
             await _indexerGenesisProvider.GetContractListAsync(chainId, 0, 1, "", "",
@@ -159,25 +183,29 @@ public class SearchService : ISearchService, ISingletonDependency
 
         if (!contractListAsync.ContractList.Items.IsNullOrEmpty())
         {
-            return contractListAsync.ContractList.Items.First().Address;
+            return contractListAsync.ContractList.Items;
         }
 
-        return "";
+        return new List<ContractInfoDto>();
     }
 
-    public async Task<string> FindEoaAddress(string chainId, string address)
+    public async Task<List<SearchAccount>> FindEoaAddress(string address)
     {
-        var holderInput = new TokenHolderInput { ChainId = chainId, Address = address };
+        var result = new List<SearchAccount>();
+        var holderInput = new TokenHolderInput { ChainId = "", Address = address };
         holderInput.SetDefaultSort();
-        var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
 
-        var list = tokenHolderInfos.Items.Select(i => i.Address).Distinct().ToList();
-        if (!list.IsNullOrEmpty())
+        var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
+        foreach (var indexerTokenHolderInfoDto in tokenHolderInfos.Items)
         {
-            return list.First();
+            result.Add(new SearchAccount
+            {
+                Address = indexerTokenHolderInfoDto.Address,
+                ChainIds = new List<string>() { indexerTokenHolderInfoDto.Metadata.ChainId }
+            });
         }
 
-        return "";
+        return result;
     }
 
 

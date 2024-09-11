@@ -41,6 +41,8 @@ public interface IHomePageService
 
     public Task<TransactionPerMinuteResponseDto> GetTransactionPerMinuteAsync(
         string chainId);
+    
+    public Task<TransactionPerMinuteResponseDto> GetAllTransactionPerMinuteAsync();
 
     public Task<FilterTypeResponseDto> GetFilterType();
 }
@@ -94,6 +96,21 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
             JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(dataValue);
 
         transactionPerMinuteResp.Owner = data;
+
+        var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionChartData("merge"));
+        var mergeData =
+            JsonConvert.DeserializeObject<List<TransactionCountPerMinuteDto>>(redisValue);
+
+        transactionPerMinuteResp.All = mergeData;
+
+
+        return transactionPerMinuteResp;
+    }
+    
+    public async Task<TransactionPerMinuteResponseDto> GetAllTransactionPerMinuteAsync()
+    {
+        var transactionPerMinuteResp = new TransactionPerMinuteResponseDto();
+        await ConnectAsync();
 
         var redisValue = RedisDatabase.StringGet(RedisKeyHelper.TransactionChartData("merge"));
         var mergeData =
@@ -233,60 +250,14 @@ public class HomePageService : AbpRedisCache, IHomePageService, ITransientDepend
         }
     }
 
-    public void SetExSearchAddress(SearchResponseDto searchResponseDto, SearchRequestDto requestDto)
-    {
-        var accounts = new List<string>();
-        var contracts = new List<SearchContract>();
-        searchResponseDto.Accounts = accounts;
-        searchResponseDto.Contracts = contracts;
-        try
-        {
-            if (requestDto.Keyword.Length <= 2 || requestDto.Keyword.Length > 50)
-            {
-                return;
-            }
-
-            var mustQuery = new List<Func<QueryContainerDescriptor<AddressIndex>, QueryContainer>>();
-
-            mustQuery.Add(q => q.Bool(b =>
-                b.Should(
-                    sh => sh.Term(
-                        w => w.Field(f => f.LowerAddress)
-                            .Value(requestDto.Keyword.Length > 9 ? $"*{requestDto.Keyword}*" : "*")),
-                    sh => sh.Term(w => w.Field(f => f.LowerName).Value($"*{requestDto.Keyword}*"))
-                )));
-
-            QueryContainer Filter(QueryContainerDescriptor<AddressIndex> f) => f.Bool(b => b.Must(mustQuery));
-            var result = _addressIndexRepository.GetListAsync(Filter, skip: 0, limit: 1000,
-                index: BlockChainIndexNameHelper.GenerateAddressIndexName(requestDto.ChainId)).Result;
-            result.Item2.ForEach(addressIndex =>
-            {
-                if (addressIndex.AddressType == AddressType.EoaAddress)
-                {
-                    accounts.Add(addressIndex.Address);
-                }
-                else
-                {
-                    var searchContract = new SearchContract();
-                    searchContract.Address = addressIndex.Address;
-                    //todo
-                    searchContract.Name = "";
-                    contracts.Add(searchContract);
-                }
-            });
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "set search address err");
-        }
-    }
+    
 
     public void SetSearchAddress(SearchResponseDto searchResponseDto, SearchRequestDto requestDto,
         SearchTypes searchType, AddressType addressType)
     {
         var accounts = new List<string>();
         var contracts = new List<SearchContract>();
-        searchResponseDto.Accounts = accounts;
+        searchResponseDto.Accounts = new List<SearchAccount>();
         searchResponseDto.Contracts = contracts;
         try
         {
