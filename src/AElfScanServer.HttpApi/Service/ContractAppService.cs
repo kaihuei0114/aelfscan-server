@@ -110,7 +110,7 @@ public class ContractAppService : IContractAppService
 
         await tasks.WhenAll();
 
-        var accountTokenDic = addressTokenList.ToDictionary(c => c.Address + c.ChainId, c => c);
+        var accountTokenDic = addressTokenList.ToDictionary(c => c.Address + c.Metadata.ChainId, c => c);
 
         var txnCountDic = addressTransactionCountList.ToDictionary(c => c.Address + c.ChainId, c => c);
         foreach (var info in getContractListResult.ContractList.Items)
