@@ -78,14 +78,14 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
 
             tasks.Add(_blockChainIndexerProvider.GetTransactionCount(chainId).ContinueWith(task =>
             {
-                overviewResp.Transactions = task.Result;
+                overviewResp.MergeTransactions.Total = task.Result;
             }));
 
 
             tasks.Add(_uniqueAddressRepository.GetQueryableAsync().ContinueWith(
                 task =>
                 {
-                    overviewResp.Accounts =
+                    overviewResp.MergeAccounts.Total =
                         task.Result.Where(c => c.ChainId == chainId).OrderByDescending(c => c.Date).Take(1).ToList()
                             .First().TotalUniqueAddressees;
                 }));
@@ -141,7 +141,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
     }
 
 
-    public async Task<long> GetTotalAccount()
+    public async Task<long> GetTotalAccount(string chainId)
     {
         var totalCount = 0;
         try
@@ -150,7 +150,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
 
             if (count.IsNullOrEmpty())
             {
-                totalCount = _addressRepository.GetQueryableAsync().Result.Count();
+                totalCount = _addressRepository.GetQueryableAsync().Result.Where(c => c.ChainId == chainId).Count();
                 await _cache.SetAsync("TotalAccount", totalCount.ToString());
                 return totalCount;
             }
@@ -173,21 +173,19 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
             decimal mainChainTps = 0;
             decimal sideChainTps = 0;
 
+
             var tasks = new List<Task>();
 
 
-            tasks.Add(_blockChainIndexerProvider.GetTransactionCount("").ContinueWith(task =>
+            tasks.Add(_blockChainIndexerProvider.GetTransactionCount("AELF").ContinueWith(task =>
             {
-                overviewResp.Transactions = task.Result;
+                overviewResp.MergeTransactions.MainChain = task.Result;
             }));
 
 
-            tasks.Add(_homePageProvider.GetRewardAsync("AELF").ContinueWith(
-                task =>
-                {
-                    overviewResp.Reward = task.Result.ToDecimalsString(8);
-                    overviewResp.CitizenWelfare = (task.Result * 0.75).ToDecimalsString(8);
-                }));
+            tasks.Add(_blockChainIndexerProvider.GetTransactionCount(_globalOptions.CurrentValue.SideChainId)
+                .ContinueWith(task => { overviewResp.MergeTransactions.SideChain = task.Result; }));
+
 
             tasks.Add(_blockChainProvider.GetTokenUsd24ChangeAsync("ELF").ContinueWith(
                 task =>
@@ -197,18 +195,35 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
                 }));
 
             tasks.Add(_homePageProvider.GetTransactionCountPerLastMinute("AELF").ContinueWith(
-                task => { mainChainTps = (task.Result / 60); }));
+                task => { overviewResp.MergeTps.MainChain = (task.Result / 60).ToString("F2"); }));
 
             tasks.Add(_homePageProvider.GetTransactionCountPerLastMinute(_globalOptions.CurrentValue.SideChainId)
                 .ContinueWith(
-                    task => { sideChainTps = (task.Result / 60); }));
+                    task => { overviewResp.MergeTps.SideChain = (task.Result / 60).ToString("F2"); }));
 
             tasks.Add(GetMarketCap().ContinueWith(task => { overviewResp.MarketCap = task.Result; }));
 
-            tasks.Add(GetTotalAccount().ContinueWith(task => { overviewResp.Accounts = task.Result; }));
-            await Task.WhenAll(tasks);
-            overviewResp.Tps = (mainChainTps + sideChainTps).ToString("F2");
+            tasks.Add(GetTotalAccount("AELF").ContinueWith(task =>
+            {
+                overviewResp.MergeAccounts.MainChain = task.Result;
+            }));
 
+            tasks.Add(GetTotalAccount(_globalOptions.CurrentValue.SideChainId).ContinueWith(task =>
+            {
+                overviewResp.MergeAccounts.SideChain = task.Result;
+            }));
+
+            await Task.WhenAll(tasks);
+            overviewResp.MergeTps.MainChain = mainChainTps.ToString("F2");
+            overviewResp.MergeTps.SideChain = sideChainTps.ToString("F2");
+            overviewResp.MergeTps.Total = (sideChainTps + mainChainTps).ToString("F2");
+
+            overviewResp.MergeTransactions.Total =
+                overviewResp.MergeTransactions.MainChain + overviewResp.MergeTransactions.SideChain;
+            overviewResp.MergeAccounts.Total =
+                overviewResp.MergeAccounts.MainChain + overviewResp.MergeAccounts.SideChain;
+            overviewResp.MergeNfts.Total = overviewResp.MergeNfts.MainChain + overviewResp.MergeNfts.SideChain;
+            overviewResp.MergeTokens.Total = overviewResp.MergeTokens.MainChain + overviewResp.MergeTokens.SideChain;
             DataStrategyLogger.LogInformation("Set home page overview success: merge chain");
         }
         catch (Exception e)

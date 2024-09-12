@@ -92,6 +92,11 @@ public class HomeOverviewResponseDto
     public decimal TokenPriceRate24h { get; set; }
     public long Transactions { get; set; }
 
+    public OverviewAccountInfo MergeAccounts { get; set; } = new();
+    public OverviewTokensInfo MergeTokens { get; set; } = new();
+    public OverviewNftsInfo MergeNfts { get; set; } = new();
+    public OverviewTransactionsInfo MergeTransactions { get; set; } = new();
+    public OverviewTpsInfo MergeTps { get; set; } = new();
     public string MarketCap { get; set; }
     public string Tps { get; set; }
 
@@ -100,6 +105,44 @@ public class HomeOverviewResponseDto
     public long BlockHeight { get; set; }
     public long Accounts { get; set; }
     public string CitizenWelfare { get; set; }
+}
+
+public class OverviewTransactionsInfo
+{
+    public long Total { get; set; }
+
+    public long MainChain { get; set; }
+    public long SideChain { get; set; }
+}
+
+public class OverviewTpsInfo
+{
+    public string Total { get; set; }
+    public string MainChain { get; set; }
+    public string SideChain { get; set; }
+}
+
+public class OverviewTokensInfo
+{
+    public long Total { get; set; }
+
+    public long MainChain { get; set; }
+    public long SideChain { get; set; }
+}
+
+public class OverviewNftsInfo
+{
+    public long Total { get; set; }
+    public long MainChain { get; set; }
+    public long SideChain { get; set; }
+}
+
+public class OverviewAccountInfo
+{
+    public long Total { get; set; }
+
+    public long MainChain { get; set; }
+    public long SideChain { get; set; }
 }
 
 public class BlocksRequestDto : PagedResultRequestDto
@@ -486,6 +529,8 @@ public class TransactionPerMinuteResponseDto
 {
     public List<TransactionCountPerMinuteDto> All { get; set; }
     public List<TransactionCountPerMinuteDto> Owner { get; set; }
+    public List<TransactionCountPerMinuteDto> MainChain { get; set; }
+    public List<TransactionCountPerMinuteDto> SideChain { get; set; }
 }
 
 public class TransactionCountPerMinuteDto

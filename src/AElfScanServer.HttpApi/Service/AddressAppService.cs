@@ -95,24 +95,24 @@ public class AddressAppService : IAddressAppService
 
         await Task.WhenAll(tokenHolderInfoTask, tokenDetailTask);
 
-        var indexerTokenHolderInfo = await tokenHolderInfoTask;
+        var tokenHolderAccountlist = await tokenHolderInfoTask;
         var indexerTokenList = await tokenDetailTask;
         var tokenInfo = indexerTokenList[0];
 
         var result = new GetAddressListResultDto
         {
-            Total = indexerTokenHolderInfo.TotalCount,
+            Total = tokenHolderAccountlist.TotalCount,
             TotalBalance = DecimalHelper.Divide(indexerTokenList.Sum(c => c.Supply), tokenInfo.Decimals)
         };
 
 
         var contractInfosDict =
             await _indexerGenesisProvider.GetContractListAsync(input.ChainId,
-                indexerTokenHolderInfo.Items.Select(address => address.Address).ToList());
+                tokenHolderAccountlist.Items.Select(address => address.Address).ToList());
 
 
         var addressList = new List<GetAddressInfoResultDto>();
-        foreach (var info in indexerTokenHolderInfo.Items)
+        foreach (var info in tokenHolderAccountlist.Items)
         {
             var addressResult = _objectMapper.Map<IndexerTokenHolderInfoDto, GetAddressInfoResultDto>(info);
             addressResult.ChainIds = new List<string>() { info.Metadata.ChainId };

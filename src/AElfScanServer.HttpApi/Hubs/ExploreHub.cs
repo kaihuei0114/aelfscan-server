@@ -15,6 +15,7 @@ using AElfScanServer.DataStrategy;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using Volo.Abp.AspNetCore.SignalR;
 using Timer = System.Timers.Timer;
 
@@ -294,19 +295,23 @@ public class ExploreHub : AbpHub
             _logger.LogInformation("RequestTransactionDataChart costTime:{chainId},{costTime}", request.ChainId,
                 startNew.Elapsed.TotalSeconds);
         }
- 
+
         PushTransactionCountPerMinuteAsync(request.ChainId);
     }
 
     public async Task RequestMergeTransactionDataChart()
     {
-        var resp = await _HomePageService.GetAllTransactionPerMinuteAsync();
+        var mainChainData = await _HomePageService.GetTransactionPerMinuteAsync("AELF");
+        var sideChainData =
+            await _HomePageService.GetTransactionPerMinuteAsync(_globalOptions.CurrentValue.SideChainId);
 
-        resp.All = resp.All.Take(resp.All.Count - 3).ToList();
+        mainChainData.All = mainChainData.All.Take(mainChainData.All.Count - 3).ToList();
+        mainChainData.MainChain = mainChainData.Owner.Take(mainChainData.Owner.Count - 3).ToList();
+        mainChainData.SideChain = sideChainData.Owner.Take(sideChainData.Owner.Count - 3).ToList();
         await Groups.AddToGroupAsync(Context.ConnectionId,
             HubGroupHelper.GetTransactionCountPerMinuteGroupName());
 
-        await Clients.Caller.SendAsync("ReceiveTransactionDataChart", resp);
+        await Clients.Caller.SendAsync("ReceiveTransactionDataChart", mainChainData);
     }
 
 
@@ -331,6 +336,7 @@ public class ExploreHub : AbpHub
             {
                 if (chainId.IsNullOrEmpty())
                 {
+                    await Task.Delay(60 * 1000);
                     await RequestMergeTransactionDataChart();
                 }
                 else
