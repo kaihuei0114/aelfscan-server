@@ -266,7 +266,7 @@ public class SearchService : ISearchService, ISingletonDependency
                 {
                     if (searchTokensDic.TryGetValue(tokenInfo.Symbol, out var v))
                     {
-                        v.ChainIds.Add(tokenInfo.IssueChainId);
+                        v.ChainIds.Add(tokenInfo.Metadata.ChainId);
                     }
                     else
                     {
@@ -275,6 +275,8 @@ public class SearchService : ISearchService, ISingletonDependency
                             var price = await GetTokenOfUsdPriceAsync(priceDict, tokenInfo.Symbol);
                             searchToken.Price = Math.Round(price, CommonConstant.UsdPriceValueDecimals);
                         }
+
+                        searchToken.ChainIds.Add(tokenInfo.Metadata.ChainId);
 
                         searchTokensDic[tokenInfo.Symbol] = searchToken;
                     }
@@ -285,7 +287,7 @@ public class SearchService : ISearchService, ISingletonDependency
                 {
                     if (searchTNftsDic.TryGetValue(tokenInfo.Symbol, out var v))
                     {
-                        v.ChainIds.Add(tokenInfo.IssueChainId);
+                        v.ChainIds.Add(tokenInfo.Metadata.ChainId);
                     }
                     else
                     {
@@ -294,7 +296,7 @@ public class SearchService : ISearchService, ISingletonDependency
                             ? priceDto.Price
                             : 0;
                         searchToken.Price = Math.Round(elfPrice * elfOfUsdPrice, CommonConstant.UsdPriceValueDecimals);
-                        searchToken.ChainIds.Add(tokenInfo.IssueChainId);
+                        searchToken.ChainIds.Add(tokenInfo.Metadata.ChainId);
                         searchTNftsDic[tokenInfo.Symbol] = searchToken;
                     }
 
@@ -302,7 +304,16 @@ public class SearchService : ISearchService, ISingletonDependency
                 }
                 case SymbolType.Nft_Collection:
                 {
-                    searchResponseDto.Nfts.Add(searchToken);
+                    if (searchTNftsDic.TryGetValue(tokenInfo.Symbol, out var v))
+                    {
+                        v.ChainIds.Add(tokenInfo.Metadata.ChainId);
+                    }
+                    else
+                    {
+                        searchToken.ChainIds.Add(tokenInfo.Metadata.ChainId);
+                        searchTNftsDic[tokenInfo.Symbol] = searchToken;
+                    }
+
                     break;
                 }
             }

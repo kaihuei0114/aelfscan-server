@@ -308,7 +308,7 @@ public class SearchToken
     public string Symbol { get; set; }
     public decimal Price { get; set; }
     public SymbolType Type { get; set; }
-    public List<string> ChainIds { get; set; }
+    public List<string> ChainIds { get; set; } = new();
 }
 
 public class SearchContract

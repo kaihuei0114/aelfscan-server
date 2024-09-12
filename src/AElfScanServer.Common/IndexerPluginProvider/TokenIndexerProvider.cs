@@ -163,6 +163,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
                         supply,
                         issued,
     					issuer,
+                        metadata{chainId,block{blockHash,blockTime,blockHeight}},
                         owner,
                         isPrimaryToken
                         isBurnable,
