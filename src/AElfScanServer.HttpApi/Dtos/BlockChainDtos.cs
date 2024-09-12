@@ -95,7 +95,7 @@ public class HomeOverviewResponseDto
     public string MarketCap { get; set; }
     public string Tps { get; set; }
 
-    public DateTime TpsTime { get; set; }
+    public int Tokens { get; set; }
     public string Reward { get; set; }
     public long BlockHeight { get; set; }
     public long Accounts { get; set; }
@@ -131,7 +131,7 @@ public class TransactionsResponseDto
 
 public class SearchRequestDto : IValidatableObject
 {
-    public string ChainId { get; set; }
+    public string ChainId { get; set; } = "";
     [Required] public string Keyword { get; set; }
     public FilterTypes FilterType { get; set; }
     public SearchTypes SearchType { get; set; }
@@ -308,6 +308,7 @@ public class SearchToken
     public string Symbol { get; set; }
     public decimal Price { get; set; }
     public SymbolType Type { get; set; }
+    public List<string> ChainIds { get; set; }
 }
 
 public class SearchContract

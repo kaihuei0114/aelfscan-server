@@ -151,9 +151,9 @@ public class SearchService : ISearchService, ISingletonDependency
                 searchResponseDto.Contracts.Add(new SearchContract
                 {
                     Address = request.Keyword,
-                    Name = BlockHelper.GetContractName(_globalOptions.CurrentValue, contractInfoDto.ChainId,
+                    Name = BlockHelper.GetContractName(_globalOptions.CurrentValue, contractInfoDto.Metadata.ChainId,
                         request.Keyword),
-                    ChainIds = new List<string>() { contractInfoDto.ChainId }
+                    ChainIds = new List<string>() { contractInfoDto.Metadata.ChainId }
                 });
             }
         }
@@ -196,15 +196,25 @@ public class SearchService : ISearchService, ISingletonDependency
         holderInput.SetDefaultSort();
 
         var tokenHolderInfos = await _tokenIndexerProvider.GetTokenHolderInfoAsync(holderInput);
+        var dic = new Dictionary<string, SearchAccount>();
+
         foreach (var indexerTokenHolderInfoDto in tokenHolderInfos.Items)
         {
-            result.Add(new SearchAccount
+            if (dic.TryGetValue(indexerTokenHolderInfoDto.Address, out var v))
             {
-                Address = indexerTokenHolderInfoDto.Address,
-                ChainIds = new List<string>() { indexerTokenHolderInfoDto.Metadata.ChainId }
-            });
+                v.ChainIds.Add(indexerTokenHolderInfoDto.Metadata.ChainId);
+            }
+            else
+            {
+                dic.Add(indexerTokenHolderInfoDto.Address, new SearchAccount()
+                {
+                    Address = indexerTokenHolderInfoDto.Address,
+                    ChainIds = new List<string>() { indexerTokenHolderInfoDto.Metadata.ChainId }
+                });
+            }
         }
 
+        result.AddRange(dic.Values);
         return result;
     }
 
@@ -238,6 +248,9 @@ public class SearchService : ISearchService, ISingletonDependency
             lastSaleInfoDict = await _nftInfoProvider.GetLatestPriceAsync(request.ChainId, symbols);
         }
 
+        var searchTokensDic = new Dictionary<string, SearchToken>();
+        var searchTNftsDic = new Dictionary<string, SearchToken>();
+
         var elfOfUsdPriceTask = GetTokenOfUsdPriceAsync(priceDict, CurrencyConstant.ElfCurrency);
         foreach (var tokenInfo in indexerTokenInfoList.Items)
         {
@@ -251,23 +264,40 @@ public class SearchService : ISearchService, ISingletonDependency
             {
                 case SymbolType.Token:
                 {
-                    if (_tokenInfoOptions.CurrentValue.NonResourceSymbols.Contains(tokenInfo.Symbol))
+                    if (searchTokensDic.TryGetValue(tokenInfo.Symbol, out var v))
                     {
-                        var price = await GetTokenOfUsdPriceAsync(priceDict, tokenInfo.Symbol);
-                        searchToken.Price = Math.Round(price, CommonConstant.UsdPriceValueDecimals);
+                        v.ChainIds.Add(tokenInfo.IssueChainId);
+                    }
+                    else
+                    {
+                        if (_tokenInfoOptions.CurrentValue.NonResourceSymbols.Contains(tokenInfo.Symbol))
+                        {
+                            var price = await GetTokenOfUsdPriceAsync(priceDict, tokenInfo.Symbol);
+                            searchToken.Price = Math.Round(price, CommonConstant.UsdPriceValueDecimals);
+                        }
+
+                        searchTokensDic[tokenInfo.Symbol] = searchToken;
                     }
 
-                    searchResponseDto.Tokens.Add(searchToken);
                     break;
                 }
                 case SymbolType.Nft:
                 {
-                    var elfOfUsdPrice = await elfOfUsdPriceTask;
-                    var elfPrice = lastSaleInfoDict.TryGetValue(tokenInfo.Symbol, out var priceDto)
-                        ? priceDto.Price
-                        : 0;
-                    searchToken.Price = Math.Round(elfPrice * elfOfUsdPrice, CommonConstant.UsdPriceValueDecimals);
-                    searchResponseDto.Nfts.Add(searchToken);
+                    if (searchTNftsDic.TryGetValue(tokenInfo.Symbol, out var v))
+                    {
+                        v.ChainIds.Add(tokenInfo.IssueChainId);
+                    }
+                    else
+                    {
+                        var elfOfUsdPrice = await elfOfUsdPriceTask;
+                        var elfPrice = lastSaleInfoDict.TryGetValue(tokenInfo.Symbol, out var priceDto)
+                            ? priceDto.Price
+                            : 0;
+                        searchToken.Price = Math.Round(elfPrice * elfOfUsdPrice, CommonConstant.UsdPriceValueDecimals);
+                        searchToken.ChainIds.Add(tokenInfo.IssueChainId);
+                        searchTNftsDic[tokenInfo.Symbol] = searchToken;
+                    }
+
                     break;
                 }
                 case SymbolType.Nft_Collection:
@@ -277,6 +307,9 @@ public class SearchService : ISearchService, ISingletonDependency
                 }
             }
         }
+
+        searchResponseDto.Tokens.AddRange(searchTokensDic.Values);
+        searchResponseDto.Nfts.AddRange(searchTNftsDic.Values);
     }
 
     private async Task AssemblySearchBlockAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
