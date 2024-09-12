@@ -344,6 +344,7 @@ public class SearchService : ISearchService, ISingletonDependency
             .GetLatestBlocksAsync(_globalOptions.CurrentValue.SideChainId, blockHeight, blockHeight).ContinueWith(
                 task => { sideBlockList.AddRange(task.Result); }));
 
+        await tasks.WhenAll();
 
         if (!mainBlockList.IsNullOrEmpty())
         {
@@ -440,6 +441,7 @@ public class SearchService : ISearchService, ISingletonDependency
         tasks.Add(_blockchainClientFactory.GetClient(_globalOptions.CurrentValue.SideChainId)
             .GetTransactionResultAsync(request.Keyword).ContinueWith(task => { sideChainTxn = task.Result; }));
 
+        await tasks.WhenAll();
 
         if (!mainChainTxn.TransactionId.IsNullOrEmpty() && mainChainTxn.Status is "MINED" or "PENDING")
         {
