@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.Provider;
@@ -323,8 +324,56 @@ public class SearchService : ISearchService, ISingletonDependency
         searchResponseDto.Nfts.AddRange(searchTNftsDic.Values);
     }
 
+    private async Task SearchMergeBlockAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
+    {
+        if (!BlockHelper.IsBlockHeight(request.Keyword))
+        {
+            return;
+        }
+
+        var mainBlockList = new List<IndexerBlockDto>();
+        var sideBlockList = new List<IndexerBlockDto>();
+        var tasks = new List<Task>();
+
+        var blockHeight = long.Parse(request.Keyword);
+
+        tasks.Add(_aelfIndexerProvider.GetLatestBlocksAsync("AELF", blockHeight, blockHeight).ContinueWith(
+            task => { mainBlockList.AddRange(task.Result); }));
+
+        tasks.Add(_aelfIndexerProvider
+            .GetLatestBlocksAsync(_globalOptions.CurrentValue.SideChainId, blockHeight, blockHeight).ContinueWith(
+                task => { sideBlockList.AddRange(task.Result); }));
+
+
+        if (!mainBlockList.IsNullOrEmpty())
+        {
+            var blockDto = mainBlockList[0];
+            searchResponseDto.Blocks.Add(new SearchBlock
+            {
+                BlockHash = blockDto.BlockHash,
+                BlockHeight = blockDto.BlockHeight
+            });
+        }
+
+        if (!sideBlockList.IsNullOrEmpty())
+        {
+            var blockDto = sideBlockList[0];
+            searchResponseDto.Blocks.Add(new SearchBlock
+            {
+                BlockHash = blockDto.BlockHash,
+                BlockHeight = blockDto.BlockHeight
+            });
+        }
+    }
+
     private async Task AssemblySearchBlockAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
+        if (request.ChainId.IsNullOrEmpty())
+        {
+            await SearchMergeBlockAsync(searchResponseDto, request);
+            return;
+        }
+
         if (!BlockHelper.IsBlockHeight(request.Keyword))
         {
             return;
@@ -336,20 +385,27 @@ public class SearchService : ISearchService, ISingletonDependency
         if (!blockDtos.IsNullOrEmpty())
         {
             var blockDto = blockDtos[0];
-            searchResponseDto.Block = new SearchBlock
+            searchResponseDto.Blocks.Add(new SearchBlock
             {
                 BlockHash = blockDto.BlockHash,
                 BlockHeight = blockDto.BlockHeight
-            };
+            });
         }
     }
 
     private async Task AssemblySearchTransactionAsync(SearchResponseDto searchResponseDto, SearchRequestDto request)
     {
+        if (request.ChainId.IsNullOrEmpty())
+        {
+            await SearchMergeTransaction(searchResponseDto, request);
+            return;
+        }
+
         if (!BlockHelper.IsTxHash(request.Keyword))
         {
             return;
         }
+
 
         var transactionResult = await _blockchainClientFactory.GetClient(request.ChainId)
             .GetTransactionResultAsync(request.Keyword);
@@ -361,6 +417,55 @@ public class SearchService : ISearchService, ISingletonDependency
                 TransactionId = transactionResult.TransactionId,
                 BlockHash = transactionResult.BlockHash,
                 BlockHeight = transactionResult.BlockNumber
+            };
+        }
+    }
+
+    private async Task SearchMergeTransaction(SearchResponseDto searchResponseDto, SearchRequestDto request)
+    {
+        if (!BlockHelper.IsTxHash(request.Keyword))
+        {
+            return;
+        }
+
+        var mainChainTxn = new TransactionResultDto();
+        var sideChainTxn = new TransactionResultDto();
+
+
+        var tasks = new List<Task>();
+
+        tasks.Add(_blockchainClientFactory.GetClient("AELF")
+            .GetTransactionResultAsync(request.Keyword).ContinueWith(task => { mainChainTxn = task.Result; }));
+
+        tasks.Add(_blockchainClientFactory.GetClient(_globalOptions.CurrentValue.SideChainId)
+            .GetTransactionResultAsync(request.Keyword).ContinueWith(task => { sideChainTxn = task.Result; }));
+
+
+        if (!mainChainTxn.TransactionId.IsNullOrEmpty() && mainChainTxn.Status is "MINED" or "PENDING")
+        {
+            searchResponseDto.Transaction = new SearchTransaction
+            {
+                TransactionId = mainChainTxn.TransactionId,
+                BlockHash = mainChainTxn.BlockHash,
+                BlockHeight = mainChainTxn.BlockNumber,
+                ChainIds = new List<string>
+                {
+                    "AELF"
+                }
+            };
+        }
+
+        if (!sideChainTxn.TransactionId.IsNullOrEmpty() && sideChainTxn.Status is "MINED" or "PENDING")
+        {
+            searchResponseDto.Transaction = new SearchTransaction
+            {
+                TransactionId = mainChainTxn.TransactionId,
+                BlockHash = mainChainTxn.BlockHash,
+                BlockHeight = mainChainTxn.BlockNumber,
+                ChainIds = new List<string>
+                {
+                    _globalOptions.CurrentValue.SideChainId
+                }
             };
         }
     }

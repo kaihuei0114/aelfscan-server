@@ -20,6 +20,7 @@ using AElf.Types;
 using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.Input;
 using AElfScanServer.Common.EsIndex;
 using AElfScanServer.Worker.Core.Provider;
 using Elasticsearch.Net;
@@ -85,6 +86,8 @@ public interface ITransactionService
     public Task FixDailyData();
 
     public Task BlockSizeTask();
+
+    public Task PullTokenInfo();
 }
 
 public class TransactionService : AbpRedisCache, ITransactionService, ITransientDependency
@@ -145,6 +148,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
 
     private readonly IEntityMappingRepository<AddressIndex, string> _addressRepository;
+    private readonly ITokenIndexerProvider _tokenIndexerProvider;
     private readonly NodeProvider _nodeProvider;
 
     private readonly ILogger<TransactionService> _logger;
@@ -202,7 +206,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IOptionsMonitor<SecretOptions> secretOptions,
         IEntityMappingRepository<MonthlyActiveAddressInfoIndex, string> monthlyActiveAddressInfoRepository,
         IEntityMappingRepository<MonthlyActiveAddressIndex, string> monthlyActiveAddressRepository,
-        IPriceServerProvider priceServerProvider) :
+        IPriceServerProvider priceServerProvider, ITokenIndexerProvider tokenIndexerProvider) :
         base(optionsAccessor)
     {
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -257,6 +261,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _secretOptions = secretOptions.CurrentValue;
         _monthlyActiveAddressInfoRepository = monthlyActiveAddressInfoRepository;
         _monthlyActiveAddressRepository = monthlyActiveAddressRepository;
+        _tokenIndexerProvider = tokenIndexerProvider;
     }
 
 
@@ -274,6 +279,24 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         await tasks.WhenAll();
     }
 
+
+    public async Task PullTokenInfo()
+    {
+        var tokenListInput = new TokenListInput()
+        {
+            Types = new List<SymbolType>(),
+            SkipCount = 0,
+            MaxResultCount = 10000
+        };
+
+        tokenListInput.SetDefaultSort();
+        var tokenListAsync = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
+        
+        foreach (var indexerTokenInfoDto in tokenListAsync.Items)
+        {
+            
+        }
+    }
 
     public async Task BatchPullLogEventTask()
     {
@@ -777,7 +800,9 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         await ConnectAsync();
         var redisValue = RedisDatabase.StringGet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId));
         lastBlockHeight = redisValue.IsNullOrEmpty ? 2 : long.Parse(redisValue) + 1;
-        _logger.LogInformation("BatchParseLogEventJob {ChainId} lastBlockHeight {LastBlockHeight} PullLogEventTransactionInterval {PullLogEventTransactionInterval}",chainId,lastBlockHeight,PullLogEventTransactionInterval);
+        _logger.LogInformation(
+            "BatchParseLogEventJob {ChainId} lastBlockHeight {LastBlockHeight} PullLogEventTransactionInterval {PullLogEventTransactionInterval}",
+            chainId, lastBlockHeight, PullLogEventTransactionInterval);
         while (true)
         {
             try
@@ -806,7 +831,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
                     continue;
                 }
 
-                _logger.LogInformation("BatchParseLogEventJob :{chainId},start:{startBlockHeight}", chainId, lastBlockHeight);
+                _logger.LogInformation("BatchParseLogEventJob :{chainId},start:{startBlockHeight}", chainId,
+                    lastBlockHeight);
                 await ParseLogEventList(batchTransactionList, chainId);
                 lastBlockHeight += PullLogEventTransactionInterval + 1;
                 RedisDatabase.StringSet(RedisKeyHelper.LogEventTransactionLastBlockHeight(chainId),

@@ -327,7 +327,7 @@ public class SearchResponseDto
     public List<SearchToken> Nfts { get; set; } = new();
     public List<SearchAccount> Accounts { get; set; } = new();
     public List<SearchContract> Contracts { get; set; } = new();
-    public SearchBlock Block { get; set; }
+    public List<SearchBlock> Blocks { get; set; }
     public SearchTransaction Transaction { get; set; }
 }
 
@@ -342,6 +342,8 @@ public class SearchTransaction
     public string TransactionId { get; set; }
     public long BlockHeight { get; set; }
     public string BlockHash { get; set; }
+
+    public List<string> ChainIds { get; set; } = new();
 }
 
 public class SearchToken

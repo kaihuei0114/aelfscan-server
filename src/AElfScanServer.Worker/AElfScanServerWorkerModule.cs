@@ -17,6 +17,7 @@ using AElfScanServer.Worker.Core;
 using AElfScanServer.Worker.Core.Options;
 using AElfScanServer.Worker.Core.Service;
 using AElfScanServer.Worker.Core.Worker;
+using AElfScanServer.Worker.Core.Worker.MergeDataWorker;
 using Elasticsearch.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

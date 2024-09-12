@@ -145,7 +145,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         var indexerResult = await graphQlHelper.QueryAsync<IndexerTokenInfosDto>(new GraphQLRequest
         {
             Query =
-                @"query($chainId:String!,$skipCount:Int!,$maxResultCount:Int!,$search:String,
+                @"query($chainId:String,$skipCount:Int!,$maxResultCount:Int!,$search:String,
                         $types:[SymbolType!],$symbols:[String!],$collectionSymbols:[String!],
                         $sort:String,$orderBy:String,$exactSearch:String,$fuzzySearch:String,$searchAfter:[String]){
                     tokenInfo(input: {chainId:$chainId,skipCount:$skipCount,maxResultCount:$maxResultCount,search:$search,types:$types,
