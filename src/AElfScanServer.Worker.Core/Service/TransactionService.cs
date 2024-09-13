@@ -286,14 +286,14 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task PullTokenInfo()
     {
-        var skip = 0;
-        var maxResultCount = 100;
-        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
+        try
         {
+            var skip = 0;
+            var maxResultCount = 100;
+
             var tokenInfoIndices = new List<TokenInfoIndex>();
             var tokenListInput = new TokenListInput()
             {
-                ChainId = chainId,
                 Types = new List<SymbolType>() { SymbolType.Token, SymbolType.Nft_Collection },
                 SkipCount = skip,
                 MaxResultCount = maxResultCount
@@ -317,7 +317,11 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
 
             await _tokenInfoRepository.AddOrUpdateManyAsync(tokenInfoIndices);
-            _logger.LogInformation("tokenInfoIndices count:{count},chainId:{chainId}", tokenInfoIndices.Count, chainId);
+            _logger.LogInformation("tokenInfoIndices count:{count}", tokenInfoIndices.Count);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "PullTokenInfo error");
         }
     }
 

@@ -279,8 +279,6 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
                 overviewResp.MergeTransactions.MainChain + overviewResp.MergeTransactions.SideChain;
             overviewResp.MergeAccounts.Total =
                 overviewResp.MergeAccounts.MainChain + overviewResp.MergeAccounts.SideChain;
-            overviewResp.MergeNfts.Total = overviewResp.MergeNfts.MainChain + overviewResp.MergeNfts.SideChain;
-            overviewResp.MergeTokens.Total = overviewResp.MergeTokens.MainChain + overviewResp.MergeTokens.SideChain;
             DataStrategyLogger.LogInformation("Set home page overview success: merge chain");
         }
         catch (Exception e)
