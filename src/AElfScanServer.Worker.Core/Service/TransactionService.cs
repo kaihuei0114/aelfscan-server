@@ -284,12 +284,14 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     {
         var tokenListInput = new TokenListInput()
         {
-            Types = new List<SymbolType>() { SymbolType.Nft, SymbolType.Token },
+            ChainId = "AELF",
+            Types = new List<SymbolType>() { SymbolType.Token },
+            // Types = new List<SymbolType>() { SymbolType.Nft, SymbolType.Token },
             SkipCount = 0,
             MaxResultCount = 100
         };
 
-        tokenListInput.SetDefaultSort();
+        // tokenListInput.SetDefaultSort();
         var tokenListAsync = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
 
         foreach (var indexerTokenInfoDto in tokenListAsync.Items)

@@ -105,7 +105,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
                     overviewResp.TokenPriceInUsd = task.Result.LastPrice;
                 }));
             tasks.Add(_homePageProvider.GetTransactionCountPerLastMinute(chainId).ContinueWith(
-                task => { overviewResp.Tps = (task.Result / 60).ToString("F2"); }));
+                task => { overviewResp.MergeTps.Total = (task.Result / 60).ToString("F2"); }));
 
             await Task.WhenAll(tasks);
 

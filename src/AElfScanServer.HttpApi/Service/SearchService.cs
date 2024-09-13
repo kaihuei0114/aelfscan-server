@@ -411,13 +411,14 @@ public class SearchService : ISearchService, ISingletonDependency
         var transactionResult = await _blockchainClientFactory.GetClient(request.ChainId)
             .GetTransactionResultAsync(request.Keyword);
 
-        if (transactionResult.Status is "MINED" or "PENDING")
+        if (!transactionResult.TransactionId.IsNullOrEmpty() && transactionResult.Status is "MINED" or "PENDING")
         {
             searchResponseDto.Transaction = new SearchTransaction
             {
                 TransactionId = transactionResult.TransactionId,
                 BlockHash = transactionResult.BlockHash,
-                BlockHeight = transactionResult.BlockNumber
+                BlockHeight = transactionResult.BlockNumber,
+                ChainIds = new List<string> { request.ChainId }
             };
         }
     }
