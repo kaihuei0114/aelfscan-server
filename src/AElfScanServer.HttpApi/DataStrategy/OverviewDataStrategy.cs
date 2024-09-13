@@ -156,6 +156,8 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
             var searchResponse = await _elasticClient.SearchAsync<TokenInfoIndex>(searchDescriptor);
 
             var total = searchResponse.Aggregations.Cardinality("unique_symbol").Value;
+            DataStrategyLogger.LogInformation("GetTokens: chain:{chainId},{total}",
+                chainId.IsNullOrEmpty() ? "Merge" : chainId, total);
             return (long)total;
         }
         catch (Exception e)
@@ -279,7 +281,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
                 overviewResp.MergeTransactions.MainChain + overviewResp.MergeTransactions.SideChain;
             overviewResp.MergeAccounts.Total =
                 overviewResp.MergeAccounts.MainChain + overviewResp.MergeAccounts.SideChain;
-            DataStrategyLogger.LogInformation("Set home page overview success: merge chain");
+            DataStrategyLogger.LogInformation("Set  home page overview success: merge chain");
         }
         catch (Exception e)
         {
