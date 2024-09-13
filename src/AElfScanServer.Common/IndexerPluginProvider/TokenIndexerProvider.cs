@@ -138,7 +138,7 @@ public class TokenIndexerProvider : ITokenIndexerProvider, ISingletonDependency
         return indexerResult != null ? indexerResult.AccountCount.Count : 0;
     }
 
-    public async Task<IndexerTokenInfoListDto> GetTokenListAsync(TokenListInput input)
+    public async Task<IndexerTokenInfoListDto>    GetTokenListAsync(TokenListInput input)
     {
         var graphQlHelper = GetGraphQlHelper();
 
