@@ -132,43 +132,6 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         return overviewResp;
     }
 
-    public async Task<long> GetTokens(string chainId)
-    {
-        try
-        {
-            var searchDescriptor = new SearchDescriptor<TokenInfoIndex>()
-                .Index("tokeninfoindex")
-                .Query(q => q
-                    .Bool(b => b
-                        .Must(m => { return m.Term(t => t.Field("type").Value(0)); },
-                            m =>
-                            {
-                                return !string.IsNullOrEmpty(chainId)
-                                    ? m.Term(t => t.Field("chainId").Value(chainId))
-                                    : null;
-                            })
-                    )
-                )
-                .Aggregations(a => a
-                    .Cardinality("unique_symbol", t => t.Field("symbol"))
-                );
-
-            var searchResponse = await _elasticClient.SearchAsync<TokenInfoIndex>(searchDescriptor);
-
-            var total = searchResponse.Aggregations.Cardinality("unique_symbol").Value;
-            DataStrategyLogger.LogInformation("GetTokens: chain:{chainId},{total}",
-                chainId.IsNullOrEmpty() ? "Merge" : chainId, total);
-            return (long)total;
-        }
-        catch (Exception e)
-        {
-            DataStrategyLogger.LogError(e, "get token count err");
-        }
-
-        return 0;
-    }
-
-
     // public async Task<long> GetTokens(string chainId)
     // {
     //     try
@@ -177,12 +140,13 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
     //             .Index("tokeninfoindex")
     //             .Query(q => q
     //                 .Bool(b => b
-    //                     .Must(m => m.Term(t => t.Field("type").Value(0)))
-    //                     .Must(m =>
-    //                         !string.IsNullOrEmpty(chainId)
-    //                             ? m.Term(t => t.Field("chainId").Value(chainId))
-    //                             : null
-    //                     )
+    //                     .Must(m => { return m.Term(t => t.Field("type").Value(0)); },
+    //                         m =>
+    //                         {
+    //                             return !string.IsNullOrEmpty(chainId)
+    //                                 ? m.Term(t => t.Field("chainId").Value(chainId))
+    //                                 : null;
+    //                         })
     //                 )
     //             )
     //             .Aggregations(a => a
@@ -203,7 +167,50 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
     //
     //     return 0;
     // }
-    //
+
+
+    public async Task<long> GetTokens(string chainId)
+    {
+        try
+        {
+            var searchDescriptor = new SearchDescriptor<TokenInfoIndex>()
+                .Index("tokeninfoindex")
+                .Query(q => q
+                    .Bool(b => b
+                        .Must(m =>
+                        {
+                            return !string.IsNullOrEmpty(chainId)
+                                ? m.Term(t => t.Field("chainId").Value(chainId))
+                                : null;
+                        })
+                        .Should(
+                            s => s.Term(t => t.Field("type").Value(0)), // type 为指定的值
+                            s => s.Terms(t =>
+                                t.Field("symbol")
+                                    .Terms(_globalOptions.CurrentValue.SpecialSymbols))
+                        )
+                        .MinimumShouldMatch(1)
+                    )
+                )
+                .Aggregations(a => a
+                    .Cardinality("unique_symbol", t => t.Field("symbol"))
+                );
+
+            var searchResponse = await _elasticClient.SearchAsync<TokenInfoIndex>(searchDescriptor);
+
+            var total = searchResponse.Aggregations.Cardinality("unique_symbol").Value;
+            DataStrategyLogger.LogInformation("GetTokens: chain:{chainId},{total}",
+                string.IsNullOrEmpty(chainId) ? "Merge" : chainId, total);
+            return (long)total;
+        }
+        catch (Exception e)
+        {
+            DataStrategyLogger.LogError(e, "get token count err");
+        }
+
+        return 0;
+    }
+
 
     public async Task<string> GetMarketCap()
     {
@@ -305,7 +312,7 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
             {
                 overviewResp.MergeTokens.SideChain = task.Result;
             }));
-            
+
             tasks.Add(GetTokens("").ContinueWith(task => { overviewResp.MergeTokens.Total = task.Result; }));
 
             await Task.WhenAll(tasks);
