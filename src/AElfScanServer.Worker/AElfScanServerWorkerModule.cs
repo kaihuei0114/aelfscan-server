@@ -161,19 +161,6 @@ public class AElfScanServerWorkerModule : AbpModule
 
         foreach (var indexerOptionsChainId in indexerOptions.ChainIds)
         {
-            if (!elasticClient.Indices.Exists(BlockChainIndexNameHelper.GenerateTokenIndexName(indexerOptionsChainId))
-                    .Exists)
-            {
-                var indexResponse = elasticClient.Indices.Create(
-                    BlockChainIndexNameHelper.GenerateTokenIndexName(indexerOptionsChainId),
-                    c => c.Map<TokenInfoIndex>(m => m.AutoMap()));
-
-                if (!indexResponse.IsValid)
-                {
-                    throw new Exception($"Failed to index object: {indexResponse.DebugInformation}");
-                }
-            }
-
             if (!elasticClient.Indices.Exists(BlockChainIndexNameHelper.GenerateAddressIndexName(indexerOptionsChainId))
                     .Exists)
             {

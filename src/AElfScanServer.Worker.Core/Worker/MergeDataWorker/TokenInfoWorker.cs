@@ -19,7 +19,7 @@ public class TokenInfoWorker : AsyncPeriodicBackgroundWorkerBase
         ILogger<TokenInfoWorker> logger, ITransactionService transactionService) : base(timer,
         serviceScopeFactory)
     {
-        timer.Period = 1000 * 60 * 60;
+        timer.Period = 1000 * 60 * 5;
         timer.RunOnStart = true;
         _logger = logger;
         _transactionService = transactionService;

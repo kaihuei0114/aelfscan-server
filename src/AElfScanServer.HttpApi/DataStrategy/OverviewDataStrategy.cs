@@ -5,6 +5,8 @@ using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using AElf.EntityMapping.Repositories;
 using AElfScanServer.Common.Dtos.ChartData;
+using AElfScanServer.Common.Dtos.MergeData;
+using AElfScanServer.Common.EsIndex;
 using AElfScanServer.HttpApi.Dtos;
 using AElfScanServer.HttpApi.Helper;
 using AElfScanServer.HttpApi.Provider;
@@ -12,11 +14,14 @@ using AElfScanServer.Common.Helper;
 using AElfScanServer.Common.IndexerPluginProvider;
 using AElfScanServer.Common.Options;
 using AElfScanServer.DataStrategy;
+using AElfScanServer.HttpApi.Options;
 using AElfScanServer.HttpApi.Service;
+using Elasticsearch.Net;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Volo.Abp.Caching;
 using AddressIndex = AElfScanServer.Common.Dtos.ChartData.AddressIndex;
@@ -34,6 +39,8 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
     private readonly IBlockChainIndexerProvider _blockChainIndexerProvider;
     private readonly IChartDataService _chartDataService;
     private readonly IEntityMappingRepository<AddressIndex, string> _addressRepository;
+    private readonly IElasticClient _elasticClient;
+
 
     public OverviewDataStrategy(IOptions<RedisCacheOptions> optionsAccessor,
         IOptionsMonitor<GlobalOptions> globalOptions,
@@ -44,7 +51,8 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         IBlockChainIndexerProvider blockChainIndexerProvider,
         IEntityMappingRepository<DailyUniqueAddressCountIndex, string> uniqueAddressRepository,
         ILogger<DataStrategyBase<string, HomeOverviewResponseDto>> logger, IDistributedCache<string> cache,
-        IChartDataService chartDataService, IEntityMappingRepository<AddressIndex, string> addressRepository) : base(
+        IChartDataService chartDataService, IEntityMappingRepository<AddressIndex, string> addressRepository,
+        IOptionsMonitor<ElasticsearchOptions> options) : base(
         optionsAccessor, logger, cache)
     {
         _globalOptions = globalOptions;
@@ -56,6 +64,11 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
         _uniqueAddressRepository = uniqueAddressRepository;
         _chartDataService = chartDataService;
         _addressRepository = addressRepository;
+        var uris = options.CurrentValue.Url.ConvertAll(x => new Uri(x));
+        var connectionPool = new StaticConnectionPool(uris);
+        var settings = new ConnectionSettings(connectionPool).DisableDirectStreaming();
+        _elasticClient = new ElasticClient(settings);
+        EsIndex.SetElasticClient(_elasticClient);
     }
 
     public override async Task<HomeOverviewResponseDto> QueryData(string chainId)
@@ -119,6 +132,40 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
 
         return overviewResp;
     }
+
+    public async Task<long> GetTokens(string chainId)
+    {
+        try
+        {
+            var searchDescriptor = new SearchDescriptor<TokenInfoIndex>()
+                .Index("tokeninfoindex")
+                .Query(q => q
+                    .Bool(b => b
+                        .Must(m => m.Term(t => t.Field("type").Value(0)))
+                        .Must(m =>
+                            !string.IsNullOrEmpty(chainId)
+                                ? m.Term(t => t.Field("chainId").Value(chainId))
+                                : null
+                        )
+                    )
+                )
+                .Aggregations(a => a
+                    .Cardinality("unique_symbol", t => t.Field("symbol"))
+                );
+
+            var searchResponse = await _elasticClient.SearchAsync<TokenInfoIndex>(searchDescriptor);
+
+            var total = searchResponse.Aggregations.Cardinality("unique_symbol").Value;
+            return (long)total;
+        }
+        catch (Exception e)
+        {
+            DataStrategyLogger.LogError(e, "get token count err");
+        }
+
+        return 0;
+    }
+
 
     public async Task<string> GetMarketCap()
     {
@@ -212,6 +259,16 @@ public class OverviewDataStrategy : DataStrategyBase<string, HomeOverviewRespons
             {
                 overviewResp.MergeAccounts.SideChain = task.Result;
             }));
+
+
+            tasks.Add(GetTokens("AELF").ContinueWith(task => { overviewResp.MergeTokens.MainChain = task.Result; }));
+
+            tasks.Add(GetTokens(_globalOptions.CurrentValue.SideChainId).ContinueWith(task =>
+            {
+                overviewResp.MergeTokens.SideChain = task.Result;
+            }));
+
+            tasks.Add(GetTokens("").ContinueWith(task => { overviewResp.MergeTokens.Total = task.Result; }));
 
             await Task.WhenAll(tasks);
             overviewResp.MergeTps.MainChain = mainChainTps.ToString("F2");

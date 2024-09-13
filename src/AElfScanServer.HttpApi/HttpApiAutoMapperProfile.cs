@@ -109,12 +109,6 @@ public class BlockChainAutoMapperProfile : Profile
             .ReverseMap();
 
         CreateMap<TransactionIndex, TransactionDetailDto>();
-        CreateMap<TokenCreated, TokenInfoIndex>()
-            .ForMember(d => d.ExternalInfo,
-                opt => opt.MapFrom(s => s.ExternalInfo.Value.ToDictionary(o => o.Key, o => o.Value)))
-            .ForMember(d => d.IssueChainId,
-                opt => opt.MapFrom(s =>
-                    s.IssueChainId == 0 ? null : ChainHelper.ConvertChainIdToBase58(s.IssueChainId)));
         ;
 
         CreateMap<GetAddressTokenListInput, GetTokenListInput>();

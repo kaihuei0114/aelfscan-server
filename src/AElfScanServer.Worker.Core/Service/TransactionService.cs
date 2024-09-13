@@ -21,6 +21,7 @@ using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Dtos.MergeData;
 using AElfScanServer.Common.EsIndex;
 using AElfScanServer.Worker.Core.Provider;
 using Elasticsearch.Net;
@@ -135,6 +136,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
     private readonly IEntityMappingRepository<TransactionErrInfoIndex, string> _transactionErrInfoIndexRepository;
     private readonly IEntityMappingRepository<DailySupplyChange, string> _dailySupplyChangeRepository;
     private readonly IEntityMappingRepository<DailyTVLIndex, string> _dailyTVLIndexRepository;
+    private readonly IEntityMappingRepository<TokenInfoIndex, string> _tokenInfoRepository;
 
     private readonly IEntityMappingRepository<MonthlyActiveAddressInfoIndex, string>
         _monthlyActiveAddressInfoRepository;
@@ -206,7 +208,8 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         IOptionsMonitor<SecretOptions> secretOptions,
         IEntityMappingRepository<MonthlyActiveAddressInfoIndex, string> monthlyActiveAddressInfoRepository,
         IEntityMappingRepository<MonthlyActiveAddressIndex, string> monthlyActiveAddressRepository,
-        IPriceServerProvider priceServerProvider, ITokenIndexerProvider tokenIndexerProvider) :
+        IPriceServerProvider priceServerProvider, ITokenIndexerProvider tokenIndexerProvider,
+        IEntityMappingRepository<TokenInfoIndex, string> tokenInfoRepository) :
         base(optionsAccessor)
     {
         _aelfIndexerProvider = aelfIndexerProvider;
@@ -262,6 +265,7 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
         _monthlyActiveAddressInfoRepository = monthlyActiveAddressInfoRepository;
         _monthlyActiveAddressRepository = monthlyActiveAddressRepository;
         _tokenIndexerProvider = tokenIndexerProvider;
+        _tokenInfoRepository = tokenInfoRepository;
     }
 
 
@@ -282,20 +286,38 @@ public class TransactionService : AbpRedisCache, ITransactionService, ITransient
 
     public async Task PullTokenInfo()
     {
-        var tokenListInput = new TokenListInput()
+        var skip = 0;
+        var maxResultCount = 100;
+        foreach (var chainId in _globalOptions.CurrentValue.ChainIds)
         {
-            ChainId = "AELF",
-            Types = new List<SymbolType>() { SymbolType.Token },
-            // Types = new List<SymbolType>() { SymbolType.Nft, SymbolType.Token },
-            SkipCount = 0,
-            MaxResultCount = 100
-        };
+            var tokenInfoIndices = new List<TokenInfoIndex>();
+            var tokenListInput = new TokenListInput()
+            {
+                ChainId = chainId,
+                Types = new List<SymbolType>() { SymbolType.Token, SymbolType.Nft_Collection },
+                SkipCount = skip,
+                MaxResultCount = maxResultCount
+            };
+            while (true)
+            {
+                tokenListInput.SkipCount = skip;
+                tokenListInput.MaxResultCount = maxResultCount;
+                var tokenListAsync = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
+                if (tokenListAsync.Items.Count == 0)
+                {
+                    break;
+                }
 
-        // tokenListInput.SetDefaultSort();
-        var tokenListAsync = await _tokenIndexerProvider.GetTokenListAsync(tokenListInput);
+                var tokenInfoList =
+                    _objectMapper.Map<List<IndexerTokenInfoDto>, List<TokenInfoIndex>>(tokenListAsync.Items);
 
-        foreach (var indexerTokenInfoDto in tokenListAsync.Items)
-        {
+                tokenInfoIndices.AddRange(tokenInfoList);
+                skip += maxResultCount;
+            }
+
+
+            await _tokenInfoRepository.AddOrUpdateManyAsync(tokenInfoIndices);
+            _logger.LogInformation("tokenInfoIndices count:{count},chainId:{chainId}", tokenInfoIndices.Count, chainId);
         }
     }
 
