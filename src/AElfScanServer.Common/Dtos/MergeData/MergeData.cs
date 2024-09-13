@@ -32,6 +32,7 @@ public class TokenInfoIndex : AElfIndexerEntity<string>, IEntityMappingEntity
     public decimal ItemCount { get; set; }
 
     public MetadataDto Metadata { get; set; }
+    public List<string> ChainIds { get; set; } = new();
 
     [Keyword] public string Symbol { get; set; }
     [Keyword] public string CollectionSymbol { get; set; }

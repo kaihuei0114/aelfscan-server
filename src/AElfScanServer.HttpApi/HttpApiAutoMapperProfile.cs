@@ -9,6 +9,7 @@ using AElfScanServer.Common.Dtos.Ads;
 using AElfScanServer.Common.Dtos.ChartData;
 using AElfScanServer.Common.Dtos.Indexer;
 using AElfScanServer.Common.Dtos.Input;
+using AElfScanServer.Common.Dtos.MergeData;
 using AElfScanServer.Common.Helper;
 using AElfScanServer.Grains.State.Ads;
 using AElfScanServer.HttpApi.Dtos.AdsData;
@@ -155,6 +156,16 @@ public class BlockChainAutoMapperProfile : Profile
 
 
         CreateMap<IndexerTokenInfoDto, TokenCommonDto>()
+            .ForPath(t => t.Token.Name, m => m.MapFrom(u => u.TokenName))
+            .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Symbol))
+            .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Decimals))
+            .ForMember(t => t.CirculatingSupply, m => m.MapFrom(u => u.Supply))
+            .ForPath(t => t.Holders, m => m.MapFrom(u => u.HolderCount))
+            .ReverseMap()
+            ;
+
+
+        CreateMap<TokenInfoIndex, TokenCommonDto>()
             .ForPath(t => t.Token.Name, m => m.MapFrom(u => u.TokenName))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Symbol))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Decimals))

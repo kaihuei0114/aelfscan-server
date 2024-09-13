@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElfScanServer.Common.Dtos;
 using AElfScanServer.Common.Dtos.Indexer;
+using AElfScanServer.Common.Dtos.MergeData;
 using Nest;
 
 namespace AElfScanServer.Common.EsIndex;
@@ -13,6 +16,51 @@ public class EsIndex
     public static void SetElasticClient(IElasticClient client)
     {
         esClient = client;
+    }
+
+    public static async Task<List<TokenInfoIndex>> SearchMergeTokenList(List<string> symbols)
+    {
+        var searchDescriptor = new SearchDescriptor<TokenInfoIndex>()
+            .Index("tokeninfoindex")
+            .Size(1000)
+            .Query(q => q
+                .Bool(b => b
+                    .Should(
+                        s => s.Term(t => t.Field(f => f.Type).Value(SymbolType.Token)),
+                        s => s.Terms(t =>
+                            t.Field(f => f.Symbol).Terms(symbols))
+                    )
+                    .MinimumShouldMatch(1)
+                )
+            );
+
+        var searchResponse = await esClient.SearchAsync<TokenInfoIndex>(searchDescriptor);
+
+        if (!searchResponse.IsValid)
+        {
+            throw new Exception($"Elasticsearch query failed: {searchResponse.OriginalException.Message}");
+        }
+
+        List<TokenInfoIndex> tokenInfoList = searchResponse.Documents.ToList();
+
+        var dic = new Dictionary<string, TokenInfoIndex>();
+        foreach (var tokenInfoIndex in tokenInfoList)
+        {
+            if (dic.TryGetValue(tokenInfoIndex.Symbol, out var value))
+            {
+                value.ChainIds.Add(tokenInfoIndex.ChainId);
+                value.HolderCount += tokenInfoIndex.HolderCount;
+                value.TransferCount += tokenInfoIndex.TransferCount;
+                value.Supply += tokenInfoIndex.Supply;
+            }
+            else
+            {
+                tokenInfoIndex.ChainIds.Add(tokenInfoIndex.ChainId);
+                dic.Add(tokenInfoIndex.Symbol, tokenInfoIndex);
+            }
+        }
+
+        return dic.Values.ToList();
     }
 
     public static async Task<List<TransactionIndex>> GetTransactionIndexList(string chainId, long startTime,
