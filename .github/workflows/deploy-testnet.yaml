@@ -4,6 +4,23 @@ on:
   push:
     branches:
       - "release/*"
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Select the service to build'
+        required: true
+        type: choice
+        options:
+          - AElfScanServer.Worker
+          - AElfScanServer.HttpApi.Host
+          - AElfScanServer.Silo
+          - AElfScanServer.AuthServer
+          - AElfScanServer.DbMigrator
+          - AElfScanServer.Worker-pre
+          - AElfScanServer.HttpApi.Host-pre
+          - AElfScanServer.Silo-pre
+          - AElfScanServer.AuthServer-pre
+          - AElfScanServer.DbMigrator-pre
 env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 
