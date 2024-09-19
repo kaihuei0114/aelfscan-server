@@ -1,14 +1,12 @@
 name: Build and Deploy Testnet
 
 on:
-  push:
-    branches:
-      - "release/*"
   workflow_dispatch:
     inputs:
-      service:
-        description: 'Select the service to build'
+      servicename:
+        description: 'Select service to build and deploy'
         required: true
+        default: 'AElfScanServer.Worker'
         type: choice
         options:
           - AElfScanServer.Worker
@@ -16,28 +14,16 @@ on:
           - AElfScanServer.Silo
           - AElfScanServer.AuthServer
           - AElfScanServer.DbMigrator
-          - AElfScanServer.Worker-pre
-          - AElfScanServer.HttpApi.Host-pre
-          - AElfScanServer.Silo-pre
-          - AElfScanServer.AuthServer-pre
-          - AElfScanServer.DbMigrator-pre
+
 env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, 'pre-release')  # Check for 'pre-release' in commit message
+    runs-on: aelfscan-runner
     strategy:
       matrix:
-        servicename:
-          [
-            AElfScanServer.Worker,
-            AElfScanServer.HttpApi.Host,
-            AElfScanServer.Silo,
-            AElfScanServer.AuthServer,
-            AElfScanServer.DbMigrator
-          ]
+        servicename: [ ${{ github.event.inputs.servicename }} ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -50,20 +36,13 @@ jobs:
           name: ${{ matrix.servicename }}
           path: out/${{ matrix.servicename }}
           retention-days: 1
+
   build-and-push-image:
     needs: publish
-    runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, 'pre-release')  # Check for 'pre-release' in commit message
+    runs-on: aelfscan-runner
     strategy:
       matrix:
-        servicename:
-          [
-            AElfScanServer.Worker,
-            AElfScanServer.HttpApi.Host,
-            AElfScanServer.Silo,
-            AElfScanServer.AuthServer,
-            AElfScanServer.DbMigrator
-          ]
+        servicename: [ ${{ github.event.inputs.servicename }} ]
     permissions:
       contents: read
     outputs:
@@ -102,11 +81,37 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
   dispatch:
-    runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, 'pre-release')  # Check for 'pre-release' in commit message
+    runs-on: aelfscan-runner
     needs: build-and-push-image
     steps:
+      - name: Map servicename to appName
+        id: map-appname
+        run: |
+          case ${{ matrix.servicename }} in
+            "AElfScanServer.HttpApi.Host")
+              appName="aelf-explorer-httpapi-host"
+              ;;
+            "AElfScanServer.Worker")
+              appName="aelf-explorer-worker"
+              ;;
+            "AElfScanServer.Silo")
+              appName="aelf-explorer-silo"
+              ;;
+            "AElfScanServer.AuthServer")
+              appName="aelf-explorer-authserver"
+              ;;
+            "AElfScanServer.DbMigrator")
+              appName="aelf-explorer-dbmigrator"
+              ;;
+            *)
+              echo "Unknown service name: ${{ matrix.servicename }}"
+              exit 1
+              ;;
+          esac
+          echo "appName=$appName" >> "$GITHUB_ENV"
+
       - name: Deploy
         uses: actions/github-script@v6
         with:
@@ -119,7 +124,7 @@ jobs:
               ref: 'main',
               inputs: {
                 env: 'testnet',
-                appName: 'aelf-explorer-backend',
+                appName: process.env.appName,
                 commit_sha: 'sha-${{ needs.build-and-push-image.outputs.short_sha }}',
               }
             })
