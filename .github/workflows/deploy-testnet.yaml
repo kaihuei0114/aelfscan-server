@@ -83,28 +83,28 @@ jobs:
       - name: Map servicename to appName
         id: map-appname
         run: |
-        case "${{ github.event.inputs.servicename }}" in
-          "AElfScanServer.HttpApi.Host")
-            appName="aelf-explorer-httpapi-host"
-            ;;
-          "AElfScanServer.Worker")
-            appName="aelf-explorer-worker"
-            ;;
-          "AElfScanServer.Silo")
-            appName="aelf-explorer-silo"
-            ;;
-          "AElfScanServer.AuthServer")
-            appName="aelf-explorer-authserver"
-            ;;
-          "AElfScanServer.DbMigrator")
-            appName="aelf-explorer-dbmigrator"
-            ;;
-          *)
-            echo "Unknown service name: ${{ github.event.inputs.servicename }}"
-            exit 1
-            ;;
-        esac
-        echo "appName=$appName" >> "$GITHUB_ENV"        
+          case "${{ github.event.inputs.servicename }}" in
+            "AElfScanServer.HttpApi.Host")
+              appName="aelf-explorer-httpapi-host"
+              ;;
+            "AElfScanServer.Worker")
+              appName="aelf-explorer-worker"
+              ;;
+            "AElfScanServer.Silo")
+              appName="aelf-explorer-silo"
+              ;;
+            "AElfScanServer.AuthServer")
+              appName="aelf-explorer-authserver"
+              ;;
+            "AElfScanServer.DbMigrator")
+              appName="aelf-explorer-dbmigrator"
+              ;;
+            *)
+              echo "Unknown service name: ${{ github.event.inputs.servicename }}"
+              exit 1
+              ;;
+          esac
+          echo "appName=$appName" >> "$GITHUB_ENV"        
         
       - name: Deploy
         uses: actions/github-script@v6
