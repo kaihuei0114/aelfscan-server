@@ -21,9 +21,6 @@ env:
 jobs:
   publish:
     runs-on: aelfscan-runner
-    strategy:
-      matrix:
-        servicename: [ ${{ github.event.inputs.servicename }} ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -40,9 +37,6 @@ jobs:
   build-and-push-image:
     needs: publish
     runs-on: aelfscan-runner
-    strategy:
-      matrix:
-        servicename: [ ${{ github.event.inputs.servicename }} ]
     permissions:
       contents: read
     outputs:
