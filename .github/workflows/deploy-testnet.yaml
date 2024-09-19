@@ -26,12 +26,12 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0"
-      - run: dotnet publish src/${{ matrix.servicename }}/${{ matrix.servicename }}.csproj -o out/${{ matrix.servicename }}
+      - run: dotnet publish src/${{ github.event.inputs.servicename}}/${{ github.event.inputs.servicename }}.csproj -o out/${{ github.event.inputs.servicename }}
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.servicename }}
-          path: out/${{ matrix.servicename }}
+          name: ${{ github.event.inputs.servicename }}
+          path: out/${{ github.event.inputs.servicename }}
           retention-days: 1
 
   build-and-push-image:
@@ -52,13 +52,13 @@ jobs:
       - name: Download a single artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.servicename }}
-          path: out/${{ matrix.servicename }}
+          name: ${{ github.event.inputs.servicename }}
+          path: out/${{ github.event.inputs.servicename }}
       - name: Create image tag
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.REPOSITORY_REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPOSITORY }}/${{ matrix.servicename }}
+          images: ${{ secrets.REPOSITORY_REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPOSITORY }}/${{ github.event.inputs.servicename }}
           tags: |
             type=sha
       - name: Set up Docker Buildx
@@ -69,7 +69,7 @@ jobs:
           context: .
           push: true
           build-args: |
-            servicename=${{ matrix.servicename }}
+            servicename=${{ github.event.inputs.servicename }}
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -83,7 +83,7 @@ jobs:
       - name: Map servicename to appName
         id: map-appname
         run: |
-          case ${{ matrix.servicename }} in
+          case ${{ github.event.inputs.servicename }} in
             "AElfScanServer.HttpApi.Host")
               appName="aelf-explorer-httpapi-host"
               ;;
@@ -100,7 +100,7 @@ jobs:
               appName="aelf-explorer-dbmigrator"
               ;;
             *)
-              echo "Unknown service name: ${{ matrix.servicename }}"
+              echo "Unknown service name: ${{ github.event.inputs.servicename }}"
               exit 1
               ;;
           esac
