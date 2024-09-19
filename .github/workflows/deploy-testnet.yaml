@@ -104,6 +104,7 @@ jobs:
               exit 1
               ;;
           esac
+          echo $appName
           echo "appName=$appName" >> "$GITHUB_ENV"        
         
       - name: Deploy
